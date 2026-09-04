@@ -22,7 +22,6 @@ export type ChatMessageItem = {
   status?: string
   sources?: string[]
   ticketSuggestion?: {
-    category: string
     subject: string
     description: string
     requester: string
@@ -59,5 +58,5 @@ export const backend = {
   updateConflict: (id: number, action: 'DISMISSED' | 'REVIEWED' | 'RESOLVED', note?: string) => api.patch<ConflictItem>(`/api/documents/conflicts/${id}`, { action, note }),
   listUsers: () => api.get<UserItem[]>('/api/users'),
   createUser: (username: string, password: string, roles: string[]) => api.post<UserItem>('/api/users', { username, password, roles }),
-  createTicket: (data: { category: string; subject: string; description: string; requester: string }) => api.post('/api/tickets', data),
+  createTicket: (data: { subject: string; description: string; requester: string }) => api.post('/api/tickets', data),
 }

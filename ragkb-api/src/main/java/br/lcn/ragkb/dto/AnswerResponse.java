@@ -6,7 +6,7 @@ public record AnswerResponse(
         String status,
         String answer,
         List<String> sourceIds,
-        TicketSuggestion ticketSuggestion,
+        TicketSuggestionDto ticketSuggestion,
         String conversationId
 ) {
     public static AnswerResponse fromKnowledgeBase(String answer, List<String> sourceIds, String conversationId) {
@@ -14,6 +14,6 @@ public record AnswerResponse(
     }
 
     public static AnswerResponse withTicketSuggestion(String message, TicketSuggestion suggestion, String conversationId) {
-        return new AnswerResponse("TICKET_SUGGESTED", message, List.of(), suggestion, conversationId);
+        return new AnswerResponse("TICKET_SUGGESTED", message, List.of(), TicketSuggestionDto.fromDomain(suggestion), conversationId);
     }
 }

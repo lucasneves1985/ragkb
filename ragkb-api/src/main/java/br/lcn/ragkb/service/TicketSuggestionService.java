@@ -1,16 +1,17 @@
 package br.lcn.ragkb.service;
 
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.ai.document.Document;
+import org.springframework.stereotype.Service;
+
 import br.lcn.ragkb.dto.AnswerResponse;
 import br.lcn.ragkb.dto.CreateTicketRequest;
 import br.lcn.ragkb.dto.TicketSuggestion;
 import br.lcn.ragkb.gateway.TicketGateway;
 import lombok.RequiredArgsConstructor;
-import org.springframework.ai.document.Document;
-import org.springframework.stereotype.Service;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +32,7 @@ public class TicketSuggestionService {
         TicketSuggestion suggestion = new TicketSuggestion(
                 UUID.randomUUID(),
                 question,
+                "",
                 userId,
                 sector,
                 nearMisses.stream()
@@ -54,8 +56,9 @@ public class TicketSuggestionService {
         TicketSuggestion suggestion = new TicketSuggestion(
                 UUID.randomUUID(),
                 request.subject(),
+                request.description(),
                 request.requester(),
-                request.category(),
+                "Geral",
                 List.of(),
                 Instant.now());
         return ticketGateway.openTicket(suggestion);

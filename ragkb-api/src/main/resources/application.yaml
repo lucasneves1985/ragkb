@@ -50,7 +50,17 @@ spring:
         distance-type: COSINE_DISTANCE
         dimensions: 1536
         initialize-schema: true
-
+  mail:
+    host: ${SMTP_HOST:smtp.kinghost.net}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:teste@email}
+    password: ${SMTP_PASSWORD:123}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 app:
   security:
     jwt:
@@ -62,6 +72,9 @@ app:
     enabled: false
     generate-dataset: false
     output: src/main/resources/eval/dataset-generated.json
+  ticket:
+    recipient-email: ${TICKET_RECIPIENT_EMAIL:chamados@unimed303.com.br}
+    from-email: ${SMTP_USERNAME:Lucas}
 management:
   endpoints:
     web:

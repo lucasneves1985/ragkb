@@ -7,6 +7,7 @@ import java.util.UUID;
 public record TicketSuggestion(
         UUID id,
         String question,
+        String description,
         String userId,
         String sector,
         List<String> relatedDocumentIds,

@@ -46,9 +46,8 @@ const defaultGreeting: Message = {
 const messages = ref<Message[]>([defaultGreeting])
 
 const ticket = reactive({
-  category: 'Acessos e Credenciais',
-  subject: 'Solicitação de liberação de VPN internacional',
-  description: 'Usuário solicitou instruções de acesso à VPN fora do país, tópico não localizado na base de conhecimento.',
+  subject: 'Assunto',
+  description: 'Descrição detalhada do assunto.',
   requester: auth.username,
 })
 
@@ -234,7 +233,6 @@ onMounted(() => {
               />
               <el-form v-else label-position="top" class="ticket-form">
                 <div class="ticket-fields">
-                  <el-form-item label="Categoria"><el-input v-model="ticket.category" /></el-form-item>
                   <el-form-item label="Assunto"><el-input v-model="ticket.subject" /></el-form-item>
                 </div>
                 <el-form-item label="Descrição"><el-input v-model="ticket.description" type="textarea" :rows="3" /></el-form-item>

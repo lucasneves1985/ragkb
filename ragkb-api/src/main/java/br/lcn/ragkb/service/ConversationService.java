@@ -1,9 +1,6 @@
 package br.lcn.ragkb.service;
 
-import br.lcn.ragkb.dto.AnswerResponse;
-import br.lcn.ragkb.dto.ConversationDetailDto;
-import br.lcn.ragkb.dto.ConversationSummaryDto;
-import br.lcn.ragkb.dto.TicketSuggestion;
+import br.lcn.ragkb.dto.*;
 import br.lcn.ragkb.entity.ChatMessage;
 import br.lcn.ragkb.entity.Conversation;
 import br.lcn.ragkb.repository.ConversationRepository;
@@ -80,13 +77,13 @@ public class ConversationService {
         String status = response.status();
         String answer = response.answer();
         List<String> sources = response.sourceIds();
-        TicketSuggestion suggestion = response.ticketSuggestion();
+        TicketSuggestionDto suggestion = response.ticketSuggestion();
 
         ChatMessage assistantMsg = new ChatMessage(conversation, "ASSISTANT", answer, status, sources);
         if (suggestion != null) {
             assistantMsg.setTicketSector(suggestion.sector());
-            assistantMsg.setTicketQuestion(suggestion.question());
-            assistantMsg.setTicketUserId(suggestion.userId());
+            assistantMsg.setTicketQuestion(suggestion.description());
+            assistantMsg.setTicketUserId(suggestion.requester());
         }
         conversation.addMessage(assistantMsg);
 

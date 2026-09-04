@@ -11,20 +11,22 @@ public record ChatMessageDto(
         String content,
         String status,
         List<String> sources,
-        TicketSuggestion ticketSuggestion,
+        TicketSuggestionDto ticketSuggestion,
         Instant createdAt
 ) {
     public static ChatMessageDto fromEntity(ChatMessage entity) {
-        TicketSuggestion suggestion = null;
+        TicketSuggestionDto suggestionDto = null;
         if ("TICKET_SUGGESTED".equals(entity.getStatus())) {
-            suggestion = new TicketSuggestion(
+            TicketSuggestion suggestion = new TicketSuggestion(
                     null,
                     entity.getTicketQuestion() != null ? entity.getTicketQuestion() : entity.getContent(),
+                    null,
                     entity.getTicketUserId(),
                     entity.getTicketSector() != null ? entity.getTicketSector() : "Geral",
                     List.of(),
                     entity.getCreatedAt()
             );
+            suggestionDto = TicketSuggestionDto.fromDomain(suggestion);
         }
         return new ChatMessageDto(
                 entity.getId(),
@@ -32,7 +34,7 @@ public record ChatMessageDto(
                 entity.getContent(),
                 entity.getStatus(),
                 entity.getSources(),
-                suggestion,
+                suggestionDto,
                 entity.getCreatedAt()
         );
     }
