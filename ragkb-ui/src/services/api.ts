@@ -74,7 +74,7 @@ export type ConversationDetail = {
 
 // Em desenvolvimento, o Vite encaminha /api para localhost:8080 e evita bloqueios de CORS.
 // VITE_API_URL permite informar a URL absoluta em ambientes publicados.
-export const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '', timeout: 15_000 })
+export const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '', timeout: 60_000 })
 api.interceptors.request.use((config) => {
   const token = sessionStorage.getItem('ragkb-token')
   if (token) config.headers.Authorization = `Bearer ${token}`
@@ -102,7 +102,8 @@ export const backend = {
   createConversation: () => api.post<ConversationDetail>('/api/conversations'),
   deleteConversation: (id: string) => api.delete(`/api/conversations/${id}`),
   listDocuments: () => api.get<DocumentItem[]>('/api/documents'),
-  uploadDocument: (data: FormData) => api.post<DocumentItem>('/api/documents', data),
+  uploadDocument: (data: FormData) =>
+    api.post<DocumentItem>('/api/documents', data, { timeout: 300_000 }), // 5 min
   updateDocument: (
     id: string,
     data: { action: 'ARCHIVE' | 'REACTIVATE'; allowedRoles?: string[] },

@@ -46,12 +46,15 @@ public class QueryService {
     public AnswerResponse ask(String question, String conversationId,
                               List<String> roles, String userId, String userSector) {
 
+        // Cria ou recupera a conversa persistida — use SEMPRE o id retornado
+        Conversation conversation = conversationService.getOrCreateConversation(conversationId, userId, question);
+        String effectiveConversationId = conversation.getId();
+
         boolean isAdmin = roles.contains("ROLE_ADMIN");
 
         String filterExpr;
         if (isAdmin) {
-            // Admin vê tudo — sem filtro de filtro de roles nem de setor
-            filterExpr = null; // ou "true" se o pgvector exigir expressão
+            filterExpr = null; // Admin vê tudo
         } else {
             String rolesExpr = roles.stream()
                     .map(r -> "'" + r + "'")
@@ -70,20 +73,20 @@ public class QueryService {
 
         List<Document> hits = vectorStore.similaritySearch(builder.build());
 
-        // Decisão determinística: sem hits acima do limiar, o LLM NÃO é chamado
+        // Sem hits acima do limiar: sugere ticket (sem chamar o LLM)
         if (hits.isEmpty()) {
-            AnswerResponse response = ticketService.suggestTicket(question, userId, List.of(), conversationId);
-            conversationService.recordInteraction(conversationId, question, response);
-            redisChatHistoryService.addMessage(conversationId, "USER", question);
-            redisChatHistoryService.addMessage(conversationId, "ASSISTANT", response.answer());
+            AnswerResponse response = ticketService.suggestTicket(question, userId, List.of(), effectiveConversationId);
+            conversationService.recordInteraction(effectiveConversationId, question, response);
+            redisChatHistoryService.addMessage(effectiveConversationId, "USER", question);
+            redisChatHistoryService.addMessage(effectiveConversationId, "ASSISTANT", response.answer());
             return response;
         }
 
         // Mapear documentIds para filenames
         List<String> docIds = hits.stream()
-                .map(doc -> doc.getMetadata().get("documentId") != null ? doc.getMetadata().get("documentId").toString() : "")
-                .filter(id -> !id.isBlank())
-                .distinct()
+                .map(doc -> doc.getMetadata().get("documentId") != null
+                        ? doc.getMetadata().get("documentId").toString()
+                        : "")
                 .toList();
 
         Map<String, String> filenameMap = metadataRepository.findAllById(docIds).stream()
@@ -96,7 +99,7 @@ public class QueryService {
                 })
                 .collect(Collectors.joining("\n\n---\n\n"));
 
-        String history = redisChatHistoryService.getFormattedHistory(conversationId);
+        String history = redisChatHistoryService.getFormattedHistory(effectiveConversationId);
         String historyBlock = history.isBlank() ? "" : """
                 Histórico recente da conversa:
                 %s
@@ -110,6 +113,8 @@ public class QueryService {
                 Pergunta: %s
                 """.formatted(historyBlock, context, question);
 
+        System.out.println(userPromptText);
+
         String answer = chatClient.prompt()
                 .system(SYSTEM_PROMPT)
                 .user(u -> u.text(userPromptText))
@@ -121,11 +126,10 @@ public class QueryService {
                 .distinct()
                 .toList();
 
-        AnswerResponse response = AnswerResponse.fromKnowledgeBase(answer, sourceFilenames, conversationId);
-        conversationService.recordInteraction(conversationId, question, response);
-
-        redisChatHistoryService.addMessage(conversationId, "USER", question);
-        redisChatHistoryService.addMessage(conversationId, "ASSISTANT", answer);
+        AnswerResponse response = AnswerResponse.fromKnowledgeBase(answer, sourceFilenames, effectiveConversationId);
+        conversationService.recordInteraction(effectiveConversationId, question, response);
+        redisChatHistoryService.addMessage(effectiveConversationId, "USER", question);
+        redisChatHistoryService.addMessage(effectiveConversationId, "ASSISTANT", answer);
 
         return response;
     }
