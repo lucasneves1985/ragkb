@@ -34,7 +34,6 @@ public class TicketSuggestionService {
                 question,
                 "",
                 userId,
-                sector,
                 nearMisses.stream()
                         .map(doc -> doc.getMetadata().get("documentId").toString())
                         .toList(),
@@ -58,7 +57,6 @@ public class TicketSuggestionService {
                 request.subject(),
                 request.description(),
                 request.requester(),
-                "Geral",
                 List.of(),
                 Instant.now());
         return ticketGateway.openTicket(suggestion);

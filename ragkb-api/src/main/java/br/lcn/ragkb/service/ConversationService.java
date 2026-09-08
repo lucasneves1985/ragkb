@@ -81,7 +81,6 @@ public class ConversationService {
 
         ChatMessage assistantMsg = new ChatMessage(conversation, "ASSISTANT", answer, status, sources);
         if (suggestion != null) {
-            assistantMsg.setTicketSector(suggestion.sector());
             assistantMsg.setTicketQuestion(suggestion.description());
             assistantMsg.setTicketUserId(suggestion.requester());
         }

@@ -9,7 +9,6 @@ public record TicketSuggestion(
         String question,
         String description,
         String userId,
-        String sector,
         List<String> relatedDocumentIds,
         Instant createdAt
 ) {}

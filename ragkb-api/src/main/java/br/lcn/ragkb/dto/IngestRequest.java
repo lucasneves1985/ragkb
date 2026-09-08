@@ -8,5 +8,6 @@ import java.util.List;
 public record IngestRequest(
         @NotBlank String sector,
         @Size(min = 1) List<String> allowedRoles,
+        @Size(min = 1) List<String> allowedSectors,
         String supersedesDocumentId // opcional
 ) {}

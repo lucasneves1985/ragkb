@@ -56,9 +56,15 @@ public class DocumentMetadata {
     @Column(name = "role", length = 50)
     private List<String> allowedRoles = new ArrayList<>();
 
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "document_allowed_sectors", joinColumns = @JoinColumn(name = "document_id"))
+    @Column(name = "sector_name", length = 80)
+    private List<String> allowedSectors = new ArrayList<>();
+
     public DocumentMetadata(String id, String filename, String sector, String contentHash,
                             Integer chunkCount, String supersedesDocumentId,
-                            String sourceText, List<String> allowedRoles) {
+                            String sourceText, List<String> allowedRoles, List<String> allowedSectors) {
         this.id = id;
         this.filename = filename;
         this.sector = sector;
@@ -69,6 +75,7 @@ public class DocumentMetadata {
         this.supersedesDocumentId = supersedesDocumentId;
         this.sourceText = sourceText;
         this.allowedRoles = allowedRoles != null ? new ArrayList<>(allowedRoles) : new ArrayList<>();
+        this.allowedSectors = allowedSectors != null ? new ArrayList<>(allowedSectors) : new ArrayList<>();
     }
 
     public void supersede() {

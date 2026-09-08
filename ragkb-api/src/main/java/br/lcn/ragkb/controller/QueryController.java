@@ -3,6 +3,7 @@ package br.lcn.ragkb.controller;
 import br.lcn.ragkb.dto.AnswerResponse;
 import br.lcn.ragkb.dto.AskRequest;
 import br.lcn.ragkb.service.QueryService;
+import br.lcn.ragkb.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -21,6 +22,7 @@ import java.util.List;
 public class QueryController {
 
     private final QueryService queryService;
+    private final UserService userService;
 
     @PostMapping
     public AnswerResponse ask(@Valid @RequestBody AskRequest request) {
@@ -28,7 +30,7 @@ public class QueryController {
         List<String> roles = auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
-        // userId agora é o username real, não a lista de papéis
-        return queryService.ask(request.question(), request.conversationId(), roles, auth.getName());
+        String userSector = userService.findByUsername(auth.getName());
+        return queryService.ask(request.question(), request.conversationId(), roles, auth.getName(), userSector);
     }
 }

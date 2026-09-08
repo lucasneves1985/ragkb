@@ -43,27 +43,39 @@ public class QueryService {
     private final ConversationService conversationService;
     private final RedisChatHistoryService redisChatHistoryService;
 
-    public AnswerResponse ask(String question, String conversationId, List<String> roles, String userId) {
-        Conversation conversation = conversationService.getOrCreateConversation(conversationId, userId, question);
+    public AnswerResponse ask(String question, String conversationId,
+                              List<String> roles, String userId, String userSector) {
 
-        String rolesExpr = roles.stream()
-                .map(role -> "'" + role + "'")
-                .collect(Collectors.joining(", "));
+        boolean isAdmin = roles.contains("ROLE_ADMIN");
 
-        List<Document> hits = vectorStore.similaritySearch(
-                SearchRequest.builder()
-                        .query(question)
-                        .topK(TOP_K)
-                        .similarityThreshold(SIMILARITY_THRESHOLD)
-                        .filterExpression("allowedRoles in [" + rolesExpr + "]")
-                        .build());
+        String filterExpr;
+        if (isAdmin) {
+            // Admin vê tudo — sem filtro de filtro de roles nem de setor
+            filterExpr = null; // ou "true" se o pgvector exigir expressão
+        } else {
+            String rolesExpr = roles.stream()
+                    .map(r -> "'" + r + "'")
+                    .collect(Collectors.joining(", "));
+            filterExpr = "allowedRoles in [" + rolesExpr + "]"
+                    + " and allowedSectors in ['" + userSector + "']";
+        }
+
+        SearchRequest.Builder builder = SearchRequest.builder()
+                .query(question)
+                .topK(TOP_K)
+                .similarityThreshold(SIMILARITY_THRESHOLD);
+        if (filterExpr != null) {
+            builder.filterExpression(filterExpr);
+        }
+
+        List<Document> hits = vectorStore.similaritySearch(builder.build());
 
         // Decisão determinística: sem hits acima do limiar, o LLM NÃO é chamado
         if (hits.isEmpty()) {
-            AnswerResponse response = ticketService.suggestTicket(question, userId, List.of(), conversation.getId());
-            conversationService.recordInteraction(conversation.getId(), question, response);
-            redisChatHistoryService.addMessage(conversation.getId(), "USER", question);
-            redisChatHistoryService.addMessage(conversation.getId(), "ASSISTANT", response.answer());
+            AnswerResponse response = ticketService.suggestTicket(question, userId, List.of(), conversationId);
+            conversationService.recordInteraction(conversationId, question, response);
+            redisChatHistoryService.addMessage(conversationId, "USER", question);
+            redisChatHistoryService.addMessage(conversationId, "ASSISTANT", response.answer());
             return response;
         }
 
@@ -84,7 +96,7 @@ public class QueryService {
                 })
                 .collect(Collectors.joining("\n\n---\n\n"));
 
-        String history = redisChatHistoryService.getFormattedHistory(conversation.getId());
+        String history = redisChatHistoryService.getFormattedHistory(conversationId);
         String historyBlock = history.isBlank() ? "" : """
                 Histórico recente da conversa:
                 %s
@@ -109,11 +121,11 @@ public class QueryService {
                 .distinct()
                 .toList();
 
-        AnswerResponse response = AnswerResponse.fromKnowledgeBase(answer, sourceFilenames, conversation.getId());
-        conversationService.recordInteraction(conversation.getId(), question, response);
+        AnswerResponse response = AnswerResponse.fromKnowledgeBase(answer, sourceFilenames, conversationId);
+        conversationService.recordInteraction(conversationId, question, response);
 
-        redisChatHistoryService.addMessage(conversation.getId(), "USER", question);
-        redisChatHistoryService.addMessage(conversation.getId(), "ASSISTANT", answer);
+        redisChatHistoryService.addMessage(conversationId, "USER", question);
+        redisChatHistoryService.addMessage(conversationId, "ASSISTANT", answer);
 
         return response;
     }

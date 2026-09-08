@@ -1,6 +1,7 @@
 package br.lcn.ragkb.config;
 
 import br.lcn.ragkb.entity.AppUser;
+import br.lcn.ragkb.entity.Sector;
 import br.lcn.ragkb.repository.AppUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,7 +25,7 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) {
         if (userRepository.findByUsername("admin").isEmpty()) {
             userRepository.save(new AppUser("admin",
-                    passwordEncoder.encode(adminPassword), List.of("ADMIN", "USER")));
+                    passwordEncoder.encode(adminPassword), new Sector(), List.of("ADMIN", "USER")));
         }
     }
 }

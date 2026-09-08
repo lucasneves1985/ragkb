@@ -82,7 +82,7 @@ public class IngestionService {
         return metadataRepository.save(new DocumentMetadata(
                 documentId, file.getOriginalFilename(), request.sector(),
                 contentHash, chunks.size(), request.supersedesDocumentId(),
-                sourceText, request.allowedRoles()));
+                sourceText, request.allowedSectors(), request.allowedRoles()));
     }
 
     private byte[] readBytes(MultipartFile file) {

@@ -41,8 +41,15 @@ public class UserService {
         AppUser saved = userRepository.save(new AppUser(
                 request.username(),
                 passwordEncoder.encode(request.password()),
+                request.sector(),
                 roles));
 
         return new UserResponse(saved.getId(), saved.getUsername(), saved.getRoles(), saved.isEnabled());
+    }
+
+
+    public String findByUsername(String username) {
+        return userRepository.findByUsername(username).map(u -> u.getSector().getName())
+                .orElse(null);
     }
 }

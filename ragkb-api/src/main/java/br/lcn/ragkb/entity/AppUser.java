@@ -28,12 +28,17 @@ public class AppUser {
     @Column(name = "role", length = 50)
     private List<String> roles = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "sector_id")
+    private Sector sector;
+
     @Column(nullable = false)
     private boolean enabled = true;
 
-    public AppUser(String username, String password, List<String> roles) {
+    public AppUser(String username, String password, Sector sector, List<String> roles) {
         this.username = username;
         this.password = password;
         this.roles = roles;
+        this.sector = sector;
     }
 }

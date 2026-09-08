@@ -22,7 +22,6 @@ public record ChatMessageDto(
                     entity.getTicketQuestion() != null ? entity.getTicketQuestion() : entity.getContent(),
                     null,
                     entity.getTicketUserId(),
-                    entity.getTicketSector() != null ? entity.getTicketSector() : "Geral",
                     List.of(),
                     entity.getCreatedAt()
             );
