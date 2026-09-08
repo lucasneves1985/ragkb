@@ -1,6 +1,7 @@
 package br.lcn.ragkb.service;
 
 import br.lcn.ragkb.dto.AnswerResponse;
+import br.lcn.ragkb.dto.RedisChatMessageDto;
 import br.lcn.ragkb.entity.Conversation;
 import br.lcn.ragkb.entity.DocumentMetadata;
 import br.lcn.ragkb.repository.DocumentMetadataRepository;
@@ -72,6 +73,26 @@ public class QueryService {
         }
 
         List<Document> hits = vectorStore.similaritySearch(builder.build());
+        if (hits.isEmpty()) {
+            List<RedisChatMessageDto> history = redisChatHistoryService.getHistory(effectiveConversationId);
+            String lastUserQuestion = null;
+            for (int i = history.size() - 1; i >= 0; i--) {
+                if ("USER".equals(history.get(i).sender())) {
+                    lastUserQuestion = history.get(i).content();
+                    break;
+                }
+            }
+            if (lastUserQuestion != null && !lastUserQuestion.equals(question)) {
+                hits = vectorStore.similaritySearch(
+                        SearchRequest.builder()
+                                .query(lastUserQuestion)
+                                .topK(TOP_K)
+                                .similarityThreshold(SIMILARITY_THRESHOLD)
+                                .filterExpression(filterExpr) // mesmo filtro de role+setor
+                                .build());
+            }
+        }
+
 
         // Sem hits acima do limiar: sugere ticket (sem chamar o LLM)
         if (hits.isEmpty()) {
@@ -113,7 +134,7 @@ public class QueryService {
                 Pergunta: %s
                 """.formatted(historyBlock, context, question);
 
-        System.out.println(userPromptText);
+        //System.out.println(userPromptText);
 
         String answer = chatClient.prompt()
                 .system(SYSTEM_PROMPT)
