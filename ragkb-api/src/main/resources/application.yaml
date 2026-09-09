@@ -15,8 +15,12 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate   # era update — isso muda AGORA
     open-in-view: false
+
+  flyway:
+    enabled: true
+    #locations: classpath:db/migration
 
   servlet:
     multipart:

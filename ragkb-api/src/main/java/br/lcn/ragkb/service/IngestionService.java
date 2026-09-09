@@ -73,6 +73,7 @@ public class IngestionService {
                 "filename", file.getOriginalFilename(),
                 "sector", request.sector(),
                 "allowedRoles", request.allowedRoles(),
+                "allowedSectors", request.allowedSectors(),
                 "contentHash", contentHash
         )));
 
