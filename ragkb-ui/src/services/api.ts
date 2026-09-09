@@ -113,8 +113,8 @@ export const backend = {
   updateConflict: (id: number, action: 'DISMISSED' | 'REVIEWED' | 'RESOLVED', note?: string) =>
     api.patch<ConflictItem>(`/api/documents/conflicts/${id}`, { action, note }),
   listUsers: () => api.get<UserItem[]>('/api/users'),
-  createUser: (username: string, password: string, roles: string[], sector: string) =>
-    api.post<UserItem>('/api/users', { username, password, roles, sector }),
+  createUser: (username: string, password: string, roles: string[], sectorId: number) =>
+    api.post<UserItem>('/api/users', { username, password, roles, sectorId }),
   createTicket: (data: { subject: string; description: string; requester: string }) =>
     api.post('/api/tickets', data),
 }

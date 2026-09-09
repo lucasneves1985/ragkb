@@ -10,6 +10,6 @@ import java.util.List;
 public record CreateUserRequest(
         @NotBlank @Size(min = 3, max = 100) String username,
         @NotBlank @Size(min = 8, max = 100) String password,
-        @NotNull Sector sector,
+        @NotNull Long sectorId,
         @Size(min = 1) List<String> roles
 ) {}

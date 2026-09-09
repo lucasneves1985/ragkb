@@ -1,46 +1,62 @@
 services:
-  pgvector:
+  postgres:
     image: pgvector/pgvector:pg16
-    container_name: pgvector
     environment:
+      POSTGRES_DB: ragkb
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: ragkb
     ports:
       - "5432:5432"
     volumes:
-      - pgvector_data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d ragkb"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   redis:
     image: redis:7-alpine
-    container_name: redis
     ports:
       - "6379:6379"
-    volumes:
-      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
-      timeout: 5s
-      retries: 5
+      timeout: 3s
+      retries: 10
 
-  redis-insight:
-    image: redis/redisinsight:latest
-    container_name: redis-insight
-    ports:
-      - "5540:5540"
-    volumes:
-      - redisinsight_data:/data
+  api:
+    build: ./ragkb-api
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-troque-antes-de-producao-32bytes}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      TICKET_RECIPIENT_EMAIL: ${TICKET_RECIPIENT_EMAIL:-chamados@unimed303.com.br}
+      SMTP_HOST: ${SMTP_HOST:-smtp.kinghost.net}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-teste@email}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-123}
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
+    ports:
+      - "8080:8080"
+
+  ui:
+    build: ./ragkb-ui
+    depends_on:
+      - api
+    ports:
+      - "3000:80"
 
 volumes:
-  pgvector_data:
-  redis_data:
-  redisinsight_data:
+  pgdata:

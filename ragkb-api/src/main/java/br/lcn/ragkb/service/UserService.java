@@ -37,7 +37,10 @@ public class UserService {
                 throw new InvalidRoleException(role);
             }
         }
-
+        Sector sector = sectorRepository.findById(request.sectorId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Setor não encontrado: " + request.sectorId()));
+                        
         AppUser saved = userRepository.save(new AppUser(
                 request.username(),
                 passwordEncoder.encode(request.password()),

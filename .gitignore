@@ -1,1 +1,29 @@
+# ===== Segredos e ambiente =====
 .env
+.env.*
+!.env.example
+
+# ===== IDE / editores =====
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+
+# ===== Sistema operacional =====
+.DS_Store
+Thumbs.db
+
+# ===== Backend (Spring Boot / Maven) =====
+ragkb-api/target/
+*.log
+
+# ===== Frontend (Vue / Vite) =====
+ragkb-ui/node_modules/
+ragkb-ui/dist/
+ragkb-ui/.vite/
+ragkb-ui/.env.local
+ragkb-ui/.env.*.local
