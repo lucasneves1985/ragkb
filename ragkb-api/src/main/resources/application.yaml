@@ -20,7 +20,8 @@ spring:
 
   flyway:
     enabled: true
-    #locations: classpath:db/migration
+    locations: classpath:db/migration
+    baseline-on-migrate: true
 
   servlet:
     multipart:
@@ -53,7 +54,7 @@ spring:
         index-type: HNSW
         distance-type: COSINE_DISTANCE
         dimensions: 1536
-        initialize-schema: true
+        #initialize-schema: true
   mail:
     host: ${SMTP_HOST:smtp.kinghost.net}
     port: ${SMTP_PORT:587}
