@@ -47,13 +47,17 @@ public class ConversationService {
     }
 
     @Transactional
-    public Conversation getOrCreateConversation(String conversationId, String userId, String initialQuestion) {
+    public ConversationDetailDto getOrCreateConversation(String conversationId, String userId, String initialQuestion) {
+        Conversation conversation = resolveConversation(conversationId, userId, initialQuestion);
+        return ConversationDetailDto.fromEntity(conversation);
+    }
+
+    private Conversation resolveConversation(String conversationId, String userId, String initialQuestion) {
         if (conversationId != null && !conversationId.isBlank()) {
             return conversationRepository.findByIdAndUserId(conversationId, userId)
                     .orElseGet(() -> createNewConversationWithTitle(userId, initialQuestion));
-        } else {
-            return createNewConversationWithTitle(userId, initialQuestion);
         }
+        return createNewConversationWithTitle(userId, initialQuestion);
     }
 
     private Conversation createNewConversationWithTitle(String userId, String question) {

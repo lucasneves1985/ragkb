@@ -1,6 +1,7 @@
 package br.lcn.ragkb.service;
 
 import br.lcn.ragkb.dto.ConflictActionRequest;
+import br.lcn.ragkb.dto.ConflictCandidateResponse;
 import br.lcn.ragkb.entity.ConflictCandidate;
 import br.lcn.ragkb.entity.ConflictStatus;
 import br.lcn.ragkb.entity.DocumentMetadata;
@@ -12,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class ConflictCandidateService {
@@ -19,8 +22,15 @@ public class ConflictCandidateService {
     private final ConflictCandidateRepository conflictRepository;
     private final DocumentMetadataRepository metadataRepository;
 
+    @Transactional(readOnly = true)
+    public List<ConflictCandidateResponse> listAll() {
+        return conflictRepository.findAll().stream()
+                .map(ConflictCandidateResponse::from)
+                .toList();
+    }
+
     @Transactional
-    public ConflictCandidate updateStatus(Long id, ConflictActionRequest request, String username) {
+    public ConflictCandidateResponse updateStatus(Long id, ConflictActionRequest request, String username) {
         ConflictCandidate candidate = conflictRepository.findById(id)
                 .orElseThrow(() -> new ConflictCandidateNotFoundException(id));
 
@@ -37,7 +47,7 @@ public class ConflictCandidateService {
         }
 
         candidate.updateStatus(newStatus, request.note(), username);
-        return conflictRepository.save(candidate);
+        return ConflictCandidateResponse.from(conflictRepository.save(candidate));
     }
 
     private void assertResolvable(ConflictCandidate candidate) {

@@ -55,6 +55,6 @@ public class IngestionController {
         }
 
         return ingestionService.ingest(file,
-                new IngestRequest(sector, allowedSectors, allowedRoles, supersedesDocumentId));
+                new IngestRequest(sector, allowedSectors, allowedRoles, supersedesDocumentId), auth.getName());
     }
 }

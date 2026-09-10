@@ -3,9 +3,11 @@ package br.lcn.ragkb.service;
 import br.lcn.ragkb.dto.CreateUserRequest;
 import br.lcn.ragkb.dto.UserResponse;
 import br.lcn.ragkb.entity.AppUser;
+import br.lcn.ragkb.entity.Sector;
 import br.lcn.ragkb.exception.InvalidRoleException;
 import br.lcn.ragkb.exception.UsernameAlreadyExistsException;
 import br.lcn.ragkb.repository.AppUserRepository;
+import br.lcn.ragkb.repository.SectorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,13 @@ public class UserService {
 
     private final AppUserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SectorRepository sectorRepository;
+
+    public List<UserResponse> listAll() {
+        return userRepository.findAll().stream()
+                .map(u -> new UserResponse(u.getId(), u.getUsername(), u.getRoles(), u.isEnabled()))
+                .toList();
+    }
 
     @Transactional
     public UserResponse create(CreateUserRequest request) {
@@ -44,7 +53,7 @@ public class UserService {
         AppUser saved = userRepository.save(new AppUser(
                 request.username(),
                 passwordEncoder.encode(request.password()),
-                request.sector(),
+                sector,
                 roles));
 
         return new UserResponse(saved.getId(), saved.getUsername(), saved.getRoles(), saved.isEnabled());

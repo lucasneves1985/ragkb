@@ -37,7 +37,7 @@ public class IngestionService {
     private final DocumentLifecycleService lifecycleService;
 
     @Transactional
-    public DocumentMetadata ingest(MultipartFile file, IngestRequest request) {
+    public DocumentMetadata ingest(MultipartFile file, IngestRequest request, String username) {
         byte[] bytes = readBytes(file);
         String contentHash = sha256(bytes);
 
@@ -49,7 +49,9 @@ public class IngestionService {
         // Supersessão ANTES de inserir o novo: se o novo falhar, a transação
         // inteira é revertida e o antigo continua ACTIVE
         if (request.supersedesDocumentId() != null) {
-            lifecycleService.supersede(request.supersedesDocumentId());
+            if (request.supersedesDocumentId() != null) {
+                lifecycleService.supersede(request.supersedesDocumentId(), username);
+            }
         }
 
         // Parse (Tika) -> texto-fonte completo + chunks

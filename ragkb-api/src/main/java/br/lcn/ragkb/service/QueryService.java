@@ -1,8 +1,8 @@
 package br.lcn.ragkb.service;
 
 import br.lcn.ragkb.dto.AnswerResponse;
+import br.lcn.ragkb.dto.ConversationDetailDto;
 import br.lcn.ragkb.dto.RedisChatMessageDto;
-import br.lcn.ragkb.entity.Conversation;
 import br.lcn.ragkb.entity.DocumentMetadata;
 import br.lcn.ragkb.repository.DocumentMetadataRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +10,8 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,9 +30,8 @@ public class QueryService {
             Você é um assistente de base de conhecimento corporativa.
             REGRAS OBRIGATÓRIAS:
             1. Responda EXCLUSIVAMENTE com base no contexto fornecido.
-            2. Se a informação não estiver no contexto, diga explicitamente que não
-               encontrou e sugira abrir um chamado.
-            3. NUNCA use conhecimento próprio, memória ou qualquer fonte externa.
+            2. Se a informação não estiver no contexto, diga explicitamente que não encontrou e sugira abrir um chamado.
+            3. NUNCA use conhecimento prévio, memória ou qualquer fonte externa.
             4. NUNCA invoque ferramentas, buscas ou APIs externas.
             5. Cite o nome do documento de origem (ex: nome do arquivo) em cada resposta quando relevante.
             6. Se a resposta possuir passos ou instruções sequenciais, quebre a linha claramente para cada passo (ex: use listas numeradas 1., 2. ou tópicos).
@@ -43,13 +44,20 @@ public class QueryService {
     private final DocumentMetadataRepository metadataRepository;
     private final ConversationService conversationService;
     private final RedisChatHistoryService redisChatHistoryService;
+    private final UserService userService;   // NOVO — resolve o setor internamente
 
-    public AnswerResponse ask(String question, String conversationId,
-                              List<String> roles, String userId, String userSector) {
+    public AnswerResponse ask(String question, String conversationId, Authentication auth) {
 
-        // Cria ou recupera a conversa persistida — use SEMPRE o id retornado
-        Conversation conversation = conversationService.getOrCreateConversation(conversationId, userId, question);
-        String effectiveConversationId = conversation.getId();
+        // Contexto do usuário agora é resolvido AQUI, não no controller
+        List<String> roles = auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+        String userId = auth.getName();
+        String userSector = userService.findByUsername(userId);
+
+        // Cria ou recupera a conversa persistida — usa SEMPRE o id retornado
+        ConversationDetailDto conversation = conversationService.getOrCreateConversation(conversationId, userId, question);
+        String effectiveConversationId = conversation.id();
 
         boolean isAdmin = roles.contains("ROLE_ADMIN");
 
@@ -74,6 +82,7 @@ public class QueryService {
 
         List<Document> hits = vectorStore.similaritySearch(builder.build());
         if (hits.isEmpty()) {
+            // Sem hits com a pergunta atual: tenta a última pergunta do usuário (follow-up)
             List<RedisChatMessageDto> history = redisChatHistoryService.getHistory(effectiveConversationId);
             String lastUserQuestion = null;
             for (int i = history.size() - 1; i >= 0; i--) {
@@ -88,13 +97,12 @@ public class QueryService {
                                 .query(lastUserQuestion)
                                 .topK(TOP_K)
                                 .similarityThreshold(SIMILARITY_THRESHOLD)
-                                .filterExpression(filterExpr) // mesmo filtro de role+setor
+                                .filterExpression(filterExpr) // mesmo filtro de role+sector
                                 .build());
             }
         }
 
-
-        // Sem hits acima do limiar: sugere ticket (sem chamar o LLM)
+        // Sem hits acima do limiar: abre ticket sem chamar o LLM
         if (hits.isEmpty()) {
             AnswerResponse response = ticketService.suggestTicket(question, userId, List.of(), effectiveConversationId);
             conversationService.recordInteraction(effectiveConversationId, question, response);
@@ -103,7 +111,7 @@ public class QueryService {
             return response;
         }
 
-        // Mapear documentIds para filenames
+        // Mapeia documentIds para filenames
         List<String> docIds = hits.stream()
                 .map(doc -> doc.getMetadata().get("documentId") != null
                         ? doc.getMetadata().get("documentId").toString()

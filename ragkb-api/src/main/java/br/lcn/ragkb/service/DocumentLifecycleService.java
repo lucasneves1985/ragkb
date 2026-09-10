@@ -1,5 +1,6 @@
 package br.lcn.ragkb.service;
 
+import br.lcn.ragkb.dto.DocumentoDto;
 import br.lcn.ragkb.entity.ConflictStatus;
 import br.lcn.ragkb.entity.DocumentMetadata;
 import br.lcn.ragkb.entity.DocumentStatus;
@@ -10,8 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,17 +32,17 @@ public class DocumentLifecycleService {
     private final ConflictCandidateRepository conflictRepository;
 
     @Transactional
-    public DocumentMetadata archive(String documentId) {
+    public DocumentoDto archive(String documentId, String username) {
         DocumentMetadata doc = findActive(documentId);
         vectorStore.delete("documentId == '" + documentId + "'");
         doc.archive();
         DocumentMetadata saved = metadataRepository.save(doc);
-        resolveConflictsFor(documentId);
-        return saved;
+        resolveConflictsFor(documentId, username);
+        return DocumentoDto.from(saved);
     }
 
     @Transactional
-    public DocumentMetadata reactivate(String documentId, List<String> allowedRoles) {
+    public DocumentoDto reactivate(String documentId, List<String> allowedRoles, String username) {
         DocumentMetadata doc = metadataRepository.findById(documentId)
                 .orElseThrow(() -> new DocumentNotFoundException(documentId));
 
@@ -65,10 +64,12 @@ public class DocumentLifecycleService {
         }
 
         List<Document> chunks = split(doc.getSourceText());
+        List<String> sectors = doc.getAllowedSectors() != null ? doc.getAllowedSectors() : List.of();
         chunks.forEach(chunk -> chunk.getMetadata().putAll(Map.of(
                 "documentId", doc.getId(),
                 "sector", doc.getSector(),
                 "allowedRoles", roles,
+                "allowedSectors", sectors,
                 "contentHash", doc.getContentHash()
         )));
 
@@ -77,30 +78,32 @@ public class DocumentLifecycleService {
         doc.setStatus(DocumentStatus.ACTIVE);
         doc.setAllowedRoles(roles);
         doc.setChunkCount(chunks.size());
-        return metadataRepository.save(doc);
+        return DocumentoDto.from(metadataRepository.save(doc));
     }
 
     @Transactional
-    public void supersede(String documentId) {
+    public void supersede(String documentId, String username) {
         DocumentMetadata old = findActive(documentId);
         vectorStore.delete("documentId == '" + documentId + "'");
         old.supersede();
         metadataRepository.save(old);
-        resolveConflictsFor(documentId);
+        resolveConflictsFor(documentId, username);
     }
 
-    private void resolveConflictsFor(String documentId) {
+    @Transactional(readOnly = true)
+    public List<DocumentoDto> listAll() {
+        return metadataRepository.findAll().stream()
+                .map(DocumentoDto::from)
+                .toList();
+    }
+
+    private void resolveConflictsFor(String documentId, String username) {
         conflictRepository.resolveOpenCandidatesForDocument(
                 documentId,
                 ConflictStatus.RESOLVED,
                 "Auto-resolvido: documento não está mais ACTIVE",
                 Instant.now(),
-                currentUser());
-    }
-
-    private String currentUser() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return auth != null ? auth.getName() : "system";
+                username);
     }
 
     private DocumentMetadata findActive(String documentId) {
