@@ -2,11 +2,17 @@
 import { onMounted, ref } from 'vue'
 import { Plus, UserFilled } from '@element-plus/icons-vue'
 import { backend, type SectorItem, type UserItem } from '../services/api'
+
 const users = ref<UserItem[]>([]),
   drawer = ref(false),
   error = ref(''),
   sectors = ref<SectorItem[]>([]),
-  form = ref({ username: '', password: '', roles: ['USER'], sector: '' })
+  form = ref({
+    username: '',
+    password: '',
+    roles: ['USER'],
+    sector: null as number | null,
+  })
 
 async function loadSectors() {
   try {
@@ -28,13 +34,15 @@ onMounted(() => {
   load()
   loadSectors()
 })
+
 async function create() {
   error.value = ''
   if (!form.value.username || form.value.password.length < 3) {
     error.value = 'Informe usuário e uma senha temporária de ao menos 3 caracteres.'
     return
   }
-  if (!form.value.sector) {
+  const sectorId = form.value.sector
+  if (!sectorId) {
     error.value = 'Informe o setor do usuário.'
     return
   }
@@ -43,10 +51,10 @@ async function create() {
       form.value.username,
       form.value.password,
       form.value.roles,
-      form.value.sector,
+      sectorId,
     )
     drawer.value = false
-    form.value = { username: '', password: '', roles: ['USER'], sector: '' }
+    form.value = { username: '', password: '', roles: ['USER'], sector: null }
     await load()
   } catch (e: unknown) {
     const status = (e as { response?: { status?: number } }).response?.status
