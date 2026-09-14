@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { Refresh, WarningFilled } from '@element-plus/icons-vue'
-import { conflictsService, documentsService } from '@/services'
-import type { Conflict, KnowledgeDocument } from '@/types'
+import { useConflicts, useDocuments } from '@/composables'
 
-const conflicts = ref<Conflict[]>([])
-const documents = ref<KnowledgeDocument[]>([])
-const scanning = ref(false)
+const { conflicts, scanning, loadConflicts, scanConflicts, updateConflict } = useConflicts()
+const { documents, loadDocuments } = useDocuments()
+
 const selected = ref<number | undefined>()
 const note = ref('')
 
@@ -37,37 +36,22 @@ function tagType(status: string) {
 }
 
 async function load() {
-  try {
-    const [conflictData, documentData] = await Promise.all([
-      conflictsService.list(),
-      documentsService.list(),
-    ])
-    conflicts.value = conflictData
-    documents.value = documentData
-    selected.value ??= conflicts.value[0]?.id
-  } catch {
-    conflicts.value = []
-  }
+  await Promise.all([loadConflicts(), loadDocuments()])
+  selected.value ??= conflicts.value[0]?.id
 }
 
 onMounted(load)
 
 async function scan() {
-  scanning.value = true
-  try {
-    conflicts.value = await conflictsService.scan()
-    if (!conflicts.value.some((c) => c.id === selected.value)) {
-      selected.value = conflicts.value[0]?.id
-    }
-  } finally {
-    scanning.value = false
+  await scanConflicts()
+  if (!conflicts.value.some((c) => c.id === selected.value)) {
+    selected.value = conflicts.value[0]?.id
   }
 }
 
 async function update(action: 'DISMISSED' | 'REVIEWED' | 'RESOLVED') {
   if (!current.value || current.value.status !== 'OPEN' || (action === 'DISMISSED' && !note.value.trim())) return
-  await conflictsService.update(current.value.id, action, note.value || undefined)
-  await load()
+  await updateConflict(current.value.id, action, note.value || undefined)
 }
 </script>
 <template>

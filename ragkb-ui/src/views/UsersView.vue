@@ -1,38 +1,22 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { Plus, UserFilled } from '@element-plus/icons-vue'
-import { sectorsService, usersService } from '@/services'
-import type { Sector, User } from '@/types'
+import { useSectors, useUsers } from '@/composables'
 
-const users = ref<User[]>([]),
-  drawer = ref(false),
-  error = ref(''),
-  sectors = ref<Sector[]>([]),
-  form = ref({
-    username: '',
-    password: '',
-    roles: ['USER'],
-    sector: null as number | null,
-  })
+const { users, loadUsers, createUser, errorMessage: userError } = useUsers()
+const { sectors, loadSectors } = useSectors()
 
-async function loadSectors() {
-  try {
-    sectors.value = await sectorsService.list()
-  } catch {
-    sectors.value = []
-  }
-}
-
-async function load() {
-  try {
-    users.value = await usersService.list()
-  } catch {
-    users.value = []
-  }
-}
+const drawer = ref(false)
+const error = ref('')
+const form = ref({
+  username: '',
+  password: '',
+  roles: ['USER'],
+  sector: null as number | null,
+})
 
 onMounted(() => {
-  load()
+  loadUsers()
   loadSectors()
 })
 
@@ -47,22 +31,17 @@ async function create() {
     error.value = 'Informe o setor do usuário.'
     return
   }
-  try {
-    await usersService.create(
-      form.value.username,
-      form.value.password,
-      form.value.roles,
-      sectorId,
-    )
+  const created = await createUser(
+    form.value.username,
+    form.value.password,
+    form.value.roles,
+    sectorId,
+  )
+  if (created) {
     drawer.value = false
     form.value = { username: '', password: '', roles: ['USER'], sector: null }
-    await load()
-  } catch (e: unknown) {
-    const status = (e as { response?: { status?: number } }).response?.status
-    error.value =
-      status === 409
-        ? 'Este nome de usuário já está em uso.'
-        : 'Não foi possível cadastrar o usuário.'
+  } else {
+    error.value = userError.value || 'Não foi possível cadastrar o usuário.'
   }
 }
 </script>

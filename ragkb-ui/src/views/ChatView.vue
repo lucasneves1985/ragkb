@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { ChatLineRound, Close, Delete, Document, Plus, Promotion, Tickets } from '@element-plus/icons-vue'
-import { useAuthStore } from '../stores/auth'
-import { conversationsService, queryService, ticketsService } from '@/services'
-import type { Conversation } from '@/types'
+import { useChat, useConversations } from '@/composables'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
 
@@ -13,137 +11,35 @@ function renderMarkdown(content?: string) {
   return DOMPurify.sanitize(md.render(content))
 }
 
-type Message = {
-  id: number
-  from: 'user' | 'assistant'
-  text?: string
-  sources?: string[]
-  ticket?: boolean
-  ticketSent?: boolean
-}
-
-const auth = useAuthStore()
-const question = ref('')
-const loading = ref(false)
 const showHistory = ref(true)
-const conversations = ref<Conversation[]>([])
-const currentConversationId = ref<string | null>(null)
 const messagesContainer = ref<HTMLElement | null>(null)
 
-async function scrollToBottom() {
-  await nextTick()
-  if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
-  }
-}
+const {
+  auth,
+  question,
+  loading,
+  messages,
+  ticket,
+  currentConversationId,
+  canSend,
+  scrollToBottom,
+  selectConversation,
+  startNewConversation,
+  ask,
+  openTicket,
+} = useChat({ messagesContainer })
 
-const defaultGreeting: Message = {
-  id: 1,
-  from: 'assistant',
-  text: 'Olá, **' + auth.username + '**. Posso ajudar a localizar informações na base corporativa. O que você precisa saber?',
-  sources: [],
-}
+const { conversations, loadConversations, deleteConversation } = useConversations()
 
-const messages = ref<Message[]>([defaultGreeting])
-
-const ticket = reactive({
-  subject: 'Assunto',
-  description: 'Descrição detalhada do assunto.',
-  requester: auth.username,
-})
-
-const canSend = computed(() => question.value.trim().length > 0 && !loading.value)
-
-async function fetchConversations() {
-  try {
-    conversations.value = await conversationsService.list()
-  } catch (e) {
-    console.error('Erro ao carregar histórico de conversas', e)
-  }
-}
-
-async function selectConversation(id: string) {
-  if (currentConversationId.value === id) return
-  currentConversationId.value = id
-  loading.value = true
-  try {
-    const data = await conversationsService.get(id)
-    messages.value = data.messages.map((m) => {
-      if (m.sender === 'USER') {
-        return { id: m.id, from: 'user', text: m.content }
-      } else {
-        if (m.status === 'TICKET_SUGGESTED' && m.ticketSuggestion) {
-          Object.assign(ticket, m.ticketSuggestion)
-          return { id: m.id, from: 'assistant', ticket: true }
-        }
-        return { id: m.id, from: 'assistant', text: m.content, sources: m.sources }
-      }
-    })
-    if (messages.value.length === 0) {
-      messages.value = [defaultGreeting]
-    }
-    scrollToBottom()
-  } catch (e) {
-    console.error('Erro ao carregar mensagem da conversa', e)
-  } finally {
-    loading.value = false
-  }
-}
-
-function startNewConversation() {
-  currentConversationId.value = null
-  messages.value = [defaultGreeting]
-  scrollToBottom()
+async function handleAsk() {
+  await ask(() => loadConversations())
 }
 
 async function removeConversation(id: string, event: Event) {
   event.stopPropagation()
-  try {
-    await conversationsService.remove(id)
-    if (currentConversationId.value === id) {
-      startNewConversation()
-    }
-    await fetchConversations()
-  } catch (e) {
-    console.error('Erro ao excluir conversa', e)
-  }
-}
-
-async function ask() {
-  if (!canSend.value) return
-  const q = question.value.trim()
-  messages.value.push({ id: Date.now(), from: 'user', text: q })
-  question.value = ''
-  loading.value = true
-  scrollToBottom()
-  try {
-    const data = await queryService.ask(q, currentConversationId.value || undefined)
-    if (data.conversationId) {
-      currentConversationId.value = data.conversationId
-    }
-    if (data.status === 'TICKET_SUGGESTED') {
-      if (data.ticketSuggestion) {
-        Object.assign(ticket, data.ticketSuggestion)
-      }
-      messages.value.push({ id: Date.now() + 1, from: 'assistant', ticket: true })
-    } else {
-      messages.value.push({ id: Date.now() + 1, from: 'assistant', text: data.answer, sources: data.sourceIds })
-    }
-    await fetchConversations()
-  } catch {
-    messages.value.push({ id: Date.now() + 1, from: 'assistant', text: 'Não foi possível consultar a base de conhecimento no momento.' })
-  } finally {
-    loading.value = false
-    scrollToBottom()
-  }
-}
-
-async function openTicket(message: Message) {
-  try {
-    await ticketsService.create(ticket)
-    message.ticketSent = true
-  } catch {
-    message.ticketSent = false
+  const success = await deleteConversation(id)
+  if (success && currentConversationId.value === id) {
+    startNewConversation()
   }
 }
 
@@ -160,7 +56,7 @@ function formatDate(isoStr?: string) {
 }
 
 onMounted(() => {
-  fetchConversations()
+  loadConversations()
   scrollToBottom()
 })
 </script>
@@ -266,9 +162,9 @@ onMounted(() => {
             resize="none"
             placeholder="Pergunte algo à base de conhecimento…"
             :disabled="loading"
-            @keydown.enter.exact.prevent="ask"
+            @keydown.enter.exact.prevent="handleAsk"
           />
-          <el-button circle class="send" :disabled="!canSend" :icon="Promotion" @click="ask" />
+          <el-button circle class="send" :disabled="!canSend" :icon="Promotion" @click="handleAsk" />
         </div>
         <p>Enter para enviar · As respostas são geradas exclusivamente com documentos autorizados.</p>
       </div>

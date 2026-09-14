@@ -2,16 +2,24 @@
 import { computed, onMounted, ref } from 'vue'
 import { DocumentAdd, Search, UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { documentsService, sectorsService } from '@/services'
-import type { DocumentStatus, KnowledgeDocument, Sector } from '@/types'
+import { useDocuments, useSectors } from '@/composables'
+import type { DocumentStatus } from '@/types'
 
-const documents = ref<KnowledgeDocument[]>([])
-const sectors = ref<Sector[]>([])
+const {
+  documents,
+  uploading,
+  loadDocuments,
+  uploadDocument,
+  archiveDocument,
+  reactivateDocument,
+  errorMessage: docError,
+} = useDocuments()
+const { sectors, loadSectors } = useSectors()
+
 const search = ref('')
 const sector = ref('')
 const status = ref('')
 const dialog = ref(false)
-const uploading = ref(false)
 
 const form = ref({
   filename: '',
@@ -31,24 +39,8 @@ const filtered = computed(() =>
   ),
 )
 
-async function load() {
-  try {
-    documents.value = await documentsService.list()
-  } catch {
-    documents.value = []
-  }
-}
-
-async function loadSectors() {
-  try {
-    sectors.value = await sectorsService.list()
-  } catch {
-    sectors.value = []
-  }
-}
-
 onMounted(() => {
-  load()
+  loadDocuments()
   loadSectors()
 })
 
@@ -61,13 +53,11 @@ function tag(s: DocumentStatus) {
 }
 
 async function archive(id: string) {
-  await documentsService.changeStatus(id, { action: 'ARCHIVE' })
-  await load()
+  await archiveDocument(id)
 }
 
 async function reactivate(id: string) {
-  await documentsService.changeStatus(id, { action: 'REACTIVATE' })
-  await load()
+  await reactivateDocument(id)
 }
 
 function selectFile(file: { name: string; raw?: File }) {
@@ -89,16 +79,15 @@ async function upload() {
     return
   }
 
-  uploading.value = true
-  try {
-    const data = new FormData()
-    data.append('file', form.value.file)
-    data.append('sector', form.value.sector)
-    form.value.allowedSectors.forEach((s) => data.append('allowedSectors', s))
-    form.value.roles.forEach((role) => data.append('allowedRoles', role))
-    if (form.value.supersedes) data.append('supersedesDocumentId', form.value.supersedes)
+  const data = new FormData()
+  data.append('file', form.value.file)
+  data.append('sector', form.value.sector)
+  form.value.allowedSectors.forEach((s) => data.append('allowedSectors', s))
+  form.value.roles.forEach((role) => data.append('allowedRoles', role))
+  if (form.value.supersedes) data.append('supersedesDocumentId', form.value.supersedes)
 
-    await documentsService.upload(data)
+  const result = await uploadDocument(data)
+  if (result) {
     dialog.value = false
     form.value = {
       filename: '',
@@ -109,11 +98,8 @@ async function upload() {
       supersedes: '',
     }
     ElMessage.success('Documento ingerido com sucesso!')
-    await load()
-  } catch {
-    ElMessage.error('Erro ao processar o documento. Tente novamente.')
-  } finally {
-    uploading.value = false
+  } else {
+    ElMessage.error(docError.value || 'Erro ao processar o documento. Tente novamente.')
   }
 }
 </script>

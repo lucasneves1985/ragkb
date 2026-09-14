@@ -2,22 +2,13 @@
 import { onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete, Plus } from '@element-plus/icons-vue'
-import { sectorsService } from '@/services'
+import { useSectors } from '@/composables'
 import type { Sector } from '@/types'
 
-const sectors = ref<Sector[]>([])
+const { sectors, saving, errorMessage, loadSectors, createSector, deleteSector } = useSectors()
 const name = ref('')
-const saving = ref(false)
 
-async function load() {
-  try {
-    sectors.value = await sectorsService.list()
-  } catch {
-    sectors.value = []
-  }
-}
-
-onMounted(load)
+onMounted(loadSectors)
 
 async function create() {
   const trimmed = name.value.trim()
@@ -25,17 +16,12 @@ async function create() {
     ElMessage.warning('Informe o nome do setor.')
     return
   }
-  saving.value = true
-  try {
-    await sectorsService.create(trimmed)
+  const result = await createSector(trimmed)
+  if (result) {
     name.value = ''
     ElMessage.success('Setor cadastrado!')
-    await load()
-  } catch (e: unknown) {
-    const status = (e as { response?: { status?: number } }).response?.status
-    ElMessage.error(status === 409 ? 'Já existe um setor com esse nome.' : 'Erro ao cadastrar setor.')
-  } finally {
-    saving.value = false
+  } else if (errorMessage.value) {
+    ElMessage.error(errorMessage.value)
   }
 }
 
@@ -49,15 +35,11 @@ async function remove(s: Sector) {
   } catch {
     return
   }
-  try {
-    await sectorsService.delete(s.id)
+  const success = await deleteSector(s.id)
+  if (success) {
     ElMessage.success('Setor excluído!')
-    await load()
-  } catch (e: unknown) {
-    const status = (e as { response?: { status?: number } }).response?.status
-    ElMessage.error(
-      status === 409 ? 'Setor em uso. Reatribua usuários e documentos antes de excluir.' : 'Erro ao excluir setor.'
-    )
+  } else if (errorMessage.value) {
+    ElMessage.error(errorMessage.value)
   }
 }
 </script>
