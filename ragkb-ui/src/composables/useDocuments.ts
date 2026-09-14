@@ -1,105 +1,116 @@
-import { ref } from 'vue'
+// ragkb-ui/src/composables/useDocuments.ts
+import { computed } from 'vue'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { documentsService } from '@/services'
-import type { DocumentActionRequest, IngestDocumentRequest, KnowledgeDocument } from '@/types'
+import { queryKeys } from './queryKeys'
+import type { KnowledgeDocument } from '@/types'
 
+// ── QUERY: listar documentos ──────────────────────────────
 export function useDocuments() {
-  const documents = ref<KnowledgeDocument[]>([])
-  const loading = ref(false)
-  const uploading = ref(false)
-  const updating = ref(false)
-  const errorMessage = ref('')
-
-  async function loadDocuments(): Promise<void> {
-    loading.value = true
-    errorMessage.value = ''
-
-    try {
-      documents.value = await documentsService.list()
-    } catch {
-      errorMessage.value = 'Não foi possível carregar os documentos.'
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function uploadDocument(data: FormData): Promise<KnowledgeDocument | null> {
-    uploading.value = true
-    errorMessage.value = ''
-
-    try {
-      const document = await documentsService.upload(data)
-      await loadDocuments()
-      return document
-    } catch {
-      errorMessage.value = 'Erro ao processar o documento. Tente novamente.'
-      return null
-    } finally {
-      uploading.value = false
-    }
-  }
-
-  async function ingestDocument(
-    file: File,
-    request: IngestDocumentRequest,
-  ): Promise<KnowledgeDocument | null> {
-    uploading.value = true
-    errorMessage.value = ''
-
-    try {
-      const document = await documentsService.ingest(file, request)
-      await loadDocuments()
-      return document
-    } catch {
-      errorMessage.value = 'Não foi possível importar o documento.'
-      return null
-    } finally {
-      uploading.value = false
-    }
-  }
-
-  async function changeStatus(
-    id: string,
-    request: DocumentActionRequest,
-  ): Promise<KnowledgeDocument | null> {
-    updating.value = true
-    errorMessage.value = ''
-
-    try {
-      const updatedDocument = await documentsService.changeStatus(id, request)
-      await loadDocuments()
-      return updatedDocument
-    } catch {
-      errorMessage.value = 'Não foi possível alterar o status do documento.'
-      return null
-    } finally {
-      updating.value = false
-    }
-  }
-
-  async function archiveDocument(id: string): Promise<KnowledgeDocument | null> {
-    return changeStatus(id, { action: 'ARCHIVE' })
-  }
-
-  async function reactivateDocument(id: string): Promise<KnowledgeDocument | null> {
-    return changeStatus(id, { action: 'REACTIVATE' })
-  }
-
-  function clearError(): void {
-    errorMessage.value = ''
-  }
+  const query = useQuery({
+    queryKey: queryKeys.documents.lists(),
+    queryFn: () => documentsService.list(),
+  })
 
   return {
-    documents,
-    loading,
-    uploading,
-    updating,
-    errorMessage,
-    loadDocuments,
-    uploadDocument,
-    ingestDocument,
-    changeStatus,
-    archiveDocument,
-    reactivateDocument,
-    clearError,
+    documents: query.data,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
+  }
+}
+
+// ── MUTATION: upload (ingest) ─────────────────────────────
+export function useUploadDocument() {
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (data: FormData) => documentsService.upload(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.documents.lists() })
+    },
+  })
+
+  return {
+    uploadDocument: mutation.mutateAsync,
+    uploading: mutation.isPending,
+    error: mutation.error,
+  }
+}
+
+// ── MUTATION: arquivar ────────────────────────────────────
+export function useArchiveDocument() {
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (id: string) => documentsService.changeStatus(id, { action: 'ARCHIVE' }),
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.documents.lists() })
+      const previous = queryClient.getQueryData<KnowledgeDocument[]>(
+        queryKeys.documents.lists(),
+      )
+
+      if (previous) {
+        queryClient.setQueryData<KnowledgeDocument[]>(
+          queryKeys.documents.lists(),
+          previous.map((d) =>
+            d.id === id ? { ...d, status: 'ARCHIVED' } : d,
+          ),
+        )
+      }
+      return { previous }
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKeys.documents.lists(), context.previous)
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.documents.lists() })
+    },
+  })
+
+  return {
+    archiveDocument: mutation.mutateAsync,
+    updating: mutation.isPending,
+  }
+}
+
+// ── MUTATION: reativar ────────────────────────────────────
+export function useReactivateDocument() {
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (id: string) => documentsService.changeStatus(id, { action: 'REACTIVATE' }),
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.documents.lists() })
+      const previous = queryClient.getQueryData<KnowledgeDocument[]>(
+        queryKeys.documents.lists(),
+      )
+
+      if (previous) {
+        queryClient.setQueryData<KnowledgeDocument[]>(
+          queryKeys.documents.lists(),
+          previous.map((d) =>
+            d.id === id ? { ...d, status: 'ACTIVE' } : d,
+          ),
+        )
+      }
+      return { previous }
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKeys.documents.lists(), context.previous)
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.documents.lists() })
+    },
+  })
+
+  return {
+    reactivateDocument: mutation.mutateAsync,
+    updating: mutation.isPending,
   }
 }

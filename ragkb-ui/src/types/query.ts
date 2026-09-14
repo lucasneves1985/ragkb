@@ -27,3 +27,16 @@ export interface ChatMessage {
   content: string
   sources?: string[]
 }
+
+export interface Message {
+  id?: string | number
+  from?: ChatRole
+  role?: ChatRole
+  text?: string
+  content?: string
+  sources?: string[]
+  ticket?: boolean
+  ticketSent?: boolean
+  timestamp?: string
+}
+

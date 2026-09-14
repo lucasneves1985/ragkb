@@ -1,73 +1,77 @@
-import { ref } from 'vue'
+// ragkb-ui/src/composables/useSectors.ts
+import { ref, computed } from 'vue'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { sectorsService } from '@/services'
+import { queryKeys } from './queryKeys'
 import type { Sector } from '@/types'
 
 export function useSectors() {
-  const sectors = ref<Sector[]>([])
-  const loading = ref(false)
-  const saving = ref(false)
+  const queryClient = useQueryClient()
   const errorMessage = ref('')
 
-  async function loadSectors(): Promise<void> {
-    loading.value = true
-    errorMessage.value = ''
+  const query = useQuery({
+    queryKey: queryKeys.sectors.lists(),
+    queryFn: () => sectorsService.list(),
+  })
 
+  const createMutation = useMutation({
+    mutationFn: (name: string) => sectorsService.create(name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sectors.lists() })
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => sectorsService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sectors.lists() })
+    },
+  })
+
+  const sectors = computed<Sector[]>(() => query.data.value ?? [])
+  const saving = computed(() => createMutation.isPending.value || deleteMutation.isPending.value)
+
+  async function loadSectors() {
+    errorMessage.value = ''
     try {
-      sectors.value = await sectorsService.list()
+      await query.refetch()
     } catch {
       errorMessage.value = 'Não foi possível carregar os setores.'
-    } finally {
-      loading.value = false
     }
   }
 
   async function createSector(name: string): Promise<Sector | null> {
-    saving.value = true
     errorMessage.value = ''
-
     try {
-      const sector = await sectorsService.create(name)
-      await loadSectors()
-      return sector
-    } catch (e: unknown) {
-      const status = (e as { response?: { status?: number } }).response?.status
-      errorMessage.value =
-        status === 409 ? 'Já existe um setor com esse nome.' : 'Erro ao cadastrar setor.'
+      return await createMutation.mutateAsync(name)
+    } catch {
+      errorMessage.value = 'Não foi possível cadastrar o setor.'
       return null
-    } finally {
-      saving.value = false
     }
   }
 
   async function deleteSector(id: number): Promise<boolean> {
     errorMessage.value = ''
-
     try {
-      await sectorsService.delete(id)
-      await loadSectors()
+      await deleteMutation.mutateAsync(id)
       return true
-    } catch (e: unknown) {
-      const status = (e as { response?: { status?: number } }).response?.status
-      errorMessage.value =
-        status === 409
-          ? 'Setor em uso. Reatribua usuários e documentos antes de excluir.'
-          : 'Erro ao excluir setor.'
+    } catch {
+      errorMessage.value = 'Não foi possível excluir o setor.'
       return false
     }
   }
 
-  function clearError(): void {
-    errorMessage.value = ''
-  }
-
   return {
     sectors,
-    loading,
     saving,
     errorMessage,
     loadSectors,
     createSector,
     deleteSector,
-    clearError,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
   }
 }
+

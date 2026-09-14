@@ -8,6 +8,7 @@ export interface Conflict {
   documentIdA: string
   documentIdB: string
   score: number
+  similarityScore?: number
   snippetA: string
   snippetB: string
   status: ConflictStatus

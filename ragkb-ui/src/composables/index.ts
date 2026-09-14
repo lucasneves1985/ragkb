@@ -1,7 +1,10 @@
-export { useChat } from './useChat'
-export { useConflicts } from './useConflicts'
-export { useConversations } from './useConversations'
-export { useDocuments } from './useDocuments'
+// ragkb-ui/src/composables/index.ts
+export { queryKeys } from './queryKeys'
+
+export { useDocuments, useUploadDocument, useArchiveDocument, useReactivateDocument } from './useDocuments'
 export { useSectors } from './useSectors'
-export { useTickets } from './useTickets'
+export { useConflicts, useScanConflicts, useUpdateConflict } from './useConflicts'
+export { useConversations, useDeleteConversation } from './useConversations'
+export { useChat } from './useChat'
 export { useUsers } from './useUsers'
+export { useTickets } from './useTickets'

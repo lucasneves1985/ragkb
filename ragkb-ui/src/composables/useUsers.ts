@@ -1,23 +1,45 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { usersService } from '@/services'
+import { queryKeys } from './queryKeys'
 import type { CreateUserRequest, User } from '@/types'
 
 export function useUsers() {
-  const users = ref<User[]>([])
-  const loading = ref(false)
-  const submitting = ref(false)
+  const queryClient = useQueryClient()
   const errorMessage = ref('')
 
-  async function loadUsers(): Promise<void> {
-    loading.value = true
-    errorMessage.value = ''
+  const query = useQuery({
+    queryKey: queryKeys.users.lists(),
+    queryFn: () => usersService.list(),
+  })
 
+  const createMutation = useMutation({
+    mutationFn: ({
+      usernameOrRequest,
+      password,
+      roles,
+      sectorId,
+    }: {
+      usernameOrRequest: string | CreateUserRequest
+      password?: string
+      roles?: string[]
+      sectorId?: number
+    }) => usersService.create(usernameOrRequest, password, roles, sectorId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() })
+    },
+  })
+
+  const users = computed<User[]>(() => query.data.value ?? [])
+  const loading = computed(() => query.isLoading.value)
+  const submitting = computed(() => createMutation.isPending.value)
+
+  async function loadUsers(): Promise<void> {
+    errorMessage.value = ''
     try {
-      users.value = await usersService.list()
+      await query.refetch()
     } catch {
       errorMessage.value = 'Não foi possível carregar os usuários.'
-    } finally {
-      loading.value = false
     }
   }
 
@@ -27,13 +49,14 @@ export function useUsers() {
     roles?: string[],
     sectorId?: number,
   ): Promise<User | null> {
-    submitting.value = true
     errorMessage.value = ''
-
     try {
-      const user = await usersService.create(usernameOrRequest, password, roles, sectorId)
-      await loadUsers()
-      return user
+      return await createMutation.mutateAsync({
+        usernameOrRequest,
+        password,
+        roles,
+        sectorId,
+      })
     } catch (e: unknown) {
       const status = (e as { response?: { status?: number } }).response?.status
       errorMessage.value =
@@ -41,8 +64,6 @@ export function useUsers() {
           ? 'Este nome de usuário já está em uso.'
           : 'Não foi possível cadastrar o usuário.'
       return null
-    } finally {
-      submitting.value = false
     }
   }
 
@@ -58,5 +79,7 @@ export function useUsers() {
     loadUsers,
     createUser,
     clearError,
+    refetch: query.refetch,
   }
 }
+

@@ -1,21 +1,25 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { DocumentAdd, Search, UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { useDocuments, useSectors } from '@/composables'
-import type { DocumentStatus } from '@/types'
+import {
+  useDocuments,
+  useUploadDocument,
+  useArchiveDocument,
+  useReactivateDocument,
+  useSectors,
+} from '@/composables'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
+import type { DocumentStatus } from '@/types'
 
-const {
-  documents,
-  uploading,
-  loadDocuments,
-  uploadDocument,
-  archiveDocument,
-  reactivateDocument,
-  errorMessage: docError,
-} = useDocuments()
-const { sectors, loadSectors } = useSectors()
+// Queries — disparam automaticamente ao montar, sem onMounted
+const { documents, isLoading, isError, error, refetch } = useDocuments()
+const { sectors } = useSectors()
+
+// Mutations — loading e error já embutidos
+const { uploadDocument, uploading } = useUploadDocument()
+const { archiveDocument } = useArchiveDocument()
+const { reactivateDocument } = useReactivateDocument()
 
 const search = ref('')
 const sector = ref('')
@@ -31,19 +35,17 @@ const form = ref({
   supersedes: '',
 })
 
-const filtered = computed(() =>
-  documents.value.filter(
+const filtered = computed(() => {
+  if (!documents.value) return []
+  return documents.value.filter(
     (d) =>
       (!search.value || d.filename.toLowerCase().includes(search.value.toLowerCase())) &&
       (!sector.value || d.sector === sector.value) &&
       (!status.value || d.status === status.value),
-  ),
-)
-
-onMounted(() => {
-  loadDocuments()
-  loadSectors()
+  )
 })
+
+// não precisa mais de onMounted — Vue Query busca automaticamente
 
 function tag(s: DocumentStatus) {
   return s === 'ACTIVE'
@@ -54,16 +56,21 @@ function tag(s: DocumentStatus) {
 }
 
 async function archive(id: string) {
-  await archiveDocument(id)
+  try {
+    await archiveDocument(id)
+    ElMessage.success('Documento arquivado.')
+  } catch {
+    ElMessage.error('Erro ao arquivar documento.')
+  }
 }
 
 async function reactivate(id: string) {
-  await reactivateDocument(id)
-}
-
-function reset() {
-  loadDocuments()
-  loadSectors()
+  try {
+    await reactivateDocument(id)
+    ElMessage.success('Documento reativado.')
+  } catch {
+    ElMessage.error('Erro ao reativar documento.')
+  }
 }
 
 function selectFile(file: { name: string; raw?: File }) {
@@ -72,18 +79,10 @@ function selectFile(file: { name: string; raw?: File }) {
 }
 
 async function upload() {
-  if (!form.value.file) {
-    ElMessage.error('Selecione um arquivo para ingerir.')
-    return
-  }
-  if (!form.value.sector) {
-    ElMessage.error('Informe o setor responsável pelo documento.')
-    return
-  }
-  if (form.value.allowedSectors.length === 0) {
-    ElMessage.error('Informe ao menos um setor com permissão de acesso.')
-    return
-  }
+  if (!form.value.file) return ElMessage.error('Selecione um arquivo.')
+  if (!form.value.sector) return ElMessage.error('Informe o setor.')
+  if (form.value.allowedSectors.length === 0)
+    return ElMessage.error('Informe ao menos um setor com permissão.')
 
   const data = new FormData()
   data.append('file', form.value.file)
@@ -92,9 +91,11 @@ async function upload() {
   form.value.roles.forEach((role) => data.append('allowedRoles', role))
   if (form.value.supersedes) data.append('supersedesDocumentId', form.value.supersedes)
 
-  const result = await uploadDocument(data)
-  if (result) {
+  try {
+    await uploadDocument(data)
+    ElMessage.success('Documento ingerido com sucesso!')
     dialog.value = false
+    // invalidação já acontece no onSuccess da mutation → lista atualiza sozinha
     form.value = {
       filename: '',
       file: null,
@@ -103,10 +104,14 @@ async function upload() {
       roles: ['ROLE_USER'],
       supersedes: '',
     }
-    ElMessage.success('Documento ingerido com sucesso!')
-  } else {
-    ElMessage.error(docError.value || 'Erro ao processar o documento. Tente novamente.')
+  } catch {
+    ElMessage.error('Erro ao processar o documento.')
   }
+}
+
+// reset para o ErrorBoundary — re-busca dados
+function reset() {
+  refetch()
 }
 </script>
 
@@ -115,16 +120,30 @@ async function upload() {
     <div>
       <div class="page-heading">
         <div>
-          <p class="eyebrow">GOVERNANÇA DA BASE</p>
-          <h1>Documentos</h1>
-          <p>Gerencie as fontes que alimentam as respostas do assistente.</p>
+          <h2>Documentos</h2>
+          <p>Base de conhecimento indexada</p>
         </div>
-        <el-button class="primary-button" :icon="DocumentAdd" @click="dialog = true">Adicionar documento</el-button>
+        <el-button type="primary" :icon="DocumentAdd" @click="dialog = true">
+          Adicionar documento
+        </el-button>
       </div>
 
-      <section class="surface">
+      <!-- loading state -->
+      <section v-if="isLoading" class="surface">
+        <el-skeleton :rows="5" animated />
+      </section>
+
+      <!-- error state -->
+      <section v-else-if="isError" class="surface">
+        <el-alert type="error" :title="error?.message || 'Erro ao carregar documentos.'" show-icon>
+          <el-button text @click="reset">Tentar novamente</el-button>
+        </el-alert>
+      </section>
+
+      <!-- success -->
+      <section v-else class="surface">
         <div class="filters">
-          <el-input v-model="search" :prefix-icon="Search" placeholder="Buscar por nome…" clearable />
+          <el-input v-model="search" placeholder="Buscar arquivo..." :prefix-icon="Search" clearable />
           <el-select v-model="sector" placeholder="Todos os setores" clearable>
             <el-option v-for="item in sectors" :key="item.id" :label="item.name" :value="item.name" />
           </el-select>
@@ -133,42 +152,30 @@ async function upload() {
             <el-option label="Arquivado" value="ARCHIVED" />
             <el-option label="Substituído" value="SUPERSEDED" />
           </el-select>
-          <span>{{ filtered.length }} documento(s)</span>
+          {{ filtered.length }} documento(s)
         </div>
 
         <el-table :data="filtered" style="width: 100%">
           <el-table-column label="Arquivo" min-width="265">
             <template #default="{ row }">
               <b class="filename">{{ row.filename }}</b>
-              <small>{{ row.id }}</small>
+              {{ row.id }}
             </template>
           </el-table-column>
-          <el-table-column prop="sector" label="Setor" min-width="170" />
-          <el-table-column label="Setores com acesso" min-width="220">
-            <template #default="{ row }">
-              <el-tag v-for="s in row.allowedSectors" :key="s" size="small" effect="plain" class="access-tag">
-                {{ s }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="Status" min-width="125">
+          <el-table-column prop="sector" label="Setor" width="140" />
+          <el-table-column label="Status" width="130">
             <template #default="{ row }">
               <el-tag :class="tag(row.status)" size="small" effect="light">
-                {{
-                  row.status === 'ACTIVE'
-                    ? 'Ativo'
-                    : row.status === 'ARCHIVED'
-                      ? 'Arquivado'
-                      : 'Substituído'
-                }}
+                {{ row.status === 'ACTIVE' ? 'Ativo' : row.status === 'ARCHIVED' ? 'Arquivado' : 'Substituído' }}
               </el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="chunkCount" label="Chunks" width="90" />
-          <el-table-column prop="ingestedAt" label="Ingestão" min-width="145" />
-          <el-table-column label="Ações" width="145">
+          <el-table-column label="Ações" width="160">
             <template #default="{ row }">
-              <el-button v-if="row.status === 'ACTIVE'" text type="warning" @click="archive(row.id)">Arquivar</el-button>
+              <el-button v-if="row.status === 'ACTIVE'" text type="warning" @click="archive(row.id)">
+                Arquivar
+              </el-button>
               <el-button v-else-if="row.status === 'ARCHIVED'" text type="success" @click="reactivate(row.id)">
                 Reativar
               </el-button>
@@ -180,17 +187,16 @@ async function upload() {
         </el-table>
       </section>
 
-      <el-dialog v-model="dialog" title="Adicionar documento" width="540px" :close-on-click-modal="!uploading"
-        :close-on-press-escape="!uploading" :show-close="!uploading">
+      <!-- dialog de upload -->
+      <el-dialog v-model="dialog" title="Adicionar documento" width="540px"
+        :close-on-click-modal="!uploading" :close-on-press-escape="!uploading" :show-close="!uploading">
         <p class="dialog-copy">O arquivo será processado e indexado para consultas autorizadas.</p>
 
         <div v-if="uploading" class="upload-overlay">
           <div class="upload-spinner">
             <div class="spinner-ring"></div>
             <p class="spinner-text">Processando documento…</p>
-            <p class="spinner-hint">
-              Extraindo texto, dividindo em chunks e indexando na base vetorial.
-            </p>
+            <p class="spinner-hint">Extraindo texto, dividindo em chunks e indexando na base vetorial.</p>
           </div>
         </div>
 
@@ -199,35 +205,15 @@ async function upload() {
             <el-upload :auto-upload="false" :show-file-list="false" accept=".pdf,.docx,.txt" @change="selectFile">
               <el-button :icon="UploadFilled">Selecionar arquivo</el-button>
             </el-upload>
-            <span v-if="form.filename" class="selected-file">{{ form.filename }}</span>
           </el-form-item>
-
           <el-form-item label="Setor responsável">
-            <el-select v-model="form.sector" placeholder="Selecione o setor" style="width: 100%">
-              <el-option v-for="item in sectors" :key="item.id" :label="item.name" :value="item.name" />
+            <el-select v-model="form.sector" placeholder="Selecione">
+              <el-option v-for="s in sectors" :key="s.id" :label="s.name" :value="s.name" />
             </el-select>
           </el-form-item>
-
-          <el-form-item label="Setores que podem acessar (obrigatório)">
-            <el-select v-model="form.allowedSectors" multiple placeholder="Selecione um ou mais setores"
-              style="width: 100%">
-              <el-option v-for="item in sectors" :key="item.id" :label="item.name" :value="item.name" />
-            </el-select>
-          </el-form-item>
-
-          <el-form-item label="Papéis permitidos">
-            <el-checkbox-group v-model="form.roles">
-              <el-checkbox label="ROLE_USER">Usuário</el-checkbox>
-              <el-checkbox label="ROLE_EDITOR">Editor</el-checkbox>
-              <el-checkbox label="ROLE_ADMIN">Administrador</el-checkbox>
-            </el-checkbox-group>
-          </el-form-item>
-
-          <el-form-item label="Este documento substitui uma versão anterior?">
-            <el-select v-model="form.supersedes" placeholder="Não substitui nenhum documento" clearable
-              style="width: 100%">
-              <el-option v-for="doc in documents.filter((d) => d.status === 'ACTIVE')" :key="doc.id" :label="doc.filename"
-                :value="doc.id" />
+          <el-form-item label="Setores com acesso">
+            <el-select v-model="form.allowedSectors" multiple placeholder="Selecione">
+              <el-option v-for="s in sectors" :key="s.id" :label="s.name" :value="s.name" />
             </el-select>
           </el-form-item>
         </el-form>
@@ -242,4 +228,5 @@ async function upload() {
     </div>
   </ErrorBoundary>
 </template>
+
 <style scoped lang="css" src="@/views/styles/documents.view.css"></style>

@@ -1,51 +1,66 @@
-import { ref } from 'vue'
-
+// ragkb-ui/src/composables/useConversations.ts
+import { computed } from 'vue'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { conversationsService } from '@/services'
+import { queryKeys } from './queryKeys'
 import type { Conversation } from '@/types'
 
+// ── QUERY: listar conversas ───────────────────────────────
 export function useConversations() {
-  const conversations = ref<Conversation[]>([])
-  const loading = ref(false)
-  const deleting = ref(false)
-  const errorMessage = ref('')
+  const queryClient = useQueryClient()
 
-  async function loadConversations(): Promise<void> {
-    loading.value = true
-    errorMessage.value = ''
+  const query = useQuery({
+    queryKey: queryKeys.conversations.lists(),
+    queryFn: () => conversationsService.list(),
+  })
 
-    try {
-      conversations.value = await conversationsService.list()
-    } catch {
-      errorMessage.value = 'Não foi possível carregar as conversas.'
-    } finally {
-      loading.value = false
-    }
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => conversationsService.remove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.lists() })
+    },
+  })
+
+  const conversations = computed<Conversation[]>(() => query.data.value ?? [])
+
+  async function loadConversations() {
+    await query.refetch()
   }
 
   async function deleteConversation(id: string): Promise<boolean> {
-    deleting.value = true
-    errorMessage.value = ''
-
     try {
-      await conversationsService.remove(id)
-
-      conversations.value = conversations.value.filter((conversation) => conversation.id !== id)
-
+      await deleteMutation.mutateAsync(id)
       return true
     } catch {
-      errorMessage.value = 'Não foi possível excluir a conversa.'
       return false
-    } finally {
-      deleting.value = false
     }
   }
 
   return {
     conversations,
-    loading,
-    deleting,
-    errorMessage,
     loadConversations,
     deleteConversation,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
   }
 }
+
+// ── MUTATION: deletar conversa ────────────────────────────
+export function useDeleteConversation() {
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (id: string) => conversationsService.remove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.conversations.lists() })
+    },
+  })
+
+  return {
+    deleteConversation: mutation.mutateAsync,
+    deleting: mutation.isPending,
+  }
+}
+

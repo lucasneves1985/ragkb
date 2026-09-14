@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete, Plus } from '@element-plus/icons-vue'
 import { useSectors } from '@/composables'
+import ErrorBoundary from '@/components/ErrorBoundary.vue'
 import type { Sector } from '@/types'
 
 const { sectors, saving, errorMessage, loadSectors, createSector, deleteSector } = useSectors()

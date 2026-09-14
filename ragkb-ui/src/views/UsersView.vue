@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { Plus, UserFilled } from '@element-plus/icons-vue'
 import { useSectors, useUsers } from '@/composables'
+import ErrorBoundary from '@/components/ErrorBoundary.vue'
 
 const { users, loadUsers, createUser, errorMessage: userError } = useUsers()
 const { sectors, loadSectors } = useSectors()
