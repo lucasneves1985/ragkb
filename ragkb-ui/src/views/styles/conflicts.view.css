@@ -1,0 +1,157 @@
+.conflicts {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 20px
+}
+
+.queue {
+    overflow: hidden
+}
+
+.queue-head {
+    display: flex;
+    justify-content: space-between;
+    padding: 18px;
+    border-bottom: 1px solid #edf0f4;
+    color: #263248;
+    font-size: 13px
+}
+
+.queue-head span {
+    color: #8793a4;
+    font-size: 11px
+}
+
+.conflict-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 15px;
+    border: 0;
+    border-bottom: 1px solid #edf0f4;
+    background: #fff;
+    text-align: left;
+    cursor: pointer
+}
+
+.conflict-row.selected {
+    background: #f0faf6
+}
+
+.score {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 30px;
+    border-radius: 6px;
+    background: #fff4e6;
+    color: #c27a17;
+    font: 500 11px 'DM Mono'
+}
+
+.conflict-row b,
+.conflict-row small {
+    display: block;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+}
+
+.conflict-row b {
+    color: #405068;
+    font-size: 11px
+}
+
+.conflict-row small {
+    margin-top: 3px;
+    color: #8d99aa;
+    font-size: 10px
+}
+
+.conflict-row .el-tag {
+    margin-left: auto
+}
+
+.review {
+    padding: 25px
+}
+
+.review-title {
+    display: flex;
+    justify-content: space-between
+}
+
+.review-title h2 {
+    margin: 0;
+    color: #202b3c;
+    font-size: 19px
+}
+
+.review-title>svg {
+    width: 26px;
+    color: #dc952b
+}
+
+.diff {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 23px 0
+}
+
+.diff article {
+    border: 1px solid #e8ebf0;
+    border-radius: 10px;
+    overflow: hidden
+}
+
+.diff header {
+    padding: 10px 12px;
+    background: #f8fafb;
+    color: #78869a;
+    font: 10px 'DM Mono';
+    letter-spacing: .4px
+}
+
+.diff header b {
+    display: block;
+    margin-top: 4px;
+    color: #405069;
+    font-family: Manrope
+}
+
+.diff p {
+    min-height: 90px;
+    margin: 0;
+    padding: 15px;
+    color: #3d4b60;
+    font-size: 13px;
+    line-height: 1.65
+}
+
+.resolution {
+    margin-top: 15px
+}
+
+.resolution>div {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    margin-top: 12px
+}
+
+@media(max-width:850px) {
+    .conflicts {
+        grid-template-columns: 1fr
+    }
+
+    .diff {
+        grid-template-columns: 1fr
+    }
+
+    .resolution>div {
+        flex-wrap: wrap
+    }
+}

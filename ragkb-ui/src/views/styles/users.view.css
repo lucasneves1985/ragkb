@@ -1,0 +1,61 @@
+.users-caption {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 17px 19px;
+  border-bottom: 1px solid #edf0f4;
+  color: #7d899b;
+  font-size: 12px;
+}
+
+.users-caption svg {
+  width: 15px;
+  color: #168463;
+}
+
+.user-name {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.user-name span {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #e8f5f0;
+  color: #168463;
+  font: 10px 'DM Mono';
+}
+
+.user-name b {
+  font-size: 13px;
+}
+
+.role {
+  margin-right: 5px;
+  color: #526077;
+}
+
+.drawer-copy {
+  margin: -5px 0 22px;
+  color: #728095;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.drawer-alert {
+  margin-bottom: 18px;
+}
+
+.el-checkbox {
+  display: flex;
+  margin: 0 0 12px;
+}
+
+.el-checkbox-group {
+  display: flex;
+  flex-direction: column;
+}

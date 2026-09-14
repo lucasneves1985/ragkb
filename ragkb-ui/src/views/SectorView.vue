@@ -74,34 +74,4 @@ async function remove(s: Sector) {
   </div>
 </template>
 
-<style scoped>
-.sector-add {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 18px;
-  border-bottom: 1px solid #edf0f4;
-}
-
-.sector-add .el-input {
-  flex: 1;
-  min-width: 0;
-}
-
-.sector-add .primary-button {
-  flex: none;
-  margin-left: 0;
-  min-width: 96px;
-}
-
-@media (max-width: 480px) {
-  .sector-add {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .sector-add .primary-button {
-    width: 100%;
-  }
-}
-</style>
+<style scoped lang="css" src="@/views/styles/sector.view.css"></style>
