@@ -1,0 +1,9 @@
+// services/index.ts
+export { authService } from './auth.service'
+export { usersService } from './users.service'
+export { sectorsService } from './sectors.service'
+export { documentsService } from './documents.service'
+export { conflictsService } from './conflicts.service'
+export { queryService } from './query.service'
+export { conversationsService } from './conversations.service'
+export { ticketsService } from './tickets.service'

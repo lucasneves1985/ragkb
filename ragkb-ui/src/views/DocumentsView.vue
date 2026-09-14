@@ -2,10 +2,11 @@
 import { computed, onMounted, ref } from 'vue'
 import { DocumentAdd, Search, UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { backend, type DocumentItem, type DocumentStatus, type SectorItem } from '../services/api'
+import { documentsService, sectorsService } from '@/services'
+import type { DocumentStatus, KnowledgeDocument, Sector } from '@/types'
 
-const documents = ref<DocumentItem[]>([])
-const sectors = ref<SectorItem[]>([])
+const documents = ref<KnowledgeDocument[]>([])
+const sectors = ref<Sector[]>([])
 const search = ref('')
 const sector = ref('')
 const status = ref('')
@@ -32,7 +33,7 @@ const filtered = computed(() =>
 
 async function load() {
   try {
-    documents.value = (await backend.listDocuments()).data
+    documents.value = await documentsService.list()
   } catch {
     documents.value = []
   }
@@ -40,7 +41,7 @@ async function load() {
 
 async function loadSectors() {
   try {
-    sectors.value = (await backend.listSectors()).data
+    sectors.value = await sectorsService.list()
   } catch {
     sectors.value = []
   }
@@ -60,12 +61,12 @@ function tag(s: DocumentStatus) {
 }
 
 async function archive(id: string) {
-  await backend.updateDocument(id, { action: 'ARCHIVE' })
+  await documentsService.changeStatus(id, { action: 'ARCHIVE' })
   await load()
 }
 
 async function reactivate(id: string) {
-  await backend.updateDocument(id, { action: 'REACTIVATE' })
+  await documentsService.changeStatus(id, { action: 'REACTIVATE' })
   await load()
 }
 
@@ -97,7 +98,7 @@ async function upload() {
     form.value.roles.forEach((role) => data.append('allowedRoles', role))
     if (form.value.supersedes) data.append('supersedesDocumentId', form.value.supersedes)
 
-    await backend.uploadDocument(data)
+    await documentsService.upload(data)
     dialog.value = false
     form.value = {
       filename: '',
@@ -125,9 +126,7 @@ async function upload() {
         <h1>Documentos</h1>
         <p>Gerencie as fontes que alimentam as respostas do assistente.</p>
       </div>
-      <el-button class="primary-button" :icon="DocumentAdd" @click="dialog = true"
-        >Adicionar documento</el-button
-      >
+      <el-button class="primary-button" :icon="DocumentAdd" @click="dialog = true">Adicionar documento</el-button>
     </div>
 
     <section class="surface">
@@ -154,13 +153,7 @@ async function upload() {
         <el-table-column prop="sector" label="Setor" min-width="170" />
         <el-table-column label="Setores com acesso" min-width="220">
           <template #default="{ row }">
-            <el-tag
-              v-for="s in row.allowedSectors"
-              :key="s"
-              size="small"
-              effect="plain"
-              class="access-tag"
-            >
+            <el-tag v-for="s in row.allowedSectors" :key="s" size="small" effect="plain" class="access-tag">
               {{ s }}
             </el-tag>
           </template>
@@ -182,15 +175,8 @@ async function upload() {
         <el-table-column prop="ingestedAt" label="Ingestão" min-width="145" />
         <el-table-column label="Ações" width="145">
           <template #default="{ row }">
-            <el-button v-if="row.status === 'ACTIVE'" text type="warning" @click="archive(row.id)"
-              >Arquivar</el-button
-            >
-            <el-button
-              v-else-if="row.status === 'ARCHIVED'"
-              text
-              type="success"
-              @click="reactivate(row.id)"
-            >
+            <el-button v-if="row.status === 'ACTIVE'" text type="warning" @click="archive(row.id)">Arquivar</el-button>
+            <el-button v-else-if="row.status === 'ARCHIVED'" text type="success" @click="reactivate(row.id)">
               Reativar
             </el-button>
             <el-tooltip v-else content="Documentos substituídos não podem ser reativados.">
@@ -201,14 +187,8 @@ async function upload() {
       </el-table>
     </section>
 
-    <el-dialog
-      v-model="dialog"
-      title="Adicionar documento"
-      width="540px"
-      :close-on-click-modal="!uploading"
-      :close-on-press-escape="!uploading"
-      :show-close="!uploading"
-    >
+    <el-dialog v-model="dialog" title="Adicionar documento" width="540px" :close-on-click-modal="!uploading"
+      :close-on-press-escape="!uploading" :show-close="!uploading">
       <p class="dialog-copy">O arquivo será processado e indexado para consultas autorizadas.</p>
 
       <div v-if="uploading" class="upload-overlay">
@@ -223,12 +203,7 @@ async function upload() {
 
       <el-form v-else label-position="top">
         <el-form-item label="Arquivo (PDF, DOCX ou TXT)">
-          <el-upload
-            :auto-upload="false"
-            :show-file-list="false"
-            accept=".pdf,.docx,.txt"
-            @change="selectFile"
-          >
+          <el-upload :auto-upload="false" :show-file-list="false" accept=".pdf,.docx,.txt" @change="selectFile">
             <el-button :icon="UploadFilled">Selecionar arquivo</el-button>
           </el-upload>
           <span v-if="form.filename" class="selected-file">{{ form.filename }}</span>
@@ -236,28 +211,14 @@ async function upload() {
 
         <el-form-item label="Setor responsável">
           <el-select v-model="form.sector" placeholder="Selecione o setor" style="width: 100%">
-            <el-option
-              v-for="item in sectors"
-              :key="item.id"
-              :label="item.name"
-              :value="item.name"
-            />
+            <el-option v-for="item in sectors" :key="item.id" :label="item.name" :value="item.name" />
           </el-select>
         </el-form-item>
 
         <el-form-item label="Setores que podem acessar (obrigatório)">
-          <el-select
-            v-model="form.allowedSectors"
-            multiple
-            placeholder="Selecione um ou mais setores"
-            style="width: 100%"
-          >
-            <el-option
-              v-for="item in sectors"
-              :key="item.id"
-              :label="item.name"
-              :value="item.name"
-            />
+          <el-select v-model="form.allowedSectors" multiple placeholder="Selecione um ou mais setores"
+            style="width: 100%">
+            <el-option v-for="item in sectors" :key="item.id" :label="item.name" :value="item.name" />
           </el-select>
         </el-form-item>
 
@@ -270,30 +231,17 @@ async function upload() {
         </el-form-item>
 
         <el-form-item label="Este documento substitui uma versão anterior?">
-          <el-select
-            v-model="form.supersedes"
-            placeholder="Não substitui nenhum documento"
-            clearable
-            style="width: 100%"
-          >
-            <el-option
-              v-for="doc in documents.filter((d) => d.status === 'ACTIVE')"
-              :key="doc.id"
-              :label="doc.filename"
-              :value="doc.id"
-            />
+          <el-select v-model="form.supersedes" placeholder="Não substitui nenhum documento" clearable
+            style="width: 100%">
+            <el-option v-for="doc in documents.filter((d) => d.status === 'ACTIVE')" :key="doc.id" :label="doc.filename"
+              :value="doc.id" />
           </el-select>
         </el-form-item>
       </el-form>
 
       <template #footer>
         <el-button @click="dialog = false" :disabled="uploading">Cancelar</el-button>
-        <el-button
-          class="primary-button"
-          @click="upload"
-          :loading="uploading"
-          :disabled="uploading"
-        >
+        <el-button class="primary-button" @click="upload" :loading="uploading" :disabled="uploading">
           {{ uploading ? 'Processando…' : 'Ingerir documento' }}
         </el-button>
       </template>
@@ -307,46 +255,56 @@ async function upload() {
   gap: 12px;
   padding: 18px;
 }
+
 .filters .el-input {
   max-width: 280px;
 }
+
 .filters .el-select {
   width: 180px;
 }
-.filters > span {
+
+.filters>span {
   margin-left: auto;
   color: #8793a4;
   font-size: 12px;
 }
+
 .filename {
   display: block;
   font-size: 13px;
 }
-.filename + small {
+
+.filename+small {
   display: block;
   margin-top: 3px;
   color: #9aa4b1;
   font: 10px 'DM Mono';
 }
+
 .dialog-copy {
   margin: -7px 0 21px;
   color: #748096;
   font-size: 12px;
 }
+
 .selected-file {
   margin-left: 10px;
   color: #168463;
   font-size: 12px;
 }
+
 .upload-overlay {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 280px;
 }
+
 .upload-spinner {
   text-align: center;
 }
+
 .spinner-ring {
   width: 52px;
   height: 52px;
@@ -356,28 +314,33 @@ async function upload() {
   border-radius: 50%;
   animation: spin 0.9s linear infinite;
 }
+
 .spinner-text {
   color: #172033;
   font-size: 15px;
   font-weight: 700;
   margin: 0 0 6px;
 }
+
 .spinner-hint {
   color: #8490a1;
   font-size: 12px;
   margin: 0;
   max-width: 300px;
 }
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
 }
+
 @media (max-width: 780px) {
   .filters {
     align-items: stretch;
     flex-direction: column;
   }
+
   .filters .el-input,
   .filters .el-select {
     max-width: none;

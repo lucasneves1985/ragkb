@@ -2,15 +2,16 @@
 import { onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete, Plus } from '@element-plus/icons-vue'
-import { backend, type SectorItem } from '../services/api'
+import { sectorsService } from '@/services'
+import type { Sector } from '@/types'
 
-const sectors = ref<SectorItem[]>([])
+const sectors = ref<Sector[]>([])
 const name = ref('')
 const saving = ref(false)
 
 async function load() {
   try {
-    sectors.value = (await backend.listSectors()).data
+    sectors.value = await sectorsService.list()
   } catch {
     sectors.value = []
   }
@@ -26,7 +27,7 @@ async function create() {
   }
   saving.value = true
   try {
-    await backend.createSector(trimmed)
+    await sectorsService.create(trimmed)
     name.value = ''
     ElMessage.success('Setor cadastrado!')
     await load()
@@ -38,7 +39,7 @@ async function create() {
   }
 }
 
-async function remove(s: SectorItem) {
+async function remove(s: Sector) {
   try {
     await ElMessageBox.confirm(
       `Excluir o setor "${s.name}"? Usuários e documentos vinculados serão afetados.`,
@@ -49,7 +50,7 @@ async function remove(s: SectorItem) {
     return
   }
   try {
-    await backend.deleteSector(s.id)
+    await sectorsService.delete(s.id)
     ElMessage.success('Setor excluído!')
     await load()
   } catch (e: unknown) {
@@ -73,12 +74,7 @@ async function remove(s: SectorItem) {
 
     <section class="surface">
       <div class="sector-add">
-        <el-input
-          v-model="name"
-          placeholder="Digite o nome do novo setor…"
-          clearable
-          @keyup.enter="create"
-        />
+        <el-input v-model="name" placeholder="Digite o nome do novo setor…" clearable @keyup.enter="create" />
         <el-button class="primary-button" :icon="Plus" :loading="saving" @click="create">
           Incluir
         </el-button>
@@ -104,20 +100,24 @@ async function remove(s: SectorItem) {
   padding: 18px;
   border-bottom: 1px solid #edf0f4;
 }
+
 .sector-add .el-input {
   flex: 1;
   min-width: 0;
 }
+
 .sector-add .primary-button {
   flex: none;
   margin-left: 0;
   min-width: 96px;
 }
+
 @media (max-width: 480px) {
   .sector-add {
     flex-direction: column;
     align-items: stretch;
   }
+
   .sector-add .primary-button {
     width: 100%;
   }

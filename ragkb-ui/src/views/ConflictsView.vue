@@ -1,6 +1,286 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'; import { Refresh, WarningFilled } from '@element-plus/icons-vue'; import { backend, type ConflictItem, type DocumentItem } from '../services/api'
-const conflicts=ref<ConflictItem[]>([]),documents=ref<DocumentItem[]>([]),scanning=ref(false),selected=ref<number|undefined>(),note=ref('');const current=computed(()=>conflicts.value.find(c=>c.id===selected.value)||conflicts.value[0]);watch(current,(newVal)=>{note.value=newVal?.note||''},{immediate:true});function name(id:string){return documents.value.find(d=>d.id===id)?.filename||id}function tagType(status:string){switch(status){case 'OPEN':return 'warning';case 'RESOLVED':return 'success';case 'REVIEWED':return 'primary';default:return 'info'}}async function load(){try{const [conflictResponse,documentResponse]=await Promise.all([backend.listConflicts(),backend.listDocuments()]);conflicts.value=conflictResponse.data;documents.value=documentResponse.data;selected.value??=conflicts.value[0]?.id}catch{conflicts.value=[]}}onMounted(load);async function scan(){scanning.value=true;try{conflicts.value=(await backend.scanConflicts()).data;if(!conflicts.value.some(c=>c.id===selected.value)){selected.value=conflicts.value[0]?.id}}finally{scanning.value=false}}async function update(action:'DISMISSED'|'REVIEWED'|'RESOLVED'){if(!current.value||current.value.status!=='OPEN'||(action==='DISMISSED'&&!note.value.trim()))return;await backend.updateConflict(current.value.id,action,note.value||undefined);await load()}
+import { computed, onMounted, ref, watch } from 'vue'
+import { Refresh, WarningFilled } from '@element-plus/icons-vue'
+import { conflictsService, documentsService } from '@/services'
+import type { Conflict, KnowledgeDocument } from '@/types'
+
+const conflicts = ref<Conflict[]>([])
+const documents = ref<KnowledgeDocument[]>([])
+const scanning = ref(false)
+const selected = ref<number | undefined>()
+const note = ref('')
+
+const current = computed(() => conflicts.value.find((c) => c.id === selected.value) || conflicts.value[0])
+watch(
+  current,
+  (newVal) => {
+    note.value = newVal?.note || ''
+  },
+  { immediate: true },
+)
+
+function name(id: string) {
+  return documents.value.find((d) => d.id === id)?.filename || id
+}
+
+function tagType(status: string) {
+  switch (status) {
+    case 'OPEN':
+      return 'warning'
+    case 'RESOLVED':
+      return 'success'
+    case 'REVIEWED':
+      return 'primary'
+    default:
+      return 'info'
+  }
+}
+
+async function load() {
+  try {
+    const [conflictData, documentData] = await Promise.all([
+      conflictsService.list(),
+      documentsService.list(),
+    ])
+    conflicts.value = conflictData
+    documents.value = documentData
+    selected.value ??= conflicts.value[0]?.id
+  } catch {
+    conflicts.value = []
+  }
+}
+
+onMounted(load)
+
+async function scan() {
+  scanning.value = true
+  try {
+    conflicts.value = await conflictsService.scan()
+    if (!conflicts.value.some((c) => c.id === selected.value)) {
+      selected.value = conflicts.value[0]?.id
+    }
+  } finally {
+    scanning.value = false
+  }
+}
+
+async function update(action: 'DISMISSED' | 'REVIEWED' | 'RESOLVED') {
+  if (!current.value || current.value.status !== 'OPEN' || (action === 'DISMISSED' && !note.value.trim())) return
+  await conflictsService.update(current.value.id, action, note.value || undefined)
+  await load()
+}
 </script>
-<template><div><div class="page-heading"><div><p class="eyebrow">QUALIDADE DA BASE</p><h1>Triagem de conflitos</h1><p>Analise potenciais divergências encontradas entre documentos ativos.</p></div><el-button class="primary-button" :loading="scanning" :icon="Refresh" @click="scan">Executar nova varredura</el-button></div><div class="conflicts"><section class="surface queue"><div class="queue-head"><b>Fila de análise</b><span>{{conflicts.length}} encontrados</span></div><button v-for="item in conflicts" :key="item.id" class="conflict-row" :class="{selected:item.id===selected}" @click="selected=item.id"><span class="score">{{Math.round(item.score*100)}}%</span><div><b>{{name(item.documentIdA)}}</b><small>vs. {{name(item.documentIdB)}}</small></div><el-tag size="small" :type="tagType(item.status)">{{item.status}}</el-tag></button></section><section v-if="current" class="surface review"><div class="review-title"><div><p class="eyebrow">CONFLITO #{{current.id}}</p><h2>Comparação semântica <el-tag type="warning" effect="light">{{Math.round(current.score*100)}}% de similaridade</el-tag></h2></div><WarningFilled/></div><div class="diff"><article><header>DOCUMENTO A <b>{{name(current.documentIdA)}}</b></header><p>{{current.snippetA}}</p></article><article><header>DOCUMENTO B <b>{{name(current.documentIdB)}}</b></header><p>{{current.snippetB}}</p></article></div><el-alert title="Para resolver, arquive ou substitua um dos documentos envolvidos antes de confirmar." type="warning" :closable="false" show-icon/><div class="resolution"><el-input v-model="note" type="textarea" :rows="2" :disabled="current.status!=='OPEN'" placeholder="Justificativa obrigatória para descartar…"/><div><el-button :disabled="current.status!=='OPEN'" @click="update('REVIEWED')">Marcar como analisado</el-button><el-button type="warning" plain :disabled="current.status!=='OPEN'" @click="update('DISMISSED')">Descartar</el-button><el-button class="primary-button" :disabled="current.status!=='OPEN'" @click="update('RESOLVED')">Resolver após arquivamento</el-button></div></div></section></div></div></template>
-<style scoped>.conflicts{display:grid;grid-template-columns:320px 1fr;gap:20px}.queue{overflow:hidden}.queue-head{display:flex;justify-content:space-between;padding:18px;border-bottom:1px solid #edf0f4;color:#263248;font-size:13px}.queue-head span{color:#8793a4;font-size:11px}.conflict-row{display:flex;align-items:center;gap:10px;width:100%;padding:15px;border:0;border-bottom:1px solid #edf0f4;background:#fff;text-align:left;cursor:pointer}.conflict-row.selected{background:#f0faf6}.score{display:grid;place-items:center;width:38px;height:30px;border-radius:6px;background:#fff4e6;color:#c27a17;font:500 11px 'DM Mono'}.conflict-row b,.conflict-row small{display:block;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.conflict-row b{color:#405068;font-size:11px}.conflict-row small{margin-top:3px;color:#8d99aa;font-size:10px}.conflict-row .el-tag{margin-left:auto}.review{padding:25px}.review-title{display:flex;justify-content:space-between}.review-title h2{margin:0;color:#202b3c;font-size:19px}.review-title>svg{width:26px;color:#dc952b}.diff{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:23px 0}.diff article{border:1px solid #e8ebf0;border-radius:10px;overflow:hidden}.diff header{padding:10px 12px;background:#f8fafb;color:#78869a;font:10px 'DM Mono';letter-spacing:.4px}.diff header b{display:block;margin-top:4px;color:#405069;font-family:Manrope}.diff p{min-height:90px;margin:0;padding:15px;color:#3d4b60;font-size:13px;line-height:1.65}.resolution{margin-top:15px}.resolution>div{display:flex;justify-content:flex-end;gap:9px;margin-top:12px}@media(max-width:850px){.conflicts{grid-template-columns:1fr}.diff{grid-template-columns:1fr}.resolution>div{flex-wrap:wrap}}</style>
+<template>
+    <div>
+        <div class="page-heading">
+            <div>
+                <p class="eyebrow">QUALIDADE DA BASE</p>
+                <h1>Triagem de conflitos</h1>
+                <p>Analise potenciais divergências encontradas entre documentos ativos.</p>
+            </div><el-button class="primary-button" :loading="scanning" :icon="Refresh" @click="scan">Executar nova
+                varredura</el-button>
+        </div>
+        <div class="conflicts">
+            <section class="surface queue">
+                <div class="queue-head"><b>Fila de análise</b><span>{{ conflicts.length }} encontrados</span></div>
+                <button v-for="item in conflicts" :key="item.id" class="conflict-row"
+                    :class="{ selected: item.id === selected }" @click="selected = item.id"><span class="score">{{
+                        Math.round(item.score * 100) }}%</span>
+                    <div><b>{{ name(item.documentIdA) }}</b><small>vs. {{ name(item.documentIdB) }}</small></div><el-tag
+                        size="small" :type="tagType(item.status)">{{ item.status }}</el-tag>
+                </button>
+            </section>
+            <section v-if="current" class="surface review">
+                <div class="review-title">
+                    <div>
+                        <p class="eyebrow">CONFLITO #{{ current.id }}</p>
+                        <h2>Comparação semântica <el-tag type="warning" effect="light">{{ Math.round(current.score *
+                                100) }}% de
+                                similaridade</el-tag></h2>
+                    </div>
+                    <WarningFilled />
+                </div>
+                <div class="diff">
+                    <article>
+                        <header>DOCUMENTO A <b>{{ name(current.documentIdA) }}</b></header>
+                        <p>{{ current.snippetA }}</p>
+                    </article>
+                    <article>
+                        <header>DOCUMENTO B <b>{{ name(current.documentIdB) }}</b></header>
+                        <p>{{ current.snippetB }}</p>
+                    </article>
+                </div><el-alert
+                    title="Para resolver, arquive ou substitua um dos documentos envolvidos antes de confirmar."
+                    type="warning" :closable="false" show-icon />
+                <div class="resolution"><el-input v-model="note" type="textarea" :rows="2"
+                        :disabled="current.status !== 'OPEN'" placeholder="Justificativa obrigatória para descartar…" />
+                    <div><el-button :disabled="current.status !== 'OPEN'" @click="update('REVIEWED')">Marcar como
+                            analisado</el-button><el-button type="warning" plain :disabled="current.status !== 'OPEN'"
+                            @click="update('DISMISSED')">Descartar</el-button><el-button class="primary-button"
+                            :disabled="current.status !== 'OPEN'" @click="update('RESOLVED')">Resolver após
+                            arquivamento</el-button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</template>
+<style scoped>
+.conflicts {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 20px
+}
+
+.queue {
+    overflow: hidden
+}
+
+.queue-head {
+    display: flex;
+    justify-content: space-between;
+    padding: 18px;
+    border-bottom: 1px solid #edf0f4;
+    color: #263248;
+    font-size: 13px
+}
+
+.queue-head span {
+    color: #8793a4;
+    font-size: 11px
+}
+
+.conflict-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 15px;
+    border: 0;
+    border-bottom: 1px solid #edf0f4;
+    background: #fff;
+    text-align: left;
+    cursor: pointer
+}
+
+.conflict-row.selected {
+    background: #f0faf6
+}
+
+.score {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 30px;
+    border-radius: 6px;
+    background: #fff4e6;
+    color: #c27a17;
+    font: 500 11px 'DM Mono'
+}
+
+.conflict-row b,
+.conflict-row small {
+    display: block;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+}
+
+.conflict-row b {
+    color: #405068;
+    font-size: 11px
+}
+
+.conflict-row small {
+    margin-top: 3px;
+    color: #8d99aa;
+    font-size: 10px
+}
+
+.conflict-row .el-tag {
+    margin-left: auto
+}
+
+.review {
+    padding: 25px
+}
+
+.review-title {
+    display: flex;
+    justify-content: space-between
+}
+
+.review-title h2 {
+    margin: 0;
+    color: #202b3c;
+    font-size: 19px
+}
+
+.review-title>svg {
+    width: 26px;
+    color: #dc952b
+}
+
+.diff {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 23px 0
+}
+
+.diff article {
+    border: 1px solid #e8ebf0;
+    border-radius: 10px;
+    overflow: hidden
+}
+
+.diff header {
+    padding: 10px 12px;
+    background: #f8fafb;
+    color: #78869a;
+    font: 10px 'DM Mono';
+    letter-spacing: .4px
+}
+
+.diff header b {
+    display: block;
+    margin-top: 4px;
+    color: #405069;
+    font-family: Manrope
+}
+
+.diff p {
+    min-height: 90px;
+    margin: 0;
+    padding: 15px;
+    color: #3d4b60;
+    font-size: 13px;
+    line-height: 1.65
+}
+
+.resolution {
+    margin-top: 15px
+}
+
+.resolution>div {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    margin-top: 12px
+}
+
+@media(max-width:850px) {
+    .conflicts {
+        grid-template-columns: 1fr
+    }
+
+    .diff {
+        grid-template-columns: 1fr
+    }
+
+    .resolution>div {
+        flex-wrap: wrap
+    }
+}
+</style>

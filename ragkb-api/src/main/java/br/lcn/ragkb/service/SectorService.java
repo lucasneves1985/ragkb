@@ -50,25 +50,23 @@ public class SectorService {
     public void delete(Long id) {
         Sector sector = sectorRepository.findById(id)
                 .orElseThrow(() -> new SectorNotFoundException(id));
+
         assertNotInUse(sector);
         sectorRepository.delete(sector);
     }
 
     private void assertNotInUse(Sector sector) {
         String name = sector.getName();
-
-        long users = userRepository.countBySector(sector.getName());
+        long users = userRepository.countBySectorId(sector.getId());
         if (users > 0) {
             throw new SectorInUseException("Setor '" + name + "' está vinculado a " + users
                     + " usuário(s). Reatribua os usuários antes de remover o setor.");
         }
-
         long asOwner = documentRepository.countByAllowedSectorsContaining(name);
         if (asOwner > 0) {
             throw new SectorInUseException("Setor '" + name + "' é o setor responsável de " + asOwner
                     + " documento(s). Reatribua os documentos antes de remover o setor.");
         }
-
         long asAllowed = documentRepository.countByAllowedSectorsContaining(name);
         if (asAllowed > 0) {
             throw new SectorInUseException("Setor '" + name + "' consta nos setores com acesso de " + asAllowed

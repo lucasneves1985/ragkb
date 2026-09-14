@@ -2,7 +2,8 @@
 import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import { ChatLineRound, Close, Delete, Document, Plus, Promotion, Tickets } from '@element-plus/icons-vue'
 import { useAuthStore } from '../stores/auth'
-import { backend, type ConversationSummary } from '../services/api'
+import { conversationsService, queryService, ticketsService } from '@/services'
+import type { Conversation } from '@/types'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
 
@@ -25,7 +26,7 @@ const auth = useAuthStore()
 const question = ref('')
 const loading = ref(false)
 const showHistory = ref(true)
-const conversations = ref<ConversationSummary[]>([])
+const conversations = ref<Conversation[]>([])
 const currentConversationId = ref<string | null>(null)
 const messagesContainer = ref<HTMLElement | null>(null)
 
@@ -55,8 +56,7 @@ const canSend = computed(() => question.value.trim().length > 0 && !loading.valu
 
 async function fetchConversations() {
   try {
-    const { data } = await backend.listConversations()
-    conversations.value = data
+    conversations.value = await conversationsService.list()
   } catch (e) {
     console.error('Erro ao carregar histórico de conversas', e)
   }
@@ -67,7 +67,7 @@ async function selectConversation(id: string) {
   currentConversationId.value = id
   loading.value = true
   try {
-    const { data } = await backend.getConversation(id)
+    const data = await conversationsService.get(id)
     messages.value = data.messages.map((m) => {
       if (m.sender === 'USER') {
         return { id: m.id, from: 'user', text: m.content }
@@ -99,7 +99,7 @@ function startNewConversation() {
 async function removeConversation(id: string, event: Event) {
   event.stopPropagation()
   try {
-    await backend.deleteConversation(id)
+    await conversationsService.remove(id)
     if (currentConversationId.value === id) {
       startNewConversation()
     }
@@ -117,12 +117,14 @@ async function ask() {
   loading.value = true
   scrollToBottom()
   try {
-    const { data } = await backend.query(q, currentConversationId.value || undefined)
+    const data = await queryService.ask(q, currentConversationId.value || undefined)
     if (data.conversationId) {
       currentConversationId.value = data.conversationId
     }
     if (data.status === 'TICKET_SUGGESTED') {
-      Object.assign(ticket, data.ticketSuggestion)
+      if (data.ticketSuggestion) {
+        Object.assign(ticket, data.ticketSuggestion)
+      }
       messages.value.push({ id: Date.now() + 1, from: 'assistant', ticket: true })
     } else {
       messages.value.push({ id: Date.now() + 1, from: 'assistant', text: data.answer, sources: data.sourceIds })
@@ -138,14 +140,14 @@ async function ask() {
 
 async function openTicket(message: Message) {
   try {
-    await backend.createTicket(ticket)
+    await ticketsService.create(ticket)
     message.ticketSent = true
   } catch {
     message.ticketSent = false
   }
 }
 
-function formatDate(isoStr: string) {
+function formatDate(isoStr?: string) {
   if (!isoStr) return ''
   const date = new Date(isoStr)
   const now = new Date()
