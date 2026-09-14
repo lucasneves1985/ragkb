@@ -1,24 +1,33 @@
 ﻿<script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   ChatDotRound,
   Document,
   FolderOpened,
-  Lock,
-  Menu,
-  Plus,
-  Setting,
-  User,
   OfficeBuilding,
+  User,
 } from '@element-plus/icons-vue'
-import { useAuthStore } from './stores/auth'
+import { useAuthStore } from '@/stores/auth'
+import AppSidebar from '@/components/layout/AppSidebar.vue'
+import AppTopbar from '@/components/layout/AppTopbar.vue'
+import type { NavItem } from '@/types'
+
+
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+
 const collapsed = ref(false)
 const loggedIn = computed(() => auth.isAuthenticated)
-const items = computed(() => [
+
+watch(loggedIn, (authed) => {
+  if (authed && route.path === '/login') {
+    router.replace('/chat')
+  }
+})
+
+const items = computed<NavItem[]>(() => [
   { label: 'Assistente', to: '/chat', icon: ChatDotRound, visible: true },
   {
     label: 'Documentos',
@@ -30,75 +39,48 @@ const items = computed(() => [
   { label: 'Setores', to: '/sectors', icon: OfficeBuilding, visible: auth.hasRole('ADMIN') },
   { label: 'Usuários', to: '/users', icon: User, visible: auth.hasRole('ADMIN') },
 ])
+
 function logout() {
   auth.logout()
   router.push('/login')
 }
 </script>
+
 <template>
   <router-view v-if="!loggedIn" />
-  <el-container v-else class="app-shell"
-    ><el-aside :width="collapsed ? '76px' : '250px'" class="sidebar">
-      <div class="brand">
-        <div class="brand-mark">R</div>
-        <span v-show="!collapsed">rag<span>kb</span></span>
-      </div>
-      <div v-show="!collapsed" class="workspace-label">BASE DE CONHECIMENTO</div>
-      <el-menu
-        :default-active="route.path"
-        :collapse="collapsed"
-        :collapse-transition="false"
-        router
-        class="nav-menu"
-        ><el-menu-item
-          v-for="item in items.filter((entry) => entry.visible)"
-          :key="item.to"
-          :index="item.to"
-          ><el-icon><component :is="item.icon" /></el-icon
-          ><template #title>{{ item.label }}</template></el-menu-item
-        ></el-menu
-      >
-      <div class="sidebar-footer">
-        <el-button text class="collapse-button" @click="collapsed = !collapsed"
-          ><el-icon><Menu /></el-icon><span v-show="!collapsed">Recolher menu</span></el-button
-        >
-      </div> </el-aside
-    ><el-container
-      ><el-header class="topbar"
-        ><div class="environment"><span class="live-dot"></span> Ambiente corporativo</div>
-        <div class="top-actions">
-          <el-button :icon="Plus" round class="new-query" @click="router.push('/chat')"
-            >Nova consulta</el-button
-          ><el-dropdown trigger="click"
-            ><button class="profile">
-              <span>{{ auth.initials }}</span>
-              <div>
-                <b>{{ auth.username }}</b
-                ><small>{{ auth.roles.join(' · ') }}</small>
-              </div></button
-            ><template #dropdown
-              ><el-dropdown-menu
-                ><el-dropdown-item :icon="Setting">Preferências</el-dropdown-item
-                ><el-dropdown-item divided :icon="Lock" @click="logout"
-                  >Sair da conta</el-dropdown-item
-                ></el-dropdown-menu
-              ></template
-            ></el-dropdown
-          >
-        </div></el-header
-      ><el-main class="content"><router-view /></el-main></el-container
-  ></el-container>
+
+  <el-container v-else class="app-shell" direction="horizontal">
+    <AppSidebar :collapsed="collapsed" :items="items" @toggle="collapsed = !collapsed" />
+
+    <el-container direction="vertical">
+      <AppTopbar
+        :username="auth.username"
+        :initials="auth.initials"
+        :roles="auth.roles"
+        @new-query="router.push('/chat')"
+        @logout="logout"
+      />
+
+      <el-main class="content">
+        <router-view />
+      </el-main>
+    </el-container>
+  </el-container>
 </template>
+
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+
 :root {
   font-family: Manrope, Arial, sans-serif;
   color: #172033;
   background: #f6f7fb;
 }
+
 * {
   box-sizing: border-box;
 }
+
 html,
 body {
   margin: 0;
@@ -106,173 +88,33 @@ body {
   overflow: hidden;
   min-width: 320px;
 }
+
 button,
 input,
 textarea {
   font-family: inherit;
 }
+
 .app-shell {
   height: 100vh;
   max-height: 100vh;
   overflow: hidden;
   background: #f6f7fb;
 }
-.sidebar {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  padding: 24px 12px;
-  background: #111827;
-  transition: width 0.2s;
-  overflow: hidden;
-  height: 100vh;
-}
-.brand {
-  height: 46px;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 0 10px;
-  color: #fff;
-  font-size: 25px;
-  font-weight: 800;
-  letter-spacing: -1.5px;
-  white-space: nowrap;
-}
-.brand span span {
-  color: #72e2bf;
-}
-.brand-mark {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  color: #102219;
-  background: #72e2bf;
-  font: 700 17px 'DM Mono';
-}
-.workspace-label {
-  padding: 30px 12px 11px;
-  color: #8490a7;
-  font: 10px 'DM Mono';
-  letter-spacing: 1.2px;
-  white-space: nowrap;
-}
-.nav-menu {
-  border: 0 !important;
-  background: transparent !important;
-}
-.nav-menu .el-menu-item {
-  margin: 4px 0;
-  border-radius: 9px;
-  color: #aeb8c8;
-  font-weight: 600;
-}
-.nav-menu .el-menu-item:hover {
-  background: #202b3d !important;
-  color: #fff !important;
-}
-.nav-menu .el-menu-item.is-active {
-  background: #273b4b !important;
-  color: #81e4c3 !important;
-}
-.nav-menu .el-menu-item.is-active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  width: 3px;
-  height: 24px;
-  border-radius: 3px;
-  background: #72e2bf;
-}
-.sidebar-footer {
-  margin-top: auto;
-}
-.collapse-button {
-  width: 100%;
-  justify-content: flex-start;
-  gap: 11px;
-  color: #aeb8c8 !important;
-  font-weight: 600;
-}
-.topbar {
-  height: 76px;
-  padding: 0 38px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: rgba(255, 255, 255, 0.88);
-  border-bottom: 1px solid #e8ebf1;
-  flex-shrink: 0;
-}
-.environment {
-  color: #748096;
-  font-size: 13px;
-  font-weight: 600;
-}
-.live-dot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  margin-right: 7px;
-  background: #42c995;
-}
-.top-actions {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-.new-query {
-  border-color: #dce3eb !important;
-  color: #273247 !important;
-  font-weight: 700 !important;
-}
-.profile {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  text-align: left;
-  cursor: pointer;
-}
-.profile > span {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: #dcefe9;
-  color: #168463;
-  font: 500 12px 'DM Mono';
-}
-.profile b,
-.profile small {
-  display: block;
-}
-.profile b {
-  color: #29354a;
-  font-size: 12px;
-}
-.profile small {
-  color: #8490a1;
-  font-size: 10px;
-  margin-top: 2px;
-}
+
 .content {
   padding: 34px 38px;
   overflow: auto;
   height: calc(100vh - 76px);
 }
+
 .page-heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 28px;
 }
+
 .eyebrow {
   color: #4eb78f;
   font: 500 11px 'DM Mono';
@@ -280,42 +122,50 @@ textarea {
   letter-spacing: 1px;
   margin-bottom: 8px;
 }
+
 .page-heading h1 {
   margin: 0;
   font-size: 27px;
   letter-spacing: -1px;
   color: #172033;
 }
+
 .page-heading p {
   margin: 7px 0 0;
   color: #718096;
   font-size: 13px;
 }
+
 .surface {
   background: #fff;
   border: 1px solid #e8ebf1;
   border-radius: 15px;
   box-shadow: 0 4px 16px rgba(22, 31, 48, 0.03);
 }
+
 .status-active {
   --el-tag-bg-color: #eaf9f2;
   --el-tag-border-color: #c0edda;
   --el-tag-text-color: #168463;
 }
+
 .status-archived {
   --el-tag-bg-color: #f2f4f7;
   --el-tag-border-color: #e2e7ed;
   --el-tag-text-color: #67758a;
 }
+
 .status-superseded {
   --el-tag-bg-color: #fff5e9;
   --el-tag-border-color: #f8deb4;
   --el-tag-text-color: #ba7012;
 }
+
 .muted {
   color: #8490a1;
   font-size: 12px;
 }
+
 .primary-button {
   --el-button-bg-color: #168463;
   --el-button-border-color: #168463;
@@ -327,52 +177,48 @@ textarea {
   color: #fff !important;
   font-weight: 700;
 }
+
 .primary-button span,
 .primary-button .el-icon {
   color: #fff !important;
 }
+
 .el-table {
   --el-table-header-bg-color: #f9fafc;
   --el-table-border-color: #edf0f4;
   --el-table-row-hover-bg-color: #f7fbf9;
 }
+
 .el-table th.el-table__cell {
   color: #708095;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+
 .el-table .cell {
   color: #344054;
   font-size: 13px;
 }
+
 .el-dialog {
   border-radius: 16px;
 }
+
 .el-dialog__title {
   font-weight: 800;
   color: #182235;
 }
+
 @media (max-width: 760px) {
-  .sidebar {
-    display: none;
-  }
   .content {
     padding: 24px 16px;
   }
-  .topbar {
-    padding: 0 16px;
-  }
-  .environment,
-  .new-query {
-    display: none;
-  }
-  .topbar {
-    justify-content: flex-end;
-  }
+
   .page-heading {
     display: block;
   }
+
   .page-heading .el-button {
     margin-top: 15px;
   }

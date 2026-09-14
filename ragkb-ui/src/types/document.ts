@@ -23,3 +23,11 @@ export interface IngestDocumentRequest {
   allowedRoles: string[]
   supersedesDocumentId?: string
 }
+
+export interface DocumentUploadPayload {
+  file: File
+  sector: string
+  allowedSectors: string[]
+  roles: string[]
+  supersedes: string
+}
