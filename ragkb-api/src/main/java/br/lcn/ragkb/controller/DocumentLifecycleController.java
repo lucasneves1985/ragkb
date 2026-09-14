@@ -1,7 +1,7 @@
 package br.lcn.ragkb.controller;
 
 import br.lcn.ragkb.dto.DocumentActionRequest;
-import br.lcn.ragkb.dto.DocumentoDto;
+import br.lcn.ragkb.dto.DocumentDto;
 import br.lcn.ragkb.service.DocumentLifecycleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,15 +25,15 @@ public class DocumentLifecycleController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
-    public List<DocumentoDto> listAll() {
+    public List<DocumentDto> listAll() {
         return lifecycleService.listAll();
     }
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
-    public DocumentoDto changeStatus(@PathVariable String id,
-                                     @Valid @RequestBody DocumentActionRequest request,
-                                     Authentication auth) {
+    public DocumentDto changeStatus(@PathVariable String id,
+                                    @Valid @RequestBody DocumentActionRequest request,
+                                    Authentication auth) {
         return switch (request.action()) {
             case "ARCHIVE" -> lifecycleService.archive(id, auth.getName());
             case "REACTIVATE" -> lifecycleService.reactivate(id, request.allowedRoles(), auth.getName());

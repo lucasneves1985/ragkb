@@ -7,7 +7,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-public record DocumentoDto(
+public record DocumentDto(
         String id,
         String filename,
         String sector,
@@ -17,8 +17,8 @@ public record DocumentoDto(
         Instant ingestedAt,
         List<String> allowedRoles
 ) {
-    public static DocumentoDto from(DocumentMetadata doc) {
-        return new DocumentoDto(
+    public static DocumentDto from(DocumentMetadata doc) {
+        return new DocumentDto(
                 doc.getId(),
                 doc.getFilename(),
                 doc.getSector(),

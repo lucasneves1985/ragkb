@@ -1,6 +1,6 @@
 package br.lcn.ragkb.service;
 
-import br.lcn.ragkb.dto.DocumentoDto;
+import br.lcn.ragkb.dto.DocumentDto;
 import br.lcn.ragkb.entity.ConflictStatus;
 import br.lcn.ragkb.entity.DocumentMetadata;
 import br.lcn.ragkb.entity.DocumentStatus;
@@ -32,17 +32,17 @@ public class DocumentLifecycleService {
     private final ConflictCandidateRepository conflictRepository;
 
     @Transactional
-    public DocumentoDto archive(String documentId, String username) {
+    public DocumentDto archive(String documentId, String username) {
         DocumentMetadata doc = findActive(documentId);
         vectorStore.delete("documentId == '" + documentId + "'");
         doc.archive();
         DocumentMetadata saved = metadataRepository.save(doc);
         resolveConflictsFor(documentId, username);
-        return DocumentoDto.from(saved);
+        return DocumentDto.from(saved);
     }
 
     @Transactional
-    public DocumentoDto reactivate(String documentId, List<String> allowedRoles, String username) {
+    public DocumentDto reactivate(String documentId, List<String> allowedRoles, String username) {
         DocumentMetadata doc = metadataRepository.findById(documentId)
                 .orElseThrow(() -> new DocumentNotFoundException(documentId));
 
@@ -78,7 +78,7 @@ public class DocumentLifecycleService {
         doc.setStatus(DocumentStatus.ACTIVE);
         doc.setAllowedRoles(roles);
         doc.setChunkCount(chunks.size());
-        return DocumentoDto.from(metadataRepository.save(doc));
+        return DocumentDto.from(metadataRepository.save(doc));
     }
 
     @Transactional
@@ -91,9 +91,9 @@ public class DocumentLifecycleService {
     }
 
     @Transactional(readOnly = true)
-    public List<DocumentoDto> listAll() {
+    public List<DocumentDto> listAll() {
         return metadataRepository.findAll().stream()
-                .map(DocumentoDto::from)
+                .map(DocumentDto::from)
                 .toList();
     }
 

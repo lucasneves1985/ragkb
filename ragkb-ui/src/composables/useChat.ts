@@ -4,7 +4,7 @@ import { queryService } from '@/services'
 import { useAuthStore } from '@/stores/auth'
 import type { Message, AskRequest } from '@/types'
 
-export function useChat({ messagesContainer }: { messagesContainer: Ref<HTMLElement | null> }) {
+export function useChat({ messagesContainer }: { messagesContainer?: Ref<HTMLElement | null> } = {}) {
   const auth = useAuthStore()
   const question = ref('')
   const messages = ref<Message[]>([])
@@ -57,7 +57,7 @@ export function useChat({ messagesContainer }: { messagesContainer: Ref<HTMLElem
 
   function scrollToBottom() {
     requestAnimationFrame(() => {
-      if (messagesContainer.value) {
+      if (messagesContainer?.value) {
         messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
       }
     })
