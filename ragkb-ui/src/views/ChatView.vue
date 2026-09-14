@@ -36,10 +36,6 @@ async function handleAsk() {
   await ask(() => loadConversations())
 }
 
-function resetChat() {
-  startNewConversation()
-}
-
 async function removeConversation(id: string, event: Event) {
   event.stopPropagation()
   const success = await deleteConversation(id)
@@ -64,10 +60,15 @@ onMounted(() => {
   loadConversations()
   scrollToBottom()
 })
+
+function reset() {
+  loadConversations()
+  scrollToBottom()
+}
 </script>
 
 <template>
-  <ErrorBoundary @retry="resetChat">
+  <ErrorBoundary @retry="reset">
   <div class="chat-layout">
     <aside v-show="showHistory" class="chat-side surface">
       <div class="chat-side-head">
