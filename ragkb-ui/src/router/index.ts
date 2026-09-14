@@ -1,32 +1,38 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import LoginView from '../views/LoginView.vue'
-import ChatView from '../views/ChatView.vue'
-import DocumentsView from '../views/DocumentsView.vue'
-import SectorView from '../views/SectorView.vue'
-import ConflictsView from '../views/ConflictsView.vue'
-import UsersView from '../views/UsersView.vue'
-import ForbiddenView from '../views/ForbiddenView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/', redirect: '/chat' },
     { path: '/login', component: LoginView },
-    { path: '/chat', component: ChatView, meta: { requiresAuth: true } },
+    { path: '/chat', component: () => import('../views/ChatView.vue'), meta: { requiresAuth: true } },
     {
       path: '/documents',
-      component: DocumentsView,
+      component: () => import('../views/DocumentsView.vue'),
       meta: { requiresAuth: true, roles: ['ADMIN', 'EDITOR'] },
     },
     {
       path: '/conflicts',
-      component: ConflictsView,
+      component: () => import('../views/ConflictsView.vue'),
       meta: { requiresAuth: true, roles: ['ADMIN'] },
     },
-    { path: '/users', component: UsersView, meta: { requiresAuth: true, roles: ['ADMIN'] } },
-    { path: '/forbidden', component: ForbiddenView, meta: { requiresAuth: true } },
-    { path: '/sectors', component: SectorView, meta: { requiresAuth: true, roles: ['ADMIN'] } },
+    {
+      path: '/users',
+      component: () => import('../views/UsersView.vue'),
+      meta: { requiresAuth: true, roles: ['ADMIN'] }
+    },
+    {
+      path: '/forbidden',
+      component: () => import('../views/ForbiddenView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/sectors',
+      component: () => import('../views/SectorView.vue'),
+      meta: { requiresAuth: true, roles: ['ADMIN'] }
+    },
   ],
 })
 router.beforeEach((to) => {

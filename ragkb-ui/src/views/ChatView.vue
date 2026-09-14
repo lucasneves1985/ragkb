@@ -4,6 +4,7 @@ import { ChatLineRound, Close, Delete, Document, Plus, Promotion, Tickets } from
 import { useChat, useConversations } from '@/composables'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
+import ErrorBoundary from '@/components/ErrorBoundary.vue'
 
 const md = new MarkdownIt({ breaks: true, html: false })
 function renderMarkdown(content?: string) {
@@ -35,6 +36,10 @@ async function handleAsk() {
   await ask(() => loadConversations())
 }
 
+function resetChat() {
+  startNewConversation()
+}
+
 async function removeConversation(id: string, event: Event) {
   event.stopPropagation()
   const success = await deleteConversation(id)
@@ -62,6 +67,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <ErrorBoundary @retry="resetChat">
   <div class="chat-layout">
     <aside v-show="showHistory" class="chat-side surface">
       <div class="chat-side-head">
@@ -156,6 +162,7 @@ onMounted(() => {
       </div>
     </section>
   </div>
+  </ErrorBoundary>
 </template>
 
 <style scoped lang="css" src="@/views/styles/chat.view.css"></style>
