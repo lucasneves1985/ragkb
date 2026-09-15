@@ -85,3 +85,9 @@ management:
     web:
       exposure:
         include: health,info,metrics,prometheus
+ragkb:
+  media:
+    path: ${RAGKB_MEDIA_PATH:/var/ragkb/media/articles}
+    max-size-bytes: 5242880
+  articles:
+    public-base-url: ${RAGKB_ARTICLES_BASE_URL:http://localhost:8080}

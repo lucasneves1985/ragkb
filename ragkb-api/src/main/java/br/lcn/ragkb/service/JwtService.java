@@ -1,5 +1,6 @@
 package br.lcn.ragkb.service;
 
+import br.lcn.ragkb.entity.AppRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -33,10 +34,12 @@ public class JwtService {
         if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
             throw new BadCredentialsException("Credenciais invalidas");
         }
-        // Claim "roles" SEM prefixo ROLE_ — o JwtGrantedAuthoritiesConverter re-adiciona
+
         List<String> roles = user.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .map(a -> a.startsWith("ROLE_") ? a.substring(5) : a)
+                .map(AppRole::parse)
+                .map(AppRole::simpleName)
+                .distinct()
                 .toList();
 
         Instant now = Instant.now();

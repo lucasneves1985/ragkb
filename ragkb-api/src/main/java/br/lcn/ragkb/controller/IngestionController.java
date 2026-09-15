@@ -1,6 +1,7 @@
 package br.lcn.ragkb.controller;
 
 import br.lcn.ragkb.dto.IngestRequest;
+import br.lcn.ragkb.entity.AppRole;
 import br.lcn.ragkb.entity.DocumentMetadata;
 import br.lcn.ragkb.service.IngestionService;
 import br.lcn.ragkb.service.UserService;
@@ -37,7 +38,13 @@ public class IngestionController {
 
         boolean isAdmin = auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .anyMatch("ROLE_ADMIN"::equals);
+                .anyMatch(AppRole.ROLE_ADMIN.name()::equals);
+
+
+        List<String> validatedRoles = allowedRoles.stream()
+                .map(AppRole::parse)
+                .map(AppRole::authority)   // metadata do PGVector mantém formato COM prefixo
+                .toList();
 
         if (!isAdmin) {
             // Editor: forçado a ingerir do próprio setor
@@ -55,6 +62,6 @@ public class IngestionController {
         }
 
         return ingestionService.ingest(file,
-                new IngestRequest(sector, allowedSectors, allowedRoles, supersedesDocumentId), auth.getName());
+                new IngestRequest(sector, allowedSectors, validatedRoles, supersedesDocumentId), auth.getName());
     }
 }

@@ -50,6 +50,8 @@ services:
         condition: service_healthy
     ports:
       - "8080:8080"
+    volumes:
+      - media-data:/var/ragkb/media/articles      
 
   ui:
     build: ./ragkb-ui
@@ -60,3 +62,4 @@ services:
 
 volumes:
   pgdata:
+  media-data:

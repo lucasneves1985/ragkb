@@ -3,6 +3,7 @@ package br.lcn.ragkb.service;
 import br.lcn.ragkb.dto.AnswerResponse;
 import br.lcn.ragkb.dto.ConversationDetailDto;
 import br.lcn.ragkb.dto.RedisChatMessageDto;
+import br.lcn.ragkb.entity.AppRole;
 import br.lcn.ragkb.entity.DocumentMetadata;
 import br.lcn.ragkb.repository.DocumentMetadataRepository;
 import lombok.RequiredArgsConstructor;
@@ -59,7 +60,7 @@ public class QueryService {
         ConversationDetailDto conversation = conversationService.getOrCreateConversation(conversationId, userId, question);
         String effectiveConversationId = conversation.id();
 
-        boolean isAdmin = roles.contains("ROLE_ADMIN");
+        boolean isAdmin = roles.contains(AppRole.ROLE_ADMIN.name());
 
         String filterExpr;
         if (isAdmin) {

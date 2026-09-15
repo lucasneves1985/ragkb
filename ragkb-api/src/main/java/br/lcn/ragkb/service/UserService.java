@@ -2,6 +2,7 @@ package br.lcn.ragkb.service;
 
 import br.lcn.ragkb.dto.CreateUserRequest;
 import br.lcn.ragkb.dto.UserResponse;
+import br.lcn.ragkb.entity.AppRole;
 import br.lcn.ragkb.entity.AppUser;
 import br.lcn.ragkb.entity.Sector;
 import br.lcn.ragkb.exception.InvalidRoleException;
@@ -20,7 +21,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class UserService {
 
-    private static final Set<String> VALID_ROLES = Set.of("USER", "ADMIN", "EDITOR");
 
     private final AppUserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -39,13 +39,11 @@ public class UserService {
         }
 
         List<String> roles = request.roles().stream()
-                .map(String::toUpperCase)
+                .map(AppRole::parse)
+                .map(AppRole::simpleName)
+                .distinct()
                 .toList();
-        for (String role : roles) {
-            if (!VALID_ROLES.contains(role)) {
-                throw new InvalidRoleException(role);
-            }
-        }
+
         Sector sector = sectorRepository.findById(request.sectorId())
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Setor não encontrado: " + request.sectorId()));

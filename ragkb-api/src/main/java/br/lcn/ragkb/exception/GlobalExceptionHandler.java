@@ -24,4 +24,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleSectorNotFound(SectorNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
     }
+
+    @ExceptionHandler(ArticleNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleArticleNotFoundException(ArticleNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidArticleContentException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidArticleContentException (InvalidArticleContentException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
+    }
+
 }
