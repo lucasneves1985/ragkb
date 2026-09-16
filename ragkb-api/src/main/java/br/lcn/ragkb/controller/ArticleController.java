@@ -1,18 +1,27 @@
 package br.lcn.ragkb.controller;
 
+import java.util.List;
+
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import br.lcn.ragkb.dto.ArticleActionRequest;
+import br.lcn.ragkb.dto.ArticleDetailDto;
 import br.lcn.ragkb.dto.ArticleDto;
 import br.lcn.ragkb.dto.CreateArticleRequest;
 import br.lcn.ragkb.dto.UpdateArticleRequest;
 import br.lcn.ragkb.service.ArticleLifecycleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/articles")
@@ -20,6 +29,12 @@ import java.util.List;
 public class ArticleController {
 
     private final ArticleLifecycleService lifecycleService;
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
+    public ArticleDetailDto detail(@PathVariable String id, Authentication auth) {
+        return lifecycleService.getDetail(id, auth.getName(), isAdmin(auth));
+    }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")

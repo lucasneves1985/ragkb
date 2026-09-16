@@ -5,6 +5,7 @@ import {
   ChatDotRound,
   Document,
   FolderOpened,
+  Notebook,
   OfficeBuilding,
   User,
 } from '@element-plus/icons-vue'
@@ -33,6 +34,12 @@ const items = computed<NavItem[]>(() => [
     label: 'Documentos',
     to: '/documents',
     icon: FolderOpened,
+    visible: auth.hasAnyRole(['ADMIN', 'EDITOR']),
+  },
+  {
+    label: 'Artigos',
+    to: '/articles',
+    icon: Notebook,
     visible: auth.hasAnyRole(['ADMIN', 'EDITOR']),
   },
   { label: 'Conflitos', to: '/conflicts', icon: Document, visible: auth.hasRole('ADMIN') },

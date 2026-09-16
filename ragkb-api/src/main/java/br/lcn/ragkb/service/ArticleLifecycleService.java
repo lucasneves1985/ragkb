@@ -1,5 +1,12 @@
 package br.lcn.ragkb.service;
 
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import br.lcn.ragkb.dto.ArticleDetailDto;
 import br.lcn.ragkb.dto.ArticleDto;
 import br.lcn.ragkb.dto.CreateArticleRequest;
 import br.lcn.ragkb.dto.UpdateArticleRequest;
@@ -8,11 +15,6 @@ import br.lcn.ragkb.entity.ArticleStatus;
 import br.lcn.ragkb.exception.ArticleNotFoundException;
 import br.lcn.ragkb.repository.ArticleRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -130,5 +132,11 @@ public class ArticleLifecycleService {
 
     private ArticleDto toDto(Article article) {
         return ArticleDto.from(article, baseUrl);
+    }
+
+    @Transactional(readOnly = true)
+    public ArticleDetailDto getDetail(String id, String username, boolean isAdmin) {
+        Article article = findOwned(id, username, isAdmin);
+        return ArticleDetailDto.from(article, baseUrl);
     }
 }

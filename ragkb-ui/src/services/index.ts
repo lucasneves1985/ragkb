@@ -1,4 +1,4 @@
-// services/index.ts
+export { articlesService } from './articles.service'
 export { authService } from './auth.service'
 export { usersService } from './users.service'
 export { sectorsService } from './sectors.service'

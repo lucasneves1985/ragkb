@@ -1,5 +1,5 @@
 // types/document.ts
-export type DocumentStatus = 'ACTIVE' | 'ARCHIVED' | 'PENDING'
+export type DocumentStatus = 'ACTIVE' | 'ARCHIVED' | 'SUPERSEDED'
 
 export interface KnowledgeDocument {
   id: string

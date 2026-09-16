@@ -1,4 +1,4 @@
-// types/index.ts
+export * from './article'
 export * from './auth'
 export * from './conflict'
 export * from './conversation'

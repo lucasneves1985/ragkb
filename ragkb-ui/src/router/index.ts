@@ -33,6 +33,11 @@ const router = createRouter({
       component: () => import('../views/SectorView.vue'),
       meta: { requiresAuth: true, roles: ['ADMIN'] }
     },
+    {
+      path: '/articles',
+      component: () => import('../views/ArticlesView.vue'),
+      meta: { requiresAuth: true, roles: ['ADMIN', 'EDITOR'] },
+    },
   ],
 })
 router.beforeEach((to) => {

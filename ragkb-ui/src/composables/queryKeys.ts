@@ -24,4 +24,8 @@ export const queryKeys = {
     all: ['tickets'] as const,
     lists: () => [...queryKeys.tickets.all, 'list'] as const,
   },
+  articles: {
+    all: ['articles'] as const,
+    lists: () => [...queryKeys.articles.all, 'list'] as const,
+  },
 } as const
