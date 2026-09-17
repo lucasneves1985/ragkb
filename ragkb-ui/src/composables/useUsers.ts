@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { usersService } from '@/services'
 import { queryKeys } from './queryKeys'
-import type { CreateUserRequest, User } from '@/types'
+import type { CreateUserRequest, UpdateUserRequest, User } from '@/types'
 
 export function useUsers() {
   const queryClient = useQueryClient()
@@ -14,17 +14,15 @@ export function useUsers() {
   })
 
   const createMutation = useMutation({
-    mutationFn: ({
-      usernameOrRequest,
-      password,
-      roles,
-      sectorId,
-    }: {
-      usernameOrRequest: string | CreateUserRequest
-      password?: string
-      roles?: string[]
-      sectorId?: number
-    }) => usersService.create(usernameOrRequest, password, roles, sectorId),
+    mutationFn: (payload: CreateUserRequest) => usersService.create(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() })
+    },
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: UpdateUserRequest }) =>
+      usersService.update(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() })
     },
@@ -32,7 +30,9 @@ export function useUsers() {
 
   const users = computed<User[]>(() => query.data.value ?? [])
   const loading = computed(() => query.isLoading.value)
-  const submitting = computed(() => createMutation.isPending.value)
+  const submitting = computed(
+    () => createMutation.isPending.value || updateMutation.isPending.value,
+  )
 
   async function loadUsers(): Promise<void> {
     errorMessage.value = ''
@@ -43,28 +43,34 @@ export function useUsers() {
     }
   }
 
-  async function createUser(
-    usernameOrRequest: string | CreateUserRequest,
-    password?: string,
-    roles?: string[],
-    sectorId?: number,
+  async function createUser(payload: CreateUserRequest): Promise<User | null> {
+    errorMessage.value = ''
+    try {
+      return await createMutation.mutateAsync(payload)
+    } catch (e: unknown) {
+      errorMessage.value = resolveError(e, 'Não foi possível cadastrar o usuário.')
+      return null
+    }
+  }
+
+  async function updateUser(
+    id: number,
+    payload: UpdateUserRequest,
   ): Promise<User | null> {
     errorMessage.value = ''
     try {
-      return await createMutation.mutateAsync({
-        usernameOrRequest,
-        password,
-        roles,
-        sectorId,
-      })
+      return await updateMutation.mutateAsync({ id, payload })
     } catch (e: unknown) {
-      const status = (e as { response?: { status?: number } }).response?.status
-      errorMessage.value =
-        status === 409
-          ? 'Este nome de usuário já está em uso.'
-          : 'Não foi possível cadastrar o usuário.'
+      errorMessage.value = resolveError(e, 'Não foi possível salvar as alterações do usuário.')
       return null
     }
+  }
+
+  function resolveError(e: unknown, fallback: string): string {
+    const status = (e as { response?: { status?: number } }).response?.status
+    if (status === 409) return 'Nome de usuário ou e-mail já está em uso.'
+    if (status === 404) return 'Usuário não encontrado.'
+    return fallback
   }
 
   function clearError(): void {
@@ -78,8 +84,8 @@ export function useUsers() {
     errorMessage,
     loadUsers,
     createUser,
+    updateUser,
     clearError,
     refetch: query.refetch,
   }
 }
-

@@ -1,6 +1,7 @@
 package br.lcn.ragkb.controller;
 
 import br.lcn.ragkb.dto.CreateUserRequest;
+import br.lcn.ragkb.dto.UpdateUserRequest;
 import br.lcn.ragkb.dto.UserResponse;
 import br.lcn.ragkb.service.UserService;
 import jakarta.validation.Valid;
@@ -27,5 +28,11 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public UserResponse create(@Valid @RequestBody CreateUserRequest request) {
         return userService.create(request);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserResponse update(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest request) {
+        return userService.update(id, request);
     }
 }
