@@ -37,8 +37,8 @@ export interface ChatMessage {
   sources?: string[]
 }
 
-// Union mantém compatibilidade: histórico persistido carrega strings,
-// respostas novas carregam SourceReference
+// Union mantém compatibilidade: histórico persistido carrega strings
+// (labels), respostas novas carregam SourceReference
 export interface Message {
   id?: string | number
   from?: ChatRole

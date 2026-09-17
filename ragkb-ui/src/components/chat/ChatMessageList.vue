@@ -1,4 +1,5 @@
-﻿<script setup lang="ts">
+﻿<!-- components/chat/ChatMessageList.vue -->
+<script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
 import { Document, Link, Tickets } from '@element-plus/icons-vue'
 import MarkdownIt from 'markdown-it'
@@ -87,7 +88,9 @@ defineExpose({ scrollToBottom })
           <el-tag v-for="(source, index) in message.sources" :key="index" size="small" effect="plain">
             <template v-if="isArticleSource(source)">
               <Link />
-              <a v-if="source.url" :href="source.url" target="_blank" class="source-link">{{ source.label }}</a>
+              <a v-if="source.url" :href="source.url" target="_blank" class="source-link">
+                {{ source.label }}
+              </a>
               <span v-else>{{ source.label }}</span>
             </template>
             <template v-else>
@@ -104,10 +107,3 @@ defineExpose({ scrollToBottom })
     </div>
   </div>
 </template>
-
-<style scoped>
-.source-link {
-  color: inherit;
-  text-decoration: underline;
-}
-</style>

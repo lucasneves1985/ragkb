@@ -49,7 +49,7 @@ public class QueryService {
     private final DocumentMetadataRepository metadataRepository;
     private final ConversationService conversationService;
     private final RedisChatHistoryService redisChatHistoryService;
-    private final UserService userService;   // resolve o setor internamente
+    private final UserService userService;
 
     public AnswerResponse ask(String question, String conversationId, Authentication auth) {
         // Contexto do usuário resolvido AQUI, não no controller
