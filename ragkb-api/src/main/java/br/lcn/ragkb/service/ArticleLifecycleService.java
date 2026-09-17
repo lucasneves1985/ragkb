@@ -136,7 +136,19 @@ public class ArticleLifecycleService {
 
     @Transactional(readOnly = true)
     public ArticleDetailDto getDetail(String id, String username, boolean isAdmin) {
-        Article article = findOwned(id, username, isAdmin);
-        return ArticleDetailDto.from(article, baseUrl);
+        Article article = articleRepository.findById(id)
+                .orElseThrow(() -> new ArticleNotFoundException(id));
+
+        if (isAdmin || article.getAuthorUsername().equals(username)) {
+            return ArticleDetailDto.from(article, baseUrl);
+        }
+
+        String userSector = userService.findByUsername(username);
+        if (article.isPublished() && userSector != null
+                && article.getAllowedSectors().contains(userSector)) {
+            return ArticleDetailDto.from(article, baseUrl);
+        }
+
+        throw new ArticleNotFoundException(id);
     }
 }

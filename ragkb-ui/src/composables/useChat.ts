@@ -31,10 +31,15 @@ export function useChat({ messagesContainer }: { messagesContainer?: Ref<HTMLEle
       question.value = ''
     },
     onSuccess: (response) => {
+      // Fontes estruturadas com fallback para backend legado (apenas labels)
+      const fallbackSources = (response.sourceIds ?? []).map((label) => ({
+        type: 'DOCUMENT' as const,
+        label,
+      }))
       messages.value.push({
         from: 'assistant',
         text: response.answer,
-        sources: response.sourceIds,
+        sources: response.sources ?? fallbackSources,
         timestamp: new Date().toISOString(),
       })
       if (response.conversationId) {

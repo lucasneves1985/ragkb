@@ -1,14 +1,15 @@
 package br.lcn.ragkb.service;
 
-import br.lcn.ragkb.exception.InvalidArticleContentException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.safety.Safelist;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import br.lcn.ragkb.exception.InvalidArticleContentException;
 
 @Service
 public class ArticleSanitizationService {
@@ -17,23 +18,30 @@ public class ArticleSanitizationService {
 
     /**
      * Sanitizes rich-text HTML from the editor before persistence.
-     * - Whitelist-based: only known-safe tags/attributes survive.
-     * - <img> src MUST point to the internal media endpoint (relative URL
-     *   returned by the image upload). External or data: URIs are rejected —
-     *   base64 must never reach persistence.
-     * - Runs BEFORE saving: the HTML stored in the database is born clean.
+     *
+     * IMPORTANT — do NOT use Safelist.basicWithImages() here: it restricts
+     * img[src] to http/https protocols and silently STRIPS the attribute from
+     * relative URLs (/api/media/articles/...), which are exactly the valid
+     * ones returned by the media endpoint. Instead we build the whitelist
+     * without protocol restriction on src — XSS protection stays with the
+     * Safelist (tags/attributes/on* handlers), and src validation is fully
+     * owned by the MEDIA_PREFIX check below, which rejects anything outside
+     * the internal media endpoint (external URLs and data: URIs included).
+     *
+     * Runs BEFORE saving: the HTML stored in the database is born clean.
      */
     public String sanitize(String rawHtml) {
-        String cleaned = Jsoup.clean(rawHtml, "", Safelist.basicWithImages()
-                .addAttributes("img", "src", "alt"));
+        String cleaned = Jsoup.clean(rawHtml, "", Safelist.basic()
+                .addTags("img")
+                .addAttributes("img", "src", "alt", "height", "width"));
 
         Document parsed = Jsoup.parseBodyFragment(cleaned);
         List<String> invalidSources = new ArrayList<>();
 
         for (Element img : parsed.select("img")) {
             String src = img.attr("src");
-            if (src == null || !src.startsWith(MEDIA_PREFIX)) {
-                invalidSources.add(src);
+            if (src == null || src.isBlank() || !src.startsWith(MEDIA_PREFIX)) {
+                invalidSources.add(describeSource(src));
                 img.remove();
             }
         }
@@ -73,5 +81,12 @@ public class ArticleSanitizationService {
         });
 
         return sb.toString().trim();
+    }
+
+    private String describeSource(String src) {
+        if (src == null || src.isBlank()) {
+            return "(src removido ou vazio — provável URL relativa descartada)";
+        }
+        return src;
     }
 }

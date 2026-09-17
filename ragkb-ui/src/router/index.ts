@@ -21,28 +21,38 @@ const router = createRouter({
     {
       path: '/users',
       component: () => import('../views/UsersView.vue'),
-      meta: { requiresAuth: true, roles: ['ADMIN'] }
+      meta: { requiresAuth: true, roles: ['ADMIN'] },
     },
     {
       path: '/forbidden',
       component: () => import('../views/ForbiddenView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
       path: '/sectors',
       component: () => import('../views/SectorView.vue'),
-      meta: { requiresAuth: true, roles: ['ADMIN'] }
+      meta: { requiresAuth: true, roles: ['ADMIN'] },
     },
     {
       path: '/articles',
       component: () => import('../views/ArticlesView.vue'),
       meta: { requiresAuth: true, roles: ['ADMIN', 'EDITOR'] },
     },
+    {
+      // Read-only — fonte citada pelo chat. Gate real (setor/autor) no backend.
+      path: '/articles/:id',
+      component: () => import('../views/ArticleDetailView.vue'),
+      meta: { requiresAuth: true, roles: ['ADMIN', 'EDITOR', 'USER'] },
+    },
   ],
 })
+
 router.beforeEach((to) => {
   const auth = useAuthStore()
-  if (to.meta.requiresAuth && !auth.isAuthenticated) return '/login'
+  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    // Preserva o destino — o login devolve o usuário para onde ele ia
+    return { path: '/login', query: { redirect: to.fullPath } }
+  }
   const roles = to.meta.roles as string[] | undefined
   if (roles && !auth.hasAnyRole(roles)) return '/forbidden'
   if (to.path === '/login' && auth.isAuthenticated) return '/chat'

@@ -38,6 +38,8 @@ const form = reactive({
 
 const fileInput = ref<HTMLInputElement | null>(null)
 
+const MEDIA_PREFIX = '/api/media/articles/'
+
 const editor = useEditor({
   content: '',
   extensions: [
@@ -53,6 +55,18 @@ const editor = useEditor({
         return true
       }
       return false
+    },
+    // Colar HTML de página web traz <img src="https://..."> — o backend
+    // rejeita qualquer src fora do endpoint de mídia (InvalidArticleContentException).
+    // Mesma política: remove as imagens externas do HTML colado.
+    transformPastedHTML(html: string) {
+      const doc = new DOMParser().parseFromString(html, 'text/html')
+      doc.querySelectorAll('img').forEach((img) => {
+        if (!img.getAttribute('src')?.startsWith(MEDIA_PREFIX)) {
+          img.remove()
+        }
+      })
+      return doc.body.innerHTML
     },
   },
 })

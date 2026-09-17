@@ -30,12 +30,6 @@ public class ArticleController {
 
     private final ArticleLifecycleService lifecycleService;
 
-    @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
-    public ArticleDetailDto detail(@PathVariable String id, Authentication auth) {
-        return lifecycleService.getDetail(id, auth.getName(), isAdmin(auth));
-    }
-
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
     public ArticleDto create(@Valid @RequestBody CreateArticleRequest request, Authentication auth) {
@@ -46,6 +40,15 @@ public class ArticleController {
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
     public List<ArticleDto> list(Authentication auth) {
         return lifecycleService.list(auth.getName(), isAdmin(auth));
+    }
+
+    // Read-only page (chat source link) + editor dialog. The sector gate
+    // lives in the service — any authenticated user may request, and the
+    // service decides by status/author/allowedSectors.
+    @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ArticleDetailDto detail(@PathVariable String id, Authentication auth) {
+        return lifecycleService.getDetail(id, auth.getName(), isAdmin(auth));
     }
 
     @PutMapping("/{id}")

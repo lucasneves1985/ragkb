@@ -1,12 +1,16 @@
+<!-- views/LoginView.vue -->
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import LoginIntro from '@/components/auth/LoginIntro.vue'
 import LoginForm from '@/components/auth/LoginForm.vue'
 
+const route = useRoute()
 const router = useRouter()
 
 function onLoginSuccess() {
-  router.push('/chat')
+  // Volta para o destino original (ex.: artigo citado no chat)
+  const redirect = route.query.redirect
+  router.push(typeof redirect === 'string' && redirect.startsWith('/') ? redirect : '/chat')
 }
 </script>
 

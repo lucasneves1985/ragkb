@@ -76,8 +76,12 @@ async function handleSubmit(payload: {
     }
     dialog.value = false
     editing.value = null
-  } catch {
-    ElMessage.error('Não foi possível salvar o artigo.')
+  } catch (error) {
+    // Surfacing do backend: 400 do save carrega a mensagem real
+    // (ex.: imagem com src externo) via GlobalExceptionHandler
+    const message =
+      (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+    ElMessage.error(message || 'Não foi possível salvar o artigo.')
   }
 }
 

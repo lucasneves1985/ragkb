@@ -7,7 +7,7 @@ export const http = axios.create({
 })
 
 http.interceptors.request.use((config) => {
-  const token = sessionStorage.getItem('ragkb-token') || localStorage.getItem('token')
+  const token = localStorage.getItem('ragkb-token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
@@ -16,9 +16,8 @@ http.interceptors.response.use(
   (res) => res,
   (error) => {
     if (error.response?.status === 401) {
-      sessionStorage.removeItem('ragkb-session')
-      sessionStorage.removeItem('ragkb-token')
-      localStorage.removeItem('token')
+      localStorage.removeItem('ragkb-session')
+      localStorage.removeItem('ragkb-token')
       if (window.location.pathname !== '/login') {
         window.location.href = '/login'
       }

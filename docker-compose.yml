@@ -43,6 +43,7 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USERNAME: ${SMTP_USERNAME:-teste@email}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-123}
+      RAGKB_ARTICLES_BASE_URL: ${RAGKB_ARTICLES_BASE_URL:-http://localhost:5173}
     depends_on:
       postgres:
         condition: service_healthy
@@ -51,7 +52,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - media-data:/var/ragkb/media/articles      
+      - media-data:/var/ragkb/media/articles
 
   ui:
     build: ./ragkb-ui

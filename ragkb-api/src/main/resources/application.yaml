@@ -15,7 +15,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate   # era update — isso muda AGORA
+      ddl-auto: validate # era update — isso muda AGORA
     open-in-view: false
 
   flyway:
@@ -90,4 +90,4 @@ ragkb:
     path: ${RAGKB_MEDIA_PATH:/var/ragkb/media/articles}
     max-size-bytes: 5242880
   articles:
-    public-base-url: ${RAGKB_ARTICLES_BASE_URL:http://localhost:8080}
+    public-base-url: ${RAGKB_ARTICLES_BASE_URL:http://localhost:5173}
