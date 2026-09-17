@@ -1,21 +1,32 @@
 package br.lcn.ragkb.service;
 
-import br.lcn.ragkb.dto.*;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import br.lcn.ragkb.dto.AnswerResponse;
+import br.lcn.ragkb.dto.ConversationDetailDto;
+import br.lcn.ragkb.dto.ConversationSummaryDto;
+import br.lcn.ragkb.dto.SourceReferenceDto;
+import br.lcn.ragkb.dto.TicketSuggestionDto;
 import br.lcn.ragkb.entity.ChatMessage;
 import br.lcn.ragkb.entity.Conversation;
 import br.lcn.ragkb.repository.ConversationRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ConversationService {
 
     private final ConversationRepository conversationRepository;
     private final RedisChatHistoryService redisChatHistoryService;
+    private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
     public List<ConversationSummaryDto> listUserConversations(String userId) {
@@ -84,6 +95,11 @@ public class ConversationService {
         TicketSuggestionDto suggestion = response.ticketSuggestion();
 
         ChatMessage assistantMsg = new ChatMessage(conversation, "ASSISTANT", answer, status, sources);
+        // Persiste as fontes estruturadas (type/label/url) — sem isso o reload
+        // do histórico renderiza apenas labels, sem link para o artigo
+        if (response.sources() != null && !response.sources().isEmpty()) {
+            assistantMsg.setSourcesJson(serializeSources(response.sources()));
+        }
         if (suggestion != null) {
             assistantMsg.setTicketQuestion(suggestion.description());
             assistantMsg.setTicketUserId(suggestion.requester());
@@ -102,5 +118,16 @@ public class ConversationService {
     @Transactional
     public void recordInteraction(Conversation conversation, String userQuestion, AnswerResponse response) {
         recordInteraction(conversation.getId(), userQuestion, response);
+    }
+
+    private String serializeSources(List<SourceReferenceDto> sources) {
+        try {
+            return objectMapper.writeValueAsString(sources);
+        } catch (JsonProcessingException e) {
+            // Falha de serialização não deve abortar a interação — o label
+            // já está persistido em chat_message_sources (fallback do reload)
+            log.warn("Falha ao serializar fontes estruturadas da conversa", e);
+            return null;
+        }
     }
 }

@@ -16,3 +16,4 @@ export {
   useArchiveArticle,
   useUploadArticleImage
 } from './useArticles'
+export { usePortalArticles } from './usePortalArticles'

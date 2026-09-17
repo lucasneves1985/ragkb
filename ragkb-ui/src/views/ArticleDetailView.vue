@@ -51,17 +51,15 @@ async function load() {
   }
 }
 
+// Regras de navegação explícitas:
+// - Aberto pela manutenção (?from=management) → volta para a listagem
+// - Aberto pelo assistente ou pelo portal (sem o parâmetro) → portal
 function goBack() {
-  // Editor/admin volta para a gestão; usuário do chat volta para onde veio
-  if (auth.hasAnyRole(['ADMIN', 'EDITOR']) && router.options.history.state.back === null) {
+  if (route.query.from === 'management') {
     router.push('/articles')
     return
   }
-  if (router.options.history.state.back) {
-    router.back()
-  } else {
-    router.push(auth.hasAnyRole(['ADMIN', 'EDITOR']) ? '/articles' : '/chat')
-  }
+  router.push('/portal')
 }
 
 onMounted(load)
@@ -70,7 +68,9 @@ onMounted(load)
 <template>
   <ErrorBoundary @retry="load">
     <div class="article-detail">
-      <div class="detail-toolbar">
+      <!-- Eyebrow à esquerda, Voltar alinhado à direita na mesma linha -->
+      <div class="detail-topbar">
+        <p class="eyebrow">BASE DE CONHECIMENTO</p>
         <el-button text :icon="ArrowLeft" @click="goBack">Voltar</el-button>
       </div>
 
@@ -80,14 +80,10 @@ onMounted(load)
 
       <section v-else-if="isNotFound" class="surface detail-body">
         <el-empty description="Artigo não encontrado ou sem acesso." />
-        <div class="empty-actions">
-          <el-button class="primary-button" @click="goBack">Voltar</el-button>
-        </div>
       </section>
 
       <template v-else-if="article">
         <div class="detail-heading">
-          <p class="eyebrow">BASE DE CONHECIMENTO</p>
           <h1>{{ article.title }}</h1>
           <div class="detail-meta">
             <el-tag :type="article.status === 'PUBLISHED' ? 'success' : 'warning'" size="small" effect="light">
@@ -121,14 +117,22 @@ onMounted(load)
 .article-detail {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   max-width: 860px;
   margin: 0 auto;
-  padding: 24px 32px;
+  /* Aproxima o conteúdo do cabeçalho da aplicação */
+  padding: 8px 32px 24px;
 }
 
-.detail-toolbar {
+/* Eyebrow à esquerda, Voltar à direita — mesma linha */
+.detail-topbar {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.detail-topbar .eyebrow {
+  margin: 0;
 }
 
 .detail-heading h1 {
@@ -159,12 +163,6 @@ onMounted(load)
 
 .detail-body {
   padding: 28px 32px;
-}
-
-.empty-actions {
-  display: flex;
-  justify-content: center;
-  margin-top: 14px;
 }
 
 .article-content {

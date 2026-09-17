@@ -9,6 +9,7 @@ defineProps<{
 }>()
 
 defineEmits<{
+  (e: 'view', article: Article): void
   (e: 'edit', article: Article): void
   (e: 'publish', id: string): void
   (e: 'archive', id: string): void
@@ -40,13 +41,7 @@ function canManage(article: Article, currentUsername: string, isAdmin: boolean) 
     <el-table-column prop="sector" label="Setor" width="140" />
     <el-table-column label="Setores com acesso" min-width="180">
       <template #default="{ row }">
-        <el-tag
-          v-for="sector in row.allowedSectors"
-          :key="sector"
-          size="small"
-          effect="plain"
-          class="sector-tag"
-        >
+        <el-tag v-for="sector in row.allowedSectors" :key="sector" size="small" effect="plain" class="sector-tag">
           {{ sector }}
         </el-tag>
       </template>
@@ -58,8 +53,11 @@ function canManage(article: Article, currentUsername: string, isAdmin: boolean) 
         </el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="Ações" width="210">
+    <el-table-column label="Ações" width="320">
       <template #default="{ row }">
+        <!-- Visualizar para todas as linhas: ação de leitura; o gate real
+             (autor/setor) é o do GET /articles/{id} -->
+        <el-button text @click="$emit('view', row)">Visualizar</el-button>
         <template v-if="canManage(row, currentUsername, isAdmin)">
           <el-button v-if="row.status === 'DRAFT'" text type="success" @click="$emit('publish', row.id)">
             Publicar
@@ -67,9 +65,6 @@ function canManage(article: Article, currentUsername: string, isAdmin: boolean) 
           <el-button text type="primary" @click="$emit('edit', row)">Editar</el-button>
           <el-button text type="warning" @click="$emit('archive', row.id)">Arquivar</el-button>
         </template>
-        <el-tooltip v-else content="Somente o autor ou um admin pode gerenciar este artigo.">
-          <el-button text disabled>Sem permissão</el-button>
-        </el-tooltip>
       </template>
     </el-table-column>
   </el-table>
@@ -81,7 +76,7 @@ function canManage(article: Article, currentUsername: string, isAdmin: boolean) 
   font-size: 13px;
 }
 
-.title + small {
+.title+small {
   display: block;
   margin-top: 3px;
   color: #9aa4b1;

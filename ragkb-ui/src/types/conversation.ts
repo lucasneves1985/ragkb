@@ -1,3 +1,5 @@
+import type { SourceReference } from './query'
+
 export interface Conversation {
   id: string
   title: string
@@ -11,6 +13,9 @@ export interface ChatMessageItem {
   content: string
   status?: string
   sources?: string[]
+  // Fontes estruturadas persistidas a partir da migration V4 —
+  // mensagens antigas vêm vazias (fallback para labels)
+  structuredSources?: SourceReference[]
   ticketSuggestion?: {
     subject: string
     description: string

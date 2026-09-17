@@ -7,6 +7,7 @@ import {
   FolderOpened,
   Notebook,
   OfficeBuilding,
+  Reading,
   User,
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
@@ -42,6 +43,12 @@ const items = computed<NavItem[]>(() => [
     icon: Notebook,
     visible: auth.hasAnyRole(['ADMIN', 'EDITOR']),
   },
+  {
+    label: 'Portal',
+    to: '/portal',
+    icon: Reading, // importe de '@element-plus/icons-vue'
+    visible: true, // todos os autenticados
+  },
   { label: 'Conflitos', to: '/conflicts', icon: Document, visible: auth.hasRole('ADMIN') },
   { label: 'Setores', to: '/sectors', icon: OfficeBuilding, visible: auth.hasRole('ADMIN') },
   { label: 'Usuários', to: '/users', icon: User, visible: auth.hasRole('ADMIN') },
@@ -60,13 +67,8 @@ function logout() {
     <AppSidebar :collapsed="collapsed" :items="items" @toggle="collapsed = !collapsed" />
 
     <el-container direction="vertical">
-      <AppTopbar
-        :username="auth.username"
-        :initials="auth.initials"
-        :roles="auth.roles"
-        @new-query="router.push('/chat')"
-        @logout="logout"
-      />
+      <AppTopbar :username="auth.username" :initials="auth.initials" :roles="auth.roles"
+        @new-query="router.push('/chat')" @logout="logout" />
 
       <el-main class="content">
         <router-view />

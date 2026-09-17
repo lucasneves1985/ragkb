@@ -201,13 +201,13 @@
   color: #536175;
 }
 .bubble {
-  padding: 13px 15px;
+  padding: 5px 12px;
   border: 1px solid #e4e9ef;
   border-radius: 4px 13px 13px 13px;
   background: #fff;
   color: #354156;
   font-size: 13px;
-  line-height: 1.65;
+  line-height: 1.55;
 }
 .user .bubble {
   border: 0;
@@ -249,8 +249,8 @@
   align-items: center;
   gap: 7px;
   flex-wrap: wrap;
-  margin-top: 13px;
-  padding-top: 10px;
+  margin-top: 8px;
+  padding-top: 7px;
   border-top: 1px solid #eef1f4;
 }
 .sources > span {

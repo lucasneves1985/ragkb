@@ -107,3 +107,28 @@ defineExpose({ scrollToBottom })
     </div>
   </div>
 </template>
+
+<style scoped>
+.source-link {
+  color: #168463;
+  text-decoration: none;
+}
+
+/* Mata o roxo de link visitado — sem isso o browser vence a cor do el-tag */
+.source-link:visited {
+  color: #168463;
+  text-decoration: none;
+}
+
+.source-link:hover,
+.source-link:focus {
+  color: #168463;
+  text-decoration: underline;
+}
+
+/* Links markdown no corpo da mensagem também ficam roxos quando visitados */
+.bubble :deep(a),
+.bubble :deep(a:visited) {
+  color: #168463;
+}
+</style>

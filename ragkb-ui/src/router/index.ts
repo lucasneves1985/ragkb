@@ -39,10 +39,14 @@ const router = createRouter({
       meta: { requiresAuth: true, roles: ['ADMIN', 'EDITOR'] },
     },
     {
-      // Read-only — fonte citada pelo chat. Gate real (setor/autor) no backend.
       path: '/articles/:id',
       component: () => import('../views/ArticleDetailView.vue'),
       meta: { requiresAuth: true, roles: ['ADMIN', 'EDITOR', 'USER'] },
+    },
+    {
+      path: '/portal',
+      component: () => import('../views/PortalView.vue'),
+      meta: { requiresAuth: true },
     },
   ],
 })

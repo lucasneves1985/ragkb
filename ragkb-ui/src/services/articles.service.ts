@@ -1,3 +1,4 @@
+// services/articles.service.ts
 import { http } from './http'
 import type {
   Article,
@@ -10,6 +11,11 @@ import type {
 
 export const articlesService = {
   list: () => http.get<Article[]>('/articles').then((r) => r.data),
+
+  // Portal feed — publicado, filtrado por setor do usuário no backend.
+  // q e sector são opcionais; sector só tem efeito para ADMIN.
+  portal: (params?: { q?: string; sector?: string }) =>
+    http.get<ArticleDetail[]>('/articles/portal', { params }).then((r) => r.data),
 
   create: (request: CreateArticleRequest) =>
     http.post<Article>('/articles', request).then((r) => r.data),
@@ -27,5 +33,6 @@ export const articlesService = {
       .post<ArticleImageUploadResponse>('/articles/images', formData)
       .then((r) => r.data)
   },
+
   get: (id: string) => http.get<ArticleDetail>(`/articles/${id}`).then((r) => r.data),
 }

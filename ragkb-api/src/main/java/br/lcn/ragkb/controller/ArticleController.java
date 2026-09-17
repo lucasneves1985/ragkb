@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.lcn.ragkb.dto.ArticleActionRequest;
@@ -42,9 +43,20 @@ public class ArticleController {
         return lifecycleService.list(auth.getName(), isAdmin(auth));
     }
 
-    // Read-only page (chat source link) + editor dialog. The sector gate
-    // lives in the service — any authenticated user may request, and the
-    // service decides by status/author/allowedSectors.
+    // Portal feed — leitura para TODOS os autenticados (inclui ROLE_USER).
+    // Gate real por setor no service; q = busca por título, sector = filtro
+    // (honrado apenas para ADMIN).
+    @GetMapping("/portal")
+    @PreAuthorize("isAuthenticated()")
+    public List<ArticleDetailDto> portal(@RequestParam(required = false) String q,
+                                         @RequestParam(required = false) String sector,
+                                         Authentication auth) {
+        return lifecycleService.listPortal(auth.getName(), isAdmin(auth), q, sector);
+    }
+
+    // Read-only page (chat source link, portal) + editor dialog. The sector
+    // gate lives in the service — any authenticated user may request, and
+    // the service decides by status/author/allowedSectors.
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ArticleDetailDto detail(@PathVariable String id, Authentication auth) {

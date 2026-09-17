@@ -1,6 +1,7 @@
 <!-- views/ArticlesView.vue -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { DocumentAdd } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import {
@@ -19,6 +20,7 @@ import ArticleTable from '@/components/articles/ArticleTable.vue'
 import ArticleEditorDialog from '@/components/articles/ArticleEditorDialog.vue'
 import type { Article, ArticleDetail } from '@/types'
 
+const router = useRouter()
 const auth = useAuthStore()
 const { articles, isLoading, isError, refetch } = useArticles()
 const { sectors } = useSectors()
@@ -37,6 +39,12 @@ const saving = computed(() => creating.value || updating.value)
 function openCreate() {
   editing.value = null
   dialog.value = true
+}
+
+// Visualizar abre o detail read-only; from=management faz o Voltar
+// retornar para esta listagem (regra de navegação)
+function openView(article: Article) {
+  router.push({ path: `/articles/${article.id}`, query: { from: 'management' } })
 }
 
 async function openEdit(article: Article) {
@@ -132,8 +140,8 @@ function reset() {
       </section>
 
       <section v-else class="surface">
-        <ArticleTable :articles="articles ?? []" :current-username="auth.username" :is-admin="isAdmin" @edit="openEdit"
-          @publish="handlePublish" @archive="handleArchive" />
+        <ArticleTable :articles="articles ?? []" :current-username="auth.username" :is-admin="isAdmin" @view="openView"
+          @edit="openEdit" @publish="handlePublish" @archive="handleArchive" />
       </section>
 
       <ArticleEditorDialog v-model="dialog" :sectors="sectors ?? []" :article="editing" :saving="saving"

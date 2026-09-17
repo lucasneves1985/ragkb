@@ -1,5 +1,9 @@
 package br.lcn.ragkb.entity;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -14,10 +18,6 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "chat_messages")
@@ -47,6 +47,14 @@ public class ChatMessage {
     @CollectionTable(name = "chat_message_sources", joinColumns = @JoinColumn(name = "message_id"))
     @Column(name = "source", length = 255)
     private List<String> sources = new ArrayList<>();
+
+    /**
+     * Structured sources as JSON (List of SourceReferenceDto) — populated
+     * on new messages so the history reload can render article links.
+     * Null on messages persisted before this column existed.
+     */
+    @Column(name = "sources_json", columnDefinition = "TEXT")
+    private String sourcesJson;
 
     private String ticketSector;
     private String ticketQuestion;

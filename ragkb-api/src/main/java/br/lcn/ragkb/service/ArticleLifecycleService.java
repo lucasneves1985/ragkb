@@ -42,6 +42,34 @@ public class ArticleLifecycleService {
         return toDto(articleRepository.save(article));
     }
 
+    /**
+     * Detail view — read-only page (chat source link, portal) and editor dialog.
+     * Visibility mirrors the vector-store sector filter that allowed the
+     * agent to cite the article in the first place:
+     * - ADMIN: everything.
+     * - Author: own articles in any status.
+     * - Any authenticated user: PUBLISHED articles whose allowedSectors
+     *   include the user's sector.
+     * Anything else: 404 (does not reveal existence).
+     */
+    @Transactional(readOnly = true)
+    public ArticleDetailDto getDetail(String id, String username, boolean isAdmin) {
+        Article article = articleRepository.findById(id)
+                .orElseThrow(() -> new ArticleNotFoundException(id));
+
+        if (isAdmin || article.getAuthorUsername().equals(username)) {
+            return ArticleDetailDto.from(article, baseUrl);
+        }
+
+        String userSector = userService.findByUsername(username);
+        if (article.isPublished() && userSector != null
+                && article.getAllowedSectors().contains(userSector)) {
+            return ArticleDetailDto.from(article, baseUrl);
+        }
+
+        throw new ArticleNotFoundException(id);
+    }
+
     @Transactional
     public ArticleDto update(String id, UpdateArticleRequest request, String username, boolean isAdmin) {
         Article article = findOwned(id, username, isAdmin);
@@ -95,8 +123,54 @@ public class ArticleLifecycleService {
         List<Article> articles = isAdmin
                 ? articleRepository.findAll()
                 : articleRepository.findByStatusNotOrAuthorUsername(
-                ArticleStatus.DRAFT, username);
+                        ArticleStatus.DRAFT, username);
         return articles.stream().map(this::toDto).toList();
+    }
+
+    /**
+     * Portal feed — read-only, for ALL authenticated users (incl. ROLE_USER).
+     * Only PUBLISHED articles. Non-admin users are always bound to their own
+     * sector (the requested sector filter is ignored for them); ADMIN may
+     * filter by any sector or see all. Optional title search (q).
+     */
+    @Transactional(readOnly = true)
+    public List<ArticleDetailDto> listPortal(String username, boolean isAdmin, String q, String sector) {
+        String search = (q == null || q.isBlank()) ? null : q.trim();
+
+        List<Article> articles;
+        if (isAdmin) {
+            String effectiveSector = (sector == null || sector.isBlank()) ? null : sector.trim();
+            articles = queryPublished(effectiveSector, search);
+        } else {
+            String userSector = userService.findByUsername(username);
+            if (userSector == null || userSector.isBlank()) {
+                return List.of();
+            }
+            articles = queryPublished(userSector, search);
+        }
+
+        return articles.stream()
+                .map(a -> ArticleDetailDto.from(a, baseUrl))
+                .toList();
+    }
+
+    private List<Article> queryPublished(String sector, String search) {
+        if (sector != null && search != null) {
+            return articleRepository
+                    .findByStatusAndAllowedSectorsContainingAndTitleContainingIgnoreCaseOrderByPublishedAtDesc(
+                            ArticleStatus.PUBLISHED, sector, search);
+        }
+        if (sector != null) {
+            return articleRepository
+                    .findByStatusAndAllowedSectorsContainingOrderByPublishedAtDesc(
+                            ArticleStatus.PUBLISHED, sector);
+        }
+        if (search != null) {
+            return articleRepository
+                    .findByStatusAndTitleContainingIgnoreCaseOrderByPublishedAtDesc(
+                            ArticleStatus.PUBLISHED, search);
+        }
+        return articleRepository.findByStatusOrderByPublishedAtDesc(ArticleStatus.PUBLISHED);
     }
 
     private Article findOwned(String id, String username, boolean isAdmin) {
@@ -132,23 +206,5 @@ public class ArticleLifecycleService {
 
     private ArticleDto toDto(Article article) {
         return ArticleDto.from(article, baseUrl);
-    }
-
-    @Transactional(readOnly = true)
-    public ArticleDetailDto getDetail(String id, String username, boolean isAdmin) {
-        Article article = articleRepository.findById(id)
-                .orElseThrow(() -> new ArticleNotFoundException(id));
-
-        if (isAdmin || article.getAuthorUsername().equals(username)) {
-            return ArticleDetailDto.from(article, baseUrl);
-        }
-
-        String userSector = userService.findByUsername(username);
-        if (article.isPublished() && userSector != null
-                && article.getAllowedSectors().contains(userSector)) {
-            return ArticleDetailDto.from(article, baseUrl);
-        }
-
-        throw new ArticleNotFoundException(id);
     }
 }
