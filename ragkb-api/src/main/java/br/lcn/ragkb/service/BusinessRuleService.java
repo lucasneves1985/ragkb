@@ -116,14 +116,16 @@ public class BusinessRuleService {
     }
 
     /**
-     * DRAFT -> PUBLISHED. First embedding happens here; a provider failure
-     * does NOT roll back the publish (PENDING/FAILED + retry job covers it).
+     * DRAFT or ARCHIVED -> PUBLISHED (toggle bidirecional combinado na spec).
+     * Re-publishing re-embeds: the archived period may have outlived a
+     * description change, so the vector is refreshed unconditionally.
+     * A provider failure does NOT roll back the publish (FAILED + retry job).
      */
     @Transactional
     public BusinessRuleDto publish(String id, String username, boolean isAdmin) {
         BusinessRule rule = findOwned(id, username, isAdmin);
-        if (!rule.isDraft()) {
-            throw new IllegalStateException("Somente regras em rascunho podem ser publicadas");
+        if (rule.isPublished()) {
+            throw new IllegalStateException("A regra já está publicada");
         }
 
         rule.publish();
@@ -131,7 +133,8 @@ public class BusinessRuleService {
 
         embeddingService.embed(rule);
 
-        return BusinessRuleDto.from(repository.findById(id).orElseThrow(() -> new BusinessRuleNotFoundException(id)));
+        return BusinessRuleDto.from(
+                repository.findById(id).orElseThrow(() -> new BusinessRuleNotFoundException(id)));
     }
 
     /**

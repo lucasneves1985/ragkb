@@ -5,6 +5,7 @@ import {
   ChatDotRound,
   Document,
   FolderOpened,
+  List,
   Notebook,
   OfficeBuilding,
   Reading,
@@ -41,6 +42,12 @@ const items = computed<NavItem[]>(() => [
     label: 'Artigos',
     to: '/articles',
     icon: Notebook,
+    visible: auth.hasAnyRole(['ADMIN', 'EDITOR']),
+  },
+  {
+    label: 'Regras',
+    to: '/business-rules',
+    icon: List,
     visible: auth.hasAnyRole(['ADMIN', 'EDITOR']),
   },
   {

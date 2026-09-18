@@ -48,6 +48,11 @@ const router = createRouter({
       component: () => import('../views/PortalView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/business-rules',
+      component: () => import('../views/BusinessRulesView.vue'),
+      meta: { requiresAuth: true, roles: ['ADMIN', 'EDITOR', 'USER'] },
+    },
   ],
 })
 

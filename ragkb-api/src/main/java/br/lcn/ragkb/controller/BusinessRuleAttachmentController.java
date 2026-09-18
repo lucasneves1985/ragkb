@@ -20,7 +20,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import br.lcn.ragkb.dto.BusinessRuleAttachmentDto;
 import br.lcn.ragkb.entity.BusinessRuleAttachment;
+import br.lcn.ragkb.exception.BusinessRuleNotFoundException;
 import br.lcn.ragkb.repository.BusinessRuleAttachmentRepository;
 import br.lcn.ragkb.service.BusinessRuleAttachmentService;
 import br.lcn.ragkb.service.BusinessRuleService;
@@ -37,18 +39,18 @@ public class BusinessRuleAttachmentController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
-    public List<BusinessRuleAttachment> upload(@PathVariable String ruleId,
-                                               @RequestParam("file") MultipartFile file,
-                                               Authentication auth) {
+    public List<BusinessRuleAttachmentDto> upload(@PathVariable String ruleId,
+                                                  @RequestParam("file") MultipartFile file,
+                                                  Authentication auth) {
         attachmentService.upload(ruleId, file, auth.getName());
-        return attachmentRepository.findByRuleId(ruleId);
+        return toDtos(attachmentRepository.findByRuleId(ruleId));
     }
 
-    /** Listing schema mirrors the detail view of the rule (attached files must follow the article structure). */
+    /** Visibility mirrors the rule detail (assertReadable) — same gate. */
     @GetMapping
-    public List<BusinessRuleAttachment> list(@PathVariable String ruleId, Authentication auth) {
+    public List<BusinessRuleAttachmentDto> list(@PathVariable String ruleId, Authentication auth) {
         ruleService.assertReadable(ruleId, auth.getName(), isAdmin(auth));
-        return attachmentRepository.findByRuleId(ruleId);
+        return toDtos(attachmentRepository.findByRuleId(ruleId));
     }
 
     @GetMapping("/{attachmentId}/download")
@@ -58,7 +60,7 @@ public class BusinessRuleAttachmentController {
         ruleService.assertReadable(ruleId, auth.getName(), isAdmin(auth));
         BusinessRuleAttachment attachment = attachmentRepository
                 .findByRuleIdAndId(ruleId, attachmentId)
-                .orElseThrow(() -> new br.lcn.ragkb.exception.BusinessRuleNotFoundException(attachmentId));
+                .orElseThrow(() -> new BusinessRuleNotFoundException(attachmentId));
 
         Path file = attachmentService.resolveStorage(attachment);
         String safeName = sanitizeFileName(attachment.getFileName());
@@ -72,11 +74,15 @@ public class BusinessRuleAttachmentController {
 
     @DeleteMapping("/{attachmentId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
-    public List<BusinessRuleAttachment> delete(@PathVariable String ruleId,
-                                               @PathVariable String attachmentId,
-                                               Authentication auth) {
+    public List<BusinessRuleAttachmentDto> delete(@PathVariable String ruleId,
+                                                  @PathVariable String attachmentId,
+                                                  Authentication auth) {
         attachmentService.delete(ruleId, attachmentId);
-        return attachmentRepository.findByRuleId(ruleId);
+        return toDtos(attachmentRepository.findByRuleId(ruleId));
+    }
+
+    private List<BusinessRuleAttachmentDto> toDtos(List<BusinessRuleAttachment> attachments) {
+        return attachments.stream().map(BusinessRuleAttachmentDto::from).toList();
     }
 
     private String sanitizeFileName(String name) {

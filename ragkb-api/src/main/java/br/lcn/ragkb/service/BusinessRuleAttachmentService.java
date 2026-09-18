@@ -56,7 +56,11 @@ public class BusinessRuleAttachmentService {
             @Value("${ragkb.media.attachments-path}") String path) {
         this.ruleRepository = ruleRepository;
         this.attachmentRepository = attachmentRepository;
-        this.basePath = Paths.get(path);
+        // Canonical form ONCE here: absolute + normalized. Every startsWith()
+        // guard compares against this same form — comparing a normalized
+        // target against a relative "./data/attachments" base always fails
+        // (element "data" vs "."), which broke 100% of uploads.
+        this.basePath = Paths.get(path).toAbsolutePath().normalize();
     }
 
     @PostConstruct
@@ -119,8 +123,8 @@ public class BusinessRuleAttachmentService {
     }
 
     public Path resolveStorage(BusinessRuleAttachment attachment) {
-        Path file = basePath.resolve(attachment.getStoragePath()).normalize().toAbsolutePath();
-        if (!file.startsWith(basePath.toAbsolutePath()) || !Files.isRegularFile(file)) {
+        Path file = basePath.resolve(attachment.getStoragePath()).normalize();
+        if (!file.startsWith(basePath) || !Files.isRegularFile(file)) {
             throw new BusinessRuleNotFoundException(attachment.getId());
         }
         return file;
