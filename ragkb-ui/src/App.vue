@@ -48,7 +48,7 @@ const items = computed<NavItem[]>(() => [
     label: 'Regras',
     to: '/business-rules',
     icon: List,
-    visible: auth.hasAnyRole(['ADMIN', 'EDITOR']),
+    visible: true,
   },
   {
     label: 'Portal',

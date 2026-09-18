@@ -17,10 +17,4 @@ export {
   useUploadArticleImage
 } from './useArticles'
 export { usePortalArticles } from './usePortalArticles'
-export {
-  useBusinessRules,
-  useCreateBusinessRule,
-  useUpdateBusinessRule,
-  usePublishBusinessRule,
-  useArchiveBusinessRule,
-} from './useBusinessRules'
+export * from './useBusinessRules'

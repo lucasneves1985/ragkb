@@ -78,3 +78,17 @@ export function useArchiveBusinessRule() {
 
   return { archiveBusinessRule: mutateAsync, archiving }
 }
+
+export function usePortalBusinessRules() {
+  const query = useQuery({
+    queryKey: ['business-rules-portal'],
+    queryFn: () => businessRulesService.portal(),
+  })
+
+  return {
+    portalRules: query.data,
+    isLoadingPortal: query.isLoading,
+    isErrorPortal: query.isError,
+    refetchPortal: query.refetch,
+  }
+}

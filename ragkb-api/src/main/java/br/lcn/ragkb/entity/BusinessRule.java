@@ -117,4 +117,5 @@ public class BusinessRule {
 
     public boolean isDraft() { return status == BusinessRuleStatus.DRAFT; }
     public boolean isPublished() { return status == BusinessRuleStatus.PUBLISHED; }
+    public boolean isArchived() { return status == BusinessRuleStatus.ARCHIVED; }
 }

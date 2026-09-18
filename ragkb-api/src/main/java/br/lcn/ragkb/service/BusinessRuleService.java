@@ -95,6 +95,10 @@ public class BusinessRuleService {
     public BusinessRuleDto update(String id, UpdateBusinessRuleRequest request, String username, boolean isAdmin) {
         BusinessRule rule = findOwned(id, username, isAdmin);
 
+        if (rule.isArchived()) {
+            throw new IllegalStateException("Regras arquivadas não podem ser editadas. Republicue primeiro.");
+        }
+
         String title = request.title().trim();
         if (repository.existsByTitleIgnoreCaseAndIdNot(title, id)) {
             throw new DuplicateBusinessRuleTitleException(title);

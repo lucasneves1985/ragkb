@@ -6,6 +6,8 @@ defineProps<{
   rules: BusinessRule[]
   currentUsername: string
   isAdmin: boolean
+  /** ROLE_USER: somente visualização — nenhuma ação de gestão. */
+  readOnly?: boolean
 }>()
 
 defineEmits<{
@@ -31,10 +33,15 @@ function statusLabel(s: BusinessRule['status']) {
 function canManage(rule: BusinessRule, currentUsername: string, isAdmin: boolean) {
   return isAdmin || rule.authorUsername === currentUsername
 }
+
+// Regra arquivada = inativa no momento → linha inteira em cinza.
+function rowClass({ row }: { row: BusinessRule }) {
+  return row.status === 'ARCHIVED' ? 'archived-row' : ''
+}
 </script>
 
 <template>
-  <el-table :data="rules" style="width: 100%">
+  <el-table :data="rules" style="width: 100%" :row-class-name="rowClass">
     <el-table-column label="Regra" min-width="280">
       <template #default="{ row }">
         <b class="title">{{ row.title }}</b>
@@ -58,21 +65,21 @@ function canManage(rule: BusinessRule, currentUsername: string, isAdmin: boolean
     <el-table-column label="Ações" width="260">
       <template #default="{ row }">
         <el-button text type="primary" @click="$emit('view', row)">Ver</el-button>
-        <template v-if="canManage(row, currentUsername, isAdmin)">
+        <template v-if="!readOnly && canManage(row, currentUsername, isAdmin)">
           <!-- Rascunho e arquivada: publica/republica -->
           <el-button v-if="row.status === 'DRAFT' || row.status === 'ARCHIVED'" text type="success"
             @click="$emit('publish', row.id)">
             {{ row.status === 'ARCHIVED' ? 'Republicar' : 'Publicar' }}
           </el-button>
-          <el-button text type="primary" @click="$emit('edit', row)">Editar</el-button>
+          <!-- Arquivada é imutável: edição só após republicar (guard no backend também) -->
+          <el-button v-if="row.status !== 'ARCHIVED'" text type="primary" @click="$emit('edit', row)">
+            Editar
+          </el-button>
           <!-- Só publicada pode ser arquivada -->
           <el-button v-if="row.status === 'PUBLISHED'" text type="warning" @click="$emit('archive', row.id)">
             Arquivar
           </el-button>
         </template>
-        <el-tooltip v-else content="Somente o autor ou um admin pode gerenciar esta regra.">
-          <el-button text disabled>Sem permissão</el-button>
-        </el-tooltip>
       </template>
     </el-table-column>
   </el-table>
@@ -97,5 +104,10 @@ function canManage(rule: BusinessRule, currentUsername: string, isAdmin: boolean
 
 .status-draft {
   color: #7a8699;
+}
+
+/* Regra arquivada: linha inteira em cinza (fonte e herdeiros de texto) */
+:deep(tr.archived-row td) {
+  color: #9aa4b1;
 }
 </style>
