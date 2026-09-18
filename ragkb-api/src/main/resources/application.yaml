@@ -88,6 +88,7 @@ management:
 ragkb:
   media:
     path: ${RAGKB_MEDIA_PATH:/var/ragkb/media/articles}
+    attachments-path: ${ATTACHMENTS_PATH:./data/attachments}
     max-size-bytes: 5242880
   articles:
     public-base-url: ${RAGKB_ARTICLES_BASE_URL:http://localhost:5173}

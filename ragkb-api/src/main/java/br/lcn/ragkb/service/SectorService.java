@@ -1,5 +1,11 @@
 package br.lcn.ragkb.service;
 
+import java.util.List;
+
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import br.lcn.ragkb.dto.CreateSectorRequest;
 import br.lcn.ragkb.dto.SectorResponse;
 import br.lcn.ragkb.entity.Sector;
@@ -7,14 +13,10 @@ import br.lcn.ragkb.exception.SectorInUseException;
 import br.lcn.ragkb.exception.SectorNameAlreadyExistsException;
 import br.lcn.ragkb.exception.SectorNotFoundException;
 import br.lcn.ragkb.repository.AppUserRepository;
+import br.lcn.ragkb.repository.BusinessRuleRepository;
 import br.lcn.ragkb.repository.DocumentMetadataRepository;
 import br.lcn.ragkb.repository.SectorRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -23,8 +25,8 @@ public class SectorService {
     private final SectorRepository sectorRepository;
     private final AppUserRepository userRepository;
     private final DocumentMetadataRepository documentRepository;
+    private final BusinessRuleRepository businessRuleRepository;
 
-    @Transactional(readOnly = true)
     public List<SectorResponse> listAll() {
         return sectorRepository.findAllByOrderByNameAsc().stream()
                 .map(SectorResponse::from)
@@ -37,9 +39,9 @@ public class SectorService {
         if (sectorRepository.existsByNameIgnoreCase(name)) {
             throw new SectorNameAlreadyExistsException(name);
         }
+
         try {
-            Sector saved = sectorRepository.save(new Sector(name));
-            return SectorResponse.from(saved);
+            return SectorResponse.from(sectorRepository.save(new Sector(name)));
         } catch (DataIntegrityViolationException e) {
             // Corrida: unique constraint disparou antes do exists
             throw new SectorNameAlreadyExistsException(name);
@@ -50,7 +52,6 @@ public class SectorService {
     public void delete(Long id) {
         Sector sector = sectorRepository.findById(id)
                 .orElseThrow(() -> new SectorNotFoundException(id));
-
         assertNotInUse(sector);
         sectorRepository.delete(sector);
     }
@@ -71,6 +72,11 @@ public class SectorService {
         if (asAllowed > 0) {
             throw new SectorInUseException("Setor '" + name + "' consta nos setores com acesso de " + asAllowed
                     + " documento(s). Remova esse acesso antes de excluir o setor.");
+        }
+        long asRule = businessRuleRepository.countBySectorNamesContaining(name);
+        if (asRule > 0) {
+            throw new SectorInUseException("Setor '" + name + "' é set de acesso de " + asRule
+                    + " regra(s) de negócio. Reatribua as regras antes de remover o setor.");
         }
     }
 }
