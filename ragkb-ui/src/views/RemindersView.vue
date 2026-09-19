@@ -71,7 +71,7 @@ function statusType(s: ReminderStatus) {
               <el-tag size="small" :type="statusType(row.status)">{{ row.status }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="Tentativas" width="100" prop="retryCount" />
+          <el-table-column label="Nº Tent." width="100" prop="retryCount" />
           <el-table-column label="Ações" width="120">
             <template #default="{ row }">
               <el-button v-if="row.status === 'PENDING'" text type="danger"

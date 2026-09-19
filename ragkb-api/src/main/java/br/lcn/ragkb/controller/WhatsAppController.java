@@ -2,6 +2,7 @@ package br.lcn.ragkb.controller;
 
 import java.util.Map;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,8 +17,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Endpoints de operação/fumaça do canal WhatsApp (WAHA).
- * Restritos a ADMIN: disparam envios reais para o número dedicado.
+ * Endpoints de operação/fumaça do canal WhatsApp (WAHA). Restritos a ADMIN:
+ * disparam envios reais para o número dedicado.
  */
 @RestController
 @RequestMapping("/api/whatsapp")
@@ -37,7 +38,19 @@ public class WhatsAppController {
     public Map<String, String> startSession() {
         whatsAppService.startSession();
         return Map.of("message",
-                "Sessão iniciada. Escaneie o QR Code no Swagger do WAHA (http://localhost:3000) para emparelhar.");
+                "Sessão iniciada. Escaneie o QR Code para emparelhar.");
+    }
+
+    /**
+     * QR de emparelhamento em base64. 409 se a sessão já está conectada (não há
+     * QR a exibir) — a UI decide o que mostrar nesse caso.
+     */
+    @GetMapping("/qr")
+    public ResponseEntity<?> qr() {
+        return whatsAppService.getQrCode()
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(409)
+                .body(Map.of("message", "Sessão já conectada — não há QR Code a exibir.")));
     }
 
     @PostMapping("/test-send")

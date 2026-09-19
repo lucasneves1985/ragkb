@@ -1,12 +1,15 @@
 // services/whatsapp.service.ts
 import { http } from './http'
-import type { WhatsAppStatus, WhatsAppTestSendRequest } from '@/types'
+import type { WhatsAppQr, WhatsAppStatus, WhatsAppTestSendRequest } from '@/types'
 
 export const whatsappService = {
   status: () => http.get<WhatsAppStatus>('/whatsapp/status').then((r) => r.data),
 
   startSession: () =>
     http.post<{ message: string }>('/whatsapp/session/start').then((r) => r.data),
+
+  /** 409 quando a sessão já está conectada — tratado pela view. */
+  qr: () => http.get<WhatsAppQr>('/whatsapp/qr').then((r) => r.data),
 
   testSend: (request: WhatsAppTestSendRequest) =>
     http.post<{ message: string }>('/whatsapp/test-send', request).then((r) => r.data),

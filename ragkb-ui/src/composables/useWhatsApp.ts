@@ -1,5 +1,6 @@
 // composables/useWhatsApp.ts
-import { ref } from 'vue'
+import { ref, computed, type MaybeRefOrGetter } from 'vue'
+import { toValue } from 'vue'
 import { useQuery, useMutation } from '@tanstack/vue-query'
 import { appConfigurationsService, whatsappService } from '@/services'
 import type { WhatsAppTestSendRequest } from '@/types'
@@ -21,6 +22,30 @@ export function useWhatsAppStatus() {
     isLoadingStatus: query.isLoading,
     isErrorStatus: query.isError,
     refetchStatus: query.refetch,
+  }
+}
+
+/**
+ * QR de emparelhamento. Executa apenas quando "enabled" (sessão não conectada).
+ * O QR da WAHA expira (60s o primeiro, 20s os subsequentes) — refetchInterval
+ * renova a imagem enquanto o parâmetro de renovação for true.
+ */
+export function useWhatsAppQr(enabled: MaybeRefOrGetter<boolean>) {
+  const shouldPoll = computed(() => toValue(enabled))
+
+  const query = useQuery({
+    queryKey: ['whatsapp-qr'],
+    queryFn: whatsappService.qr,
+    enabled: shouldPoll,
+    refetchInterval: 25_000,
+    retry: false,
+  })
+
+  return {
+    qr: query.data,
+    isLoadingQr: query.isLoading,
+    isErrorQr: query.isError,
+    refetchQr: query.refetch,
   }
 }
 

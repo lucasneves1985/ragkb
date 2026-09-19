@@ -71,10 +71,17 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to) => {
+router.beforeEach((to, from) => {
   const auth = useAuthStore()
+  const session = JSON.parse(localStorage.getItem('ragkb-session') || 'null')
+  console.log('[guard]', from.fullPath, '→', to.fullPath, {
+    isAuthenticated: auth.isAuthenticated,
+    roles: auth.roles,
+    expiresAt: session?.expiresAt,
+    now: Date.now(),
+    expirada: session ? session.expiresAt <= Date.now() : 'sem sessão',
+  })
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    // Preserva o destino — o login devolve o usuário para onde ele ia
     return { path: '/login', query: { redirect: to.fullPath } }
   }
   const roles = to.meta.roles as string[] | undefined

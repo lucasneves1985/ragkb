@@ -1,5 +1,5 @@
 // composables/useIntegrations.ts
-import { ref } from 'vue'
+import { ref, computed, toValue, type MaybeRefOrGetter } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { integrationsService } from '@/services'
 import type { CreateIntegrationRequest, UpdateIntegrationRequest } from '@/types'
@@ -70,10 +70,16 @@ export function useDeleteIntegration() {
   return { deleteIntegration: mutateAsync, deleting, errorMessage }
 }
 
-export function useIntegrationExecutions(id: string) {
+export function useIntegrationExecutions(id: MaybeRefOrGetter<string>) {
+  const integrationId = computed(() => toValue(id))
+
   const query = useQuery({
-    queryKey: ['integration-executions', id],
-    queryFn: () => integrationsService.executions(id),
+    queryKey: ['integration-executions', integrationId],
+    queryFn: () => integrationsService.executions(integrationId.value),
+    // NUNCA executa com id vazio — evita GET /integrations//executions,
+    // que o backend rejeita com 401 e o interceptor interpreta como
+    // sessão expirada, apagando o localStorage e redirecionando ao login.
+    enabled: computed(() => integrationId.value !== ''),
   })
 
   return {

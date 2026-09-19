@@ -1,6 +1,6 @@
 <!-- components/integrations/IntegrationExecutionsDialog.vue -->
 <script setup lang="ts">
-import { watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useIntegrationExecutions } from '@/composables'
 import type { Integration, IntegrationExecutionStatus } from '@/types'
 
@@ -13,14 +13,18 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
 }>()
 
-const { executions, isLoadingExecutions, refetchExecutions } = useIntegrationExecutions(
-  props.integration?.id ?? '',
-)
+// Id reativo: acompanha qual integração foi aberta no diálogo.
+// Combinado com enabled no composable, o diálogo montado sem seleção
+// não dispara request nenhuma.
+const integrationId = computed(() => props.integration?.id ?? '')
+
+const { executions, isLoadingExecutions, refetchExecutions } =
+  useIntegrationExecutions(integrationId)
 
 watch(
   () => props.modelValue,
   (open) => {
-    if (open && props.integration) refetchExecutions()
+    if (open && integrationId.value) refetchExecutions()
   },
 )
 
@@ -42,7 +46,7 @@ function statusType(s: IntegrationExecutionStatus) {
           <el-tag size="small" :type="statusType(row.status)">{{ row.status }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="Tentativa" width="90" prop="attempt" />
+      <el-table-column label="Tent." width="90" prop="attempt" />
       <el-table-column label="HTTP" width="70" prop="httpStatus" />
       <el-table-column label="Resposta / Erro" min-width="300">
         <template #default="{ row }">
