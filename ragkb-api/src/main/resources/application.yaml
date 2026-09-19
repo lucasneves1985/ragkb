@@ -80,6 +80,12 @@ app:
   ticket:
     recipient-email: ${TICKET_RECIPIENT_EMAIL:chamados@unimed303.com.br}
     from-email: ${SMTP_USERNAME:Lucas}
+
+  waha:
+    base-url: ${WAHA_URL:http://localhost:3000}
+    api-key: ${WAHA_API_KEY:}
+    session: ${WAHA_SESSION:default}
+
 management:
   endpoints:
     web:

@@ -25,6 +25,21 @@ services:
       timeout: 3s
       retries: 10
 
+  waha:
+    image: devlikeapro/waha:latest
+    environment:
+      # Chave de API da própria WAHA — exporte WAHA_API_KEY no .env
+      WHATSAPP_API_KEY: ${WAHA_API_KEY:-}
+      # Engine webjs via Core (gratuito). NOWEB/GOWS são alternativas.
+      WHATSAPP_DEFAULT_ENGINE: WEBJS
+    ports:
+      - "3000:3000"
+    volumes:
+      # OBRIGATÓRIO: sem este volume o QR Code é reescaneado a cada restart
+      - waha-sessions:/app/.sessions
+      - waha-media:/app/.media
+    restart: unless-stopped
+
   api:
     build: ./ragkb-api
     environment:
@@ -44,6 +59,9 @@ services:
       SMTP_USERNAME: ${SMTP_USERNAME:-teste@email}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-123}
       RAGKB_ARTICLES_BASE_URL: ${RAGKB_ARTICLES_BASE_URL:-http://localhost:5173}
+      WAHA_URL: ${WAHA_URL:-http://waha:3000}
+      WAHA_API_KEY: ${WAHA_API_KEY:-}
+      WAHA_SESSION: ${WAHA_SESSION:-default}
     depends_on:
       postgres:
         condition: service_healthy
@@ -64,3 +82,5 @@ services:
 volumes:
   pgdata:
   media-data:
+  waha-sessions:
+  waha-media:
