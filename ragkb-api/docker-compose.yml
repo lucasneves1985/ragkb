@@ -30,9 +30,11 @@ services:
     environment:
       WAHA_DASHBOARD_USERNAME: admin
       WAHA_DASHBOARD_PASSWORD: admin123
+      WHATSAPP_SWAGGER_USERNAME: admin
+      WHATSAPP_SWAGGER_PASSWORD: admin123
       WHATSAPP_API_KEY: ${WAHA_API_KEY:-app_rag_api_key}
       # Engine webjs via Core (gratuito). NOWEB/GOWS são alternativas.
-      WHATSAPP_DEFAULT_ENGINE: WEBJS
+      WHATSAPP_DEFAULT_ENGINE: NOWEB
     ports:
       - "3000:3000"
     volumes:

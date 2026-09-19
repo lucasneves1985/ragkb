@@ -83,8 +83,10 @@ app:
 
   waha:
     base-url: ${WAHA_URL:http://localhost:3000}
-    api-key: ${WAHA_API_KEY:}
+    api-key: ${WAHA_API_KEY:app_rag_api_key}
     session: ${WAHA_SESSION:default}
+  integrations:
+    crypto-key: ${INTEGRATION_CRYPTO_KEY:TWen2jdEgfvDjp9UkwrD89t/zhOl/vxeOSoz/8il5I8=}
 
 management:
   endpoints:

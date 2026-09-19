@@ -29,7 +29,7 @@ services:
     image: devlikeapro/waha:latest
     environment:
       # Chave de API da própria WAHA — exporte WAHA_API_KEY no .env
-      WHATSAPP_API_KEY: ${WAHA_API_KEY:-}
+      WHATSAPP_API_KEY: ${WAHA_API_KEY:-app_rag_api_key}
       # Engine webjs via Core (gratuito). NOWEB/GOWS são alternativas.
       WHATSAPP_DEFAULT_ENGINE: WEBJS
     ports:
@@ -62,6 +62,7 @@ services:
       WAHA_URL: ${WAHA_URL:-http://waha:3000}
       WAHA_API_KEY: ${WAHA_API_KEY:-}
       WAHA_SESSION: ${WAHA_SESSION:-default}
+      INTEGRATION_CRYPTO_KEY: ${INTEGRATION_CRYPTO_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

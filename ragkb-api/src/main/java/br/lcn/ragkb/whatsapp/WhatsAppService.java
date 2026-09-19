@@ -1,15 +1,14 @@
 package br.lcn.ragkb.whatsapp;
 
 import java.time.Duration;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
@@ -19,13 +18,13 @@ import br.lcn.ragkb.config.WAHAProperties;
  * Camada de abstração sobre a API HTTP do WAHA (WhatsApp HTTP API).
  *
  * Contrato da WAHA usado nesta frente:
- *   GET  /api/sessions/{name}  -> status da sessão (status: WORKING, SCAN_QR_CODE, ...)
+ *   GET  /api/sessions/{name}  -> status da sessão (404 se não existir)
  *   POST /api/sessions/start   -> inicia/emparelha a sessão
  *   POST /api/sendText         -> envia mensagem de texto (chatId: numero@c.us)
  *
- * O WAHA é um gateway NÃO OFICIAL do WhatsApp (webjs/Baileys): o envio pode falhar
- * por banimento do número dedicado ou por sessão expirada — sempre trate como
- * estado degradado, nunca como exceção fatal para o flow principal da API.
+ * O WAHA é um gateway NÃO OFICIAL do WhatsApp: o envio pode falhar por
+ * banimento do número dedicado ou por sessão expirada — sempre trate como
+ * estado degradado, nunca como exceção fatal para o fluxo principal da API.
  */
 @Service
 public class WhatsAppService {
@@ -59,36 +58,46 @@ public class WhatsAppService {
             var status = sessionStatus();
             log.debug("Status da sessão WAHA '{}': {}", properties.session(), status);
             return "WORKING".equalsIgnoreCase(status);
+        } catch (WhatsAppNotConnectedException e) {
+            return false;
         } catch (RestClientException e) {
             log.warn("WAHA indisponível em {}: {}", properties.baseUrl(), e.getMessage());
             return false;
         }
     }
 
-    /** Status bruto da sessão (WORKING, SCAN_QR_CODE, FAILED, ...). */
+    /**
+     * Status bruto da sessão (WORKING, SCAN_QR_CODE, FAILED, ...).
+     * Sessão inexistente (404 na WAHA) é estado esperado — converte para
+     * WhatsAppNotConnectedException em vez de vazar HttpClientErrorException.
+     */
     public String sessionStatus() {
-        var response = restClient.get()
-                .uri("/api/sessions/{name}", properties.session())
-                .retrieve()
-                .body(SessionResponse.class);
-        if (response == null || response.status() == null) {
+        try {
+            var response = restClient.get()
+                    .uri("/api/sessions/{name}", properties.session())
+                    .retrieve()
+                    .body(SessionResponse.class);
+            if (response == null || response.status() == null) {
+                throw new WhatsAppNotConnectedException(properties.session());
+            }
+            return response.status();
+        } catch (HttpClientErrorException.NotFound e) {
             throw new WhatsAppNotConnectedException(properties.session());
         }
-        return response.status();
     }
 
     /** Inicia (e sinaliza necessidade de emparelhamento via QR) a sessão. */
     public void startSession() {
         restClient.post()
                 .uri("/api/sessions/start")
-                .body(java.util.Map.of("name", properties.session()))
+                .body(Map.of("name", properties.session()))
                 .retrieve()
                 .toBodilessEntity();
     }
 
     /**
      * Envia mensagem de texto. chatId deve estar no formato
-     * "&lt;numero- internacional-somente-digitos&gt;@c.us".
+     * "&lt;numero-internacional-somente-digitos&gt;@c.us".
      *
      * @throws WhatsAppNotConnectedException se a sessão não estiver WORKING
      * @throws WhatsAppSendException         se a WAHA rejeitar o envio
@@ -104,10 +113,13 @@ public class WhatsAppService {
         try {
             restClient.post()
                     .uri("/api/sendText")
-                    .body(java.util.Map.of("chatId", chatId, "session", properties.session(), "text", message))
+                    .body(Map.of("chatId", chatId, "session", properties.session(), "text", message))
                     .retrieve()
                     .toBodilessEntity();
             log.info("Mensagem WhatsApp enviada para {}", chatId);
+        } catch (HttpClientErrorException.NotFound e) {
+            // Sessão deletada entre o check e o envio, ou chatId inexistente na WAHA
+            throw new WhatsAppNotConnectedException(properties.session());
         } catch (RestClientException e) {
             throw new WhatsAppSendException("Falha no envio via WAHA: " + e.getMessage(), e);
         }
