@@ -16,6 +16,7 @@ import br.lcn.ragkb.dto.CreateIntegrationRequest;
 import br.lcn.ragkb.dto.IntegrationDto;
 import br.lcn.ragkb.dto.UpdateIntegrationRequest;
 import br.lcn.ragkb.entity.Integration;
+import br.lcn.ragkb.entity.IntegrationActionType;
 import br.lcn.ragkb.entity.IntegrationType;
 import br.lcn.ragkb.exception.DuplicateIntegrationNameException;
 import br.lcn.ragkb.exception.IntegrationNotFoundException;
@@ -48,7 +49,8 @@ public class IntegrationService {
         }
         validate(request.url(), request.integrationType(), request.scheduleCron(),
                 request.scheduleIntervalSeconds(), request.contextDescription(),
-                request.outputSchema(), request.paramsDefinition());
+                request.outputSchema(), request.paramsDefinition(),
+                request.actionType(), request.actionTarget(), request.credentials(), request.authType());
 
         Integration integration = new Integration(
                 request.name().trim(), request.description(), request.url().trim(),
@@ -56,6 +58,7 @@ public class IntegrationService {
                 request.scheduleCron(), request.scheduleTimezone(), request.scheduleIntervalSeconds(),
                 request.contextDescription(), request.requestTemplate(),
                 request.outputSchema(), request.paramsDefinition(),
+                request.actionType(), request.actionTarget(), request.actionTemplate(),
                 request.active(), username);
 
         if (request.credentials() != null && !request.credentials().isBlank()) {
@@ -72,14 +75,17 @@ public class IntegrationService {
         }
         validate(request.url(), request.integrationType(), request.scheduleCron(),
                 request.scheduleIntervalSeconds(), request.contextDescription(),
-                request.outputSchema(), request.paramsDefinition());
+                request.outputSchema(), request.paramsDefinition(),
+                request.actionType(), request.actionTarget(), request.credentials(), request.authType());
 
         integration.updateCore(
                 request.name().trim(), request.description(), request.url().trim(),
                 request.authType(), request.integrationType(),
                 request.scheduleCron(), request.scheduleTimezone(), request.scheduleIntervalSeconds(),
                 request.contextDescription(), request.requestTemplate(),
-                request.outputSchema(), request.paramsDefinition(), request.active());
+                request.outputSchema(), request.paramsDefinition(),
+                request.actionType(), request.actionTarget(), request.actionTemplate(),
+                request.active());
 
         if (request.credentials() != null && !request.credentials().isBlank()) {
             integration.assignCredentials(cryptoService.encrypt(request.credentials()));
@@ -89,8 +95,7 @@ public class IntegrationService {
 
     @Transactional
     public void delete(String id) {
-        Integration integration = find(id);
-        repository.delete(integration);
+        repository.delete(find(id));
     }
 
     private Integration find(String id) {
@@ -99,7 +104,9 @@ public class IntegrationService {
     }
 
     private void validate(String url, IntegrationType type, String cron, Long intervalSeconds,
-                          String contextDescription, String outputSchema, String paramsDefinition) {
+            String contextDescription, String outputSchema, String paramsDefinition,
+            IntegrationActionType actionType, String actionTarget,
+            String credentials, br.lcn.ragkb.entity.IntegrationAuthType authType) {
         assertAllowedUrl(url);
         if (type == IntegrationType.SCHEDULED
                 && (cron == null || cron.isBlank()) && intervalSeconds == null) {
@@ -113,13 +120,66 @@ public class IntegrationService {
         }
         assertJsonObject(outputSchema, "outputSchema");
         assertJsonObject(paramsDefinition, "paramsDefinition");
+        validateAction(actionType, actionTarget);
+        validateCredentials(authType, credentials);
+        if (cron != null && !cron.isBlank()) {
+            assertValidCron(cron);
+        }
+    }
+
+    private void validateAction(IntegrationActionType actionType, String actionTarget) {
+        if (actionType == null) {
+            return;
+        }
+        if (actionType == IntegrationActionType.EMAIL) {
+            if (actionTarget == null || !actionTarget.contains("@")) {
+                throw new InvalidIntegrationException(
+                        "Ação EMAIL exige actionTarget com e-mail de destino válido.");
+            }
+        }
+        if (actionType == IntegrationActionType.WHATSAPP) {
+            if (actionTarget == null || !actionTarget.endsWith("@c.us")) {
+                throw new InvalidIntegrationException(
+                        "Ação WHATSAPP exige actionTarget no formato '55DDNNNNNNNNN@c.us'.");
+            }
+        }
+    }
+
+    /**
+     * HEADER_CUSTOM exige credenciais em JSON: {"header": "X-Api-Key", "value":
+     * "..."}
+     */
+    private void validateCredentials(br.lcn.ragkb.entity.IntegrationAuthType authType,
+            String credentials) {
+        if (credentials == null || credentials.isBlank()
+                || authType != br.lcn.ragkb.entity.IntegrationAuthType.HEADER_CUSTOM) {
+            return;
+        }
+        try {
+            JsonNode node = objectMapper.readTree(credentials);
+            if (!node.isObject() || !node.hasNonNull("header") || !node.hasNonNull("value")) {
+                throw new InvalidIntegrationException(
+                        "Para HEADER_CUSTOM, credentials deve ser JSON {\"header\": \"...\", \"value\": \"...\"}.");
+            }
+        } catch (InvalidIntegrationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InvalidIntegrationException("credentials não é um JSON válido para HEADER_CUSTOM.");
+        }
+    }
+
+    private void assertValidCron(String cron) {
+        try {
+            new org.springframework.scheduling.support.CronTrigger(cron);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidIntegrationException("scheduleCron inválido: " + e.getMessage());
+        }
     }
 
     /**
      * Bloqueio básico de SSRF: só http/https e sem hosts internos/privados.
-     * Limitação conhecida: DNS rebinding (host que resolve para IP público na
-     * validação e privado na chamada) exige resolução fixada no momento da
-     * execução — fica como endurecimento futuro junto ao executor da frente 3.
+     * Limitação conhecida: DNS rebinding exige resolução fixada no momento da
+     * execução — endurecimento futuro junto ao IntegrationExecutor.
      */
     private void assertAllowedUrl(String url) {
         URI uri;
@@ -136,9 +196,8 @@ public class IntegrationService {
         if (host == null || host.isBlank()) {
             throw new InvalidIntegrationException("URL sem host válido: " + url);
         }
-        String h = host.toLowerCase();
         try {
-            InetAddress address = InetAddress.getByName(h);
+            InetAddress address = InetAddress.getByName(host.toLowerCase());
             if (address.isLoopbackAddress() || address.isSiteLocalAddress()
                     || address.isLinkLocalAddress() || address.isAnyLocalAddress()) {
                 throw new InvalidIntegrationException(

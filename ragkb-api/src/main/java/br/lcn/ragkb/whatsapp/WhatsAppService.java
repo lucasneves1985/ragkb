@@ -1,6 +1,5 @@
 package br.lcn.ragkb.whatsapp;
 
-import java.time.Duration;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -12,8 +11,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
-import br.lcn.ragkb.config.WAHAProperties;
-
 /**
  * Camada de abstração sobre a API HTTP do WAHA (WhatsApp HTTP API).
  *
@@ -22,30 +19,36 @@ import br.lcn.ragkb.config.WAHAProperties;
  *   POST /api/sessions/start   -> inicia/emparelha a sessão
  *   POST /api/sendText         -> envia mensagem de texto (chatId: numero@c.us)
  *
- * O WAHA é um gateway NÃO OFICIAL do WhatsApp: o envio pode falhar por
- * banimento do número dedicado ou por sessão expirada — sempre trate como
- * estado degradado, nunca como exceção fatal para o fluxo principal da API.
+ * Configuração dual-source: WhatsAppConfigResolver resolve base-url, api-key e
+ * session do banco (app_configuration) com fallback para properties. O RestClient
+ * é construído por chamada com URL absoluta — trocar a config no banco vale na
+ * hora, sem restart.
+ *
+ * O WAHA é um gateway NÃO OFICIAL do WhatsApp: o envio pode falhar por banimento
+ * do número dedicado ou por sessão expirada — sempre trate como estado degradado,
+ * nunca como exceção fatal para o fluxo principal da API.
  */
 @Service
 public class WhatsAppService {
 
     private static final Logger log = LoggerFactory.getLogger(WhatsAppService.class);
 
-    private static final Duration TIMEOUT = Duration.ofSeconds(30);
     private static final String CHAT_ID_SUFFIX = "@c.us";
 
-    private final WAHAProperties properties;
-    private final RestClient restClient;
+    private final WhatsAppConfigResolver configResolver;
+    private final RestClient.Builder restClientBuilder;
 
-    public WhatsAppService(WAHAProperties properties, RestClient.Builder builder) {
-        this.properties = properties;
-        this.restClient = builder
-                .baseUrl(properties.baseUrl())
+    public WhatsAppService(WhatsAppConfigResolver configResolver, RestClient.Builder restClientBuilder) {
+        this.configResolver = configResolver;
+        this.restClientBuilder = restClientBuilder;
+    }
+
+    private RestClient client(WAHARuntimeConfig config) {
+        return restClientBuilder
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .requestInterceptor((request, body, execution) -> {
-                    var apiKey = properties.apiKey();
-                    if (apiKey != null && !apiKey.isBlank()) {
-                        request.getHeaders().set("X-Api-Key", apiKey);
+                    if (config.apiKey() != null && !config.apiKey().isBlank()) {
+                        request.getHeaders().set("X-Api-Key", config.apiKey());
                     }
                     return execution.execute(request, body);
                 })
@@ -56,12 +59,12 @@ public class WhatsAppService {
     public boolean isWorking() {
         try {
             var status = sessionStatus();
-            log.debug("Status da sessão WAHA '{}': {}", properties.session(), status);
+            log.debug("Status da sessão WAHA: {}", status);
             return "WORKING".equalsIgnoreCase(status);
         } catch (WhatsAppNotConnectedException e) {
             return false;
         } catch (RestClientException e) {
-            log.warn("WAHA indisponível em {}: {}", properties.baseUrl(), e.getMessage());
+            log.warn("WAHA indisponível: {}", e.getMessage());
             return false;
         }
     }
@@ -72,25 +75,27 @@ public class WhatsAppService {
      * WhatsAppNotConnectedException em vez de vazar HttpClientErrorException.
      */
     public String sessionStatus() {
+        var config = configResolver.resolve();
         try {
-            var response = restClient.get()
-                    .uri("/api/sessions/{name}", properties.session())
+            var response = client(config).get()
+                    .uri(config.normalizedBaseUrl() + "/api/sessions/{name}", config.session())
                     .retrieve()
                     .body(SessionResponse.class);
             if (response == null || response.status() == null) {
-                throw new WhatsAppNotConnectedException(properties.session());
+                throw new WhatsAppNotConnectedException(config.session());
             }
             return response.status();
         } catch (HttpClientErrorException.NotFound e) {
-            throw new WhatsAppNotConnectedException(properties.session());
+            throw new WhatsAppNotConnectedException(config.session());
         }
     }
 
     /** Inicia (e sinaliza necessidade de emparelhamento via QR) a sessão. */
     public void startSession() {
-        restClient.post()
-                .uri("/api/sessions/start")
-                .body(Map.of("name", properties.session()))
+        var config = configResolver.resolve();
+        client(config).post()
+                .uri(config.normalizedBaseUrl() + "/api/sessions/start")
+                .body(Map.of("name", config.session()))
                 .retrieve()
                 .toBodilessEntity();
     }
@@ -107,25 +112,24 @@ public class WhatsAppService {
             throw new WhatsAppSendException(
                     "chatId inválido: esperado formato '5554999999999@c.us', recebido: " + chatId);
         }
+        var config = configResolver.resolve();
         if (!isWorking()) {
-            throw new WhatsAppNotConnectedException(properties.session());
+            throw new WhatsAppNotConnectedException(config.session());
         }
         try {
-            restClient.post()
-                    .uri("/api/sendText")
-                    .body(Map.of("chatId", chatId, "session", properties.session(), "text", message))
+            client(config).post()
+                    .uri(config.normalizedBaseUrl() + "/api/sendText")
+                    .body(Map.of("chatId", chatId, "session", config.session(), "text", message))
                     .retrieve()
                     .toBodilessEntity();
             log.info("Mensagem WhatsApp enviada para {}", chatId);
         } catch (HttpClientErrorException.NotFound e) {
             // Sessão deletada entre o check e o envio, ou chatId inexistente na WAHA
-            throw new WhatsAppNotConnectedException(properties.session());
+            throw new WhatsAppNotConnectedException(config.session());
         } catch (RestClientException e) {
             throw new WhatsAppSendException("Falha no envio via WAHA: " + e.getMessage(), e);
         }
     }
 
     private record SessionResponse(String name, String status) {}
-
-    public record SendTextRequest(String chatId, String text) {}
 }

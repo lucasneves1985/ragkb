@@ -68,6 +68,19 @@ public class Integration {
     @Column(name = "params_definition", columnDefinition = "TEXT")
     private String paramsDefinition;
 
+    /** Ação executada após a chamada (frente 3). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "action_type", nullable = false, length = 20)
+    private IntegrationActionType actionType = IntegrationActionType.NONE;
+
+    /** E-mail de destino (EMAIL) ou chatId (WHATSAPP). */
+    @Column(name = "action_target", length = 200)
+    private String actionTarget;
+
+    /** Template da mensagem: {{response}} é substituído pelo body da resposta. */
+    @Column(name = "action_template", columnDefinition = "TEXT")
+    private String actionTemplate;
+
     @Column(nullable = false)
     private boolean active = true;
 
@@ -88,6 +101,7 @@ public class Integration {
                        String scheduleCron, String scheduleTimezone, Long scheduleIntervalSeconds,
                        String contextDescription, String requestTemplate,
                        String outputSchema, String paramsDefinition,
+                       IntegrationActionType actionType, String actionTarget, String actionTemplate,
                        boolean active, String createdBy) {
         this.id = UUID.randomUUID().toString();
         this.name = name;
@@ -104,6 +118,9 @@ public class Integration {
         this.requestTemplate = requestTemplate;
         this.outputSchema = outputSchema;
         this.paramsDefinition = paramsDefinition;
+        this.actionType = actionType;
+        this.actionTarget = actionTarget;
+        this.actionTemplate = actionTemplate;
         this.active = active;
         this.createdBy = createdBy;
     }
@@ -120,7 +137,9 @@ public class Integration {
                            IntegrationAuthType authType, IntegrationType integrationType,
                            String scheduleCron, String scheduleTimezone, Long scheduleIntervalSeconds,
                            String contextDescription, String requestTemplate,
-                           String outputSchema, String paramsDefinition, boolean active) {
+                           String outputSchema, String paramsDefinition,
+                           IntegrationActionType actionType, String actionTarget, String actionTemplate,
+                           boolean active) {
         this.name = name;
         this.description = description;
         this.url = url;
@@ -135,6 +154,9 @@ public class Integration {
         this.requestTemplate = requestTemplate;
         this.outputSchema = outputSchema;
         this.paramsDefinition = paramsDefinition;
+        this.actionType = actionType;
+        this.actionTarget = actionTarget;
+        this.actionTemplate = actionTemplate;
         this.active = active;
         this.version++;
     }
