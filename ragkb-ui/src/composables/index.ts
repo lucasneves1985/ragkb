@@ -18,3 +18,6 @@ export {
 } from './useArticles'
 export { usePortalArticles } from './usePortalArticles'
 export * from './useBusinessRules'
+export * from './useIntegrations'
+export * from './useReminders'
+export * from './useWhatsApp'

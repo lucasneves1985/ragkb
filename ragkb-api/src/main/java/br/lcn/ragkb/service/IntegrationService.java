@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import br.lcn.ragkb.dto.CreateIntegrationRequest;
 import br.lcn.ragkb.dto.IntegrationDto;
+import br.lcn.ragkb.dto.IntegrationExecutionDto;
 import br.lcn.ragkb.dto.UpdateIntegrationRequest;
 import br.lcn.ragkb.entity.Integration;
 import br.lcn.ragkb.entity.IntegrationActionType;
@@ -21,6 +22,7 @@ import br.lcn.ragkb.entity.IntegrationType;
 import br.lcn.ragkb.exception.DuplicateIntegrationNameException;
 import br.lcn.ragkb.exception.IntegrationNotFoundException;
 import br.lcn.ragkb.exception.InvalidIntegrationException;
+import br.lcn.ragkb.repository.IntegrationExecutionRepository;
 import br.lcn.ragkb.repository.IntegrationRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -31,6 +33,7 @@ public class IntegrationService {
     private final IntegrationRepository repository;
     private final IntegrationCryptoService cryptoService;
     private final ObjectMapper objectMapper;
+    private final IntegrationExecutionRepository executionRepository;
 
     @Transactional(readOnly = true)
     public List<IntegrationDto> list() {
@@ -96,6 +99,14 @@ public class IntegrationService {
     @Transactional
     public void delete(String id) {
         repository.delete(find(id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<IntegrationExecutionDto> listExecutions(String id) {
+        find(id); // 404 se a integração não existir
+        return executionRepository.findTop50ByIntegrationIdOrderByStartedAtDesc(id).stream()
+                .map(IntegrationExecutionDto::from)
+                .toList();
     }
 
     private Integration find(String id) {

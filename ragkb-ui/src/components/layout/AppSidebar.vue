@@ -14,7 +14,6 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
-
 const visibleItems = computed(() => props.items.filter((entry) => entry.visible))
 </script>
 
@@ -27,22 +26,23 @@ const visibleItems = computed(() => props.items.filter((entry) => entry.visible)
 
     <div v-show="!collapsed" class="workspace-label">BASE DE CONHECIMENTO</div>
 
-    <el-menu
-      :default-active="route.path"
-      :collapse="collapsed"
-      :collapse-transition="false"
-      router
-      class="nav-menu"
-    >
-      <el-menu-item v-for="item in visibleItems" :key="item.to" :index="item.to">
-        <el-icon><component :is="item.icon" /></el-icon>
-        <template #title>{{ item.label }}</template>
-      </el-menu-item>
-    </el-menu>
+    <!-- Área rolável: com o menu crescendo, itens nunca mais são cortados -->
+    <div class="nav-scroll">
+      <el-menu :default-active="route.path" :collapse="collapsed" :collapse-transition="false" router class="nav-menu">
+        <el-menu-item v-for="item in visibleItems" :key="item.to" :index="item.to">
+          <el-icon>
+            <component :is="item.icon" />
+          </el-icon>
+          <template #title>{{ item.label }}</template>
+        </el-menu-item>
+      </el-menu>
+    </div>
 
     <div class="sidebar-footer">
       <el-button text class="collapse-button" @click="emit('toggle')">
-        <el-icon><Menu /></el-icon>
+        <el-icon>
+          <Menu />
+        </el-icon>
         <span v-show="!collapsed">Recolher menu</span>
       </el-button>
     </div>
@@ -95,6 +95,26 @@ const visibleItems = computed(() => props.items.filter((entry) => entry.visible)
   font: 10px 'DM Mono';
   letter-spacing: 1.2px;
   white-space: nowrap;
+}
+
+/* Nova regra: área de navegação rola sozinha; footer fica fixo via margin-top:auto */
+.nav-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* esconde a barra quando não precisa, mas mantém rolagem disponível */
+  scrollbar-width: thin;
+  scrollbar-color: #273b4b transparent;
+}
+
+.nav-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.nav-scroll::-webkit-scrollbar-thumb {
+  background: #273b4b;
+  border-radius: 3px;
 }
 
 .nav-menu {

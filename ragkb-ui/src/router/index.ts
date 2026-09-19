@@ -53,6 +53,21 @@ const router = createRouter({
       component: () => import('../views/BusinessRulesView.vue'),
       meta: { requiresAuth: true, roles: ['ADMIN', 'EDITOR', 'USER'] },
     },
+    {
+      path: '/integrations',
+      component: () => import('../views/IntegrationsView.vue'),
+      meta: { requiresAuth: true, roles: ['ADMIN', 'EDITOR'] },
+    },
+    {
+      path: '/reminders',
+      component: () => import('../views/RemindersView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/whatsapp',
+      component: () => import('../views/WhatsAppPanelView.vue'),
+      meta: { requiresAuth: true, roles: ['ADMIN'] },
+    },
   ],
 })
 

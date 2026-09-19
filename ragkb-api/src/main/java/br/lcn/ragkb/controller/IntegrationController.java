@@ -17,14 +17,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.lcn.ragkb.dto.CreateIntegrationRequest;
 import br.lcn.ragkb.dto.IntegrationDto;
+import br.lcn.ragkb.dto.IntegrationExecutionDto;
 import br.lcn.ragkb.dto.UpdateIntegrationRequest;
 import br.lcn.ragkb.service.IntegrationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 /**
- * CRUD de integrações externas. ADMIN escreve; EDITOR pode ler
- * (precisa ver integrações QUERY para testes na frente 5).
+ * CRUD de integrações externas. ADMIN escreve; EDITOR pode ler (precisa ver
+ * integrações QUERY para testes na frente 5).
  */
 @RestController
 @RequestMapping("/api/integrations")
@@ -51,11 +52,17 @@ public class IntegrationController {
         return service.get(id);
     }
 
+    @GetMapping("/{id}/executions")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
+    public List<IntegrationExecutionDto> listExecutions(@PathVariable String id) {
+        return service.listExecutions(id);
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public IntegrationDto update(@PathVariable String id,
-                                 @Valid @RequestBody UpdateIntegrationRequest request,
-                                 Authentication auth) {
+            @Valid @RequestBody UpdateIntegrationRequest request,
+            Authentication auth) {
         return service.update(id, request, auth.getName());
     }
 

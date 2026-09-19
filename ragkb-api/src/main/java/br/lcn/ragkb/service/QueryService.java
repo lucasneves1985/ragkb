@@ -1,9 +1,12 @@
 package br.lcn.ragkb.service;
 
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -17,6 +20,7 @@ import org.springframework.stereotype.Service;
 import br.lcn.ragkb.dto.AnswerResponse;
 import br.lcn.ragkb.dto.ConversationDetailDto;
 import br.lcn.ragkb.dto.RedisChatMessageDto;
+import br.lcn.ragkb.dto.ReminderDto;
 import br.lcn.ragkb.dto.SourceReferenceDto;
 import br.lcn.ragkb.entity.AppRole;
 import br.lcn.ragkb.entity.DocumentMetadata;
@@ -30,6 +34,22 @@ public class QueryService {
     // Valor empírico — calibrar com o ThresholdCalibrationRunner, não é definitivo
     private static final double SIMILARITY_THRESHOLD = 0.65;
     private static final int TOP_K = 6;
+
+    /**
+     * Detecção determinística de intenção de lembrete (frente 4). Regex
+     * conservadora no início da frase — evita falso positivo em perguntas
+     * normais do KB. Cobertura limitada a paráfrases explícitas; variações
+     * ("não deixe eu esquecer", "anota que ...") caem no fluxo RAG.
+     */
+    private static final Pattern REMINDER_INTENT = Pattern.compile(
+            "^\\s*(me\\s+lembre|me\\s+lembra|lembre-me|lembra-?me"
+            + "|quero\\s+um\\s+lembrete|crie\\s+um\\s+lembrete|criar\\s+um\\s+lembrete"
+            + "|lembrar\\s+de|lembrete\\s*:)\\b.*",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+
+    private static final ZoneId ZONE = ZoneId.of("America/Sao_Paulo");
+    private static final DateTimeFormatter REMINDER_TIME_FORMAT
+            = DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm").withZone(ZONE);
 
     private static final String SYSTEM_PROMPT = """
             Você é um assistente de base de conhecimento corporativa.
@@ -50,6 +70,7 @@ public class QueryService {
     private final ConversationService conversationService;
     private final RedisChatHistoryService redisChatHistoryService;
     private final UserService userService;
+    private final ReminderService reminderService;
 
     public AnswerResponse ask(String question, String conversationId, Authentication auth) {
         // Contexto do usuário resolvido AQUI, não no controller
@@ -62,6 +83,14 @@ public class QueryService {
         // Cria ou recupera a conversa persistida — usa SEMPRE o id retornado
         ConversationDetailDto conversation = conversationService.getOrCreateConversation(conversationId, userId, question);
         String effectiveConversationId = conversation.id();
+
+        // ── Intent: lembrete (frente 4) ─────────────────────────
+        // Interceptar ANTES da busca vetorial: o texto do lembrete não deve
+        // ir ao PGVector nem ao LLM de resposta — vai ao ReminderService,
+        // que extrai datetime via ChatClient e persiste na tabela reminders.
+        if (REMINDER_INTENT.matcher(question.trim()).matches()) {
+            return handleReminderIntent(question, userId, effectiveConversationId);
+        }
 
         boolean isAdmin = roles.contains(AppRole.ROLE_ADMIN.name());
 
@@ -118,8 +147,8 @@ public class QueryService {
         // Mapeia documentIds para filenames
         List<String> docIds = hits.stream()
                 .map(doc -> doc.getMetadata().get("documentId") != null
-                        ? doc.getMetadata().get("documentId").toString()
-                        : "")
+                ? doc.getMetadata().get("documentId").toString()
+                : "")
                 .toList();
         Map<String, String> filenameMap = metadataRepository.findAllById(docIds).stream()
                 .collect(Collectors.toMap(DocumentMetadata::getId, DocumentMetadata::getFilename));
@@ -167,6 +196,40 @@ public class QueryService {
         redisChatHistoryService.addMessage(effectiveConversationId, "USER", question);
         redisChatHistoryService.addMessage(effectiveConversationId, "ASSISTANT", answer);
 
+        return response;
+    }
+
+    /**
+     * Intent de lembrete: extrai datetime via LLM (ReminderExtractionService),
+     * persiste o lembrete e responde com confirmação determinística — o texto
+     * da conf no chat NÃO passa pelo LLM da resposta (data/hora já validada).
+     */
+    private AnswerResponse handleReminderIntent(String question, String userId, String effectiveConversationId) {
+        ReminderDto reminder;
+        try {
+            reminder = reminderService.create(question, userId, effectiveConversationId);
+        } catch (IllegalArgumentException e) {
+            String message = e.getMessage() != null ? e.getMessage()
+                    : "Não consegui criar o lembrete. Informe a data e a hora explicitamente.";
+            AnswerResponse response = new AnswerResponse("REMINDER_REJECTED", message,
+                    List.of(), List.of(), null, effectiveConversationId);
+            conversationService.recordInteraction(effectiveConversationId, question, response);
+            redisChatHistoryService.addMessage(effectiveConversationId, "USER", question);
+            redisChatHistoryService.addMessage(effectiveConversationId, "ASSISTANT", message);
+            return response;
+        }
+
+        String summary = reminder.summary() == null || reminder.summary().isBlank()
+                ? question
+                : reminder.summary();
+        String message = "Lembrete agendado: %s. Vou te lembrar no WhatsApp em %s.".formatted(
+                summary.trim(),
+                REMINDER_TIME_FORMAT.format(reminder.remindAt()));
+
+        AnswerResponse response = AnswerResponse.fromReminder(message, effectiveConversationId);
+        conversationService.recordInteraction(effectiveConversationId, question, response);
+        redisChatHistoryService.addMessage(effectiveConversationId, "USER", question);
+        redisChatHistoryService.addMessage(effectiveConversationId, "ASSISTANT", message);
         return response;
     }
 
