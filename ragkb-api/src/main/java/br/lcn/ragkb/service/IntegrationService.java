@@ -6,6 +6,7 @@ import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.List;
 
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,15 +26,19 @@ import br.lcn.ragkb.exception.InvalidIntegrationException;
 import br.lcn.ragkb.repository.IntegrationExecutionRepository;
 import br.lcn.ragkb.repository.IntegrationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class IntegrationService {
 
     private final IntegrationRepository repository;
+    private final IntegrationExecutionRepository executionRepository;
     private final IntegrationCryptoService cryptoService;
     private final ObjectMapper objectMapper;
-    private final IntegrationExecutionRepository executionRepository;
+    private final EmbeddingModel embeddingModel;
+    private final IntegrationEmbeddingStore embeddingStore;
 
     @Transactional(readOnly = true)
     public List<IntegrationDto> list() {
@@ -67,7 +72,9 @@ public class IntegrationService {
         if (request.credentials() != null && !request.credentials().isBlank()) {
             integration.assignCredentials(cryptoService.encrypt(request.credentials()));
         }
-        return IntegrationDto.from(repository.save(integration));
+        Integration saved = repository.save(integration);
+        refreshDescriptionEmbedding(saved);
+        return IntegrationDto.from(saved);
     }
 
     @Transactional
@@ -93,7 +100,9 @@ public class IntegrationService {
         if (request.credentials() != null && !request.credentials().isBlank()) {
             integration.assignCredentials(cryptoService.encrypt(request.credentials()));
         }
-        return IntegrationDto.from(repository.save(integration));
+        Integration saved = repository.save(integration);
+        refreshDescriptionEmbedding(saved);
+        return IntegrationDto.from(saved);
     }
 
     @Transactional
@@ -107,6 +116,29 @@ public class IntegrationService {
         return executionRepository.findTop50ByIntegrationIdOrderByStartedAtDesc(id).stream()
                 .map(IntegrationExecutionDto::from)
                 .toList();
+    }
+
+    /**
+     * Gera/grava o embedding da context_description (gate de roteamento). Só
+     * para QUERY com descrição; caso contrário limpa. Falha de embedding NÃO
+     * bloqueia o save — a integração fica sem participar do gate até a próxima
+     * edição (degradado consciente).
+     */
+    private void refreshDescriptionEmbedding(Integration integration) {
+        try {
+            if (integration.getIntegrationType() == IntegrationType.QUERY
+                    && integration.getContextDescription() != null
+                    && !integration.getContextDescription().isBlank()) {
+                float[] embedding = embeddingModel.embed(integration.getContextDescription());
+                embeddingStore.updateEmbedding(integration.getId(), embedding);
+            } else {
+                embeddingStore.clearEmbedding(integration.getId());
+            }
+        } catch (Exception e) {
+            log.warn("Falha ao gerar embedding da descrição da integração '{}' — "
+                    + "ela não participará do roteamento até a próxima edição: {}",
+                    integration.getName(), e.getMessage());
+        }
     }
 
     private Integration find(String id) {
@@ -127,7 +159,7 @@ public class IntegrationService {
         if (type == IntegrationType.QUERY
                 && (contextDescription == null || contextDescription.isBlank())) {
             throw new InvalidIntegrationException(
-                    "Integrações QUERY exigem contextDescription (rota do LLM na frente 5).");
+                    "Integrações QUERY exigem contextDescription (base do roteamento).");
         }
         assertJsonObject(outputSchema, "outputSchema");
         assertJsonObject(paramsDefinition, "paramsDefinition");
@@ -190,7 +222,7 @@ public class IntegrationService {
     /**
      * Bloqueio básico de SSRF: só http/https e sem hosts internos/privados.
      * Limitação conhecida: DNS rebinding exige resolução fixada no momento da
-     * execução — endurecimento futuro junto ao IntegrationExecutor.
+     * execução — endurecimento futuro junto ao executor.
      */
     private void assertAllowedUrl(String url) {
         URI uri;
