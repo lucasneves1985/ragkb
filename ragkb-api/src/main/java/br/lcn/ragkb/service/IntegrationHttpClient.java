@@ -109,7 +109,11 @@ public class IntegrationHttpClient {
 
         String body = integration.getRequestTemplate();
         if (body != null && !body.isBlank()) {
-            return requestSpec.body(renderBody(body, question, params))
+            // Content-Type explícito: sem isso, o RestClient envia String body
+            // como text/plain — divergência herdada do executor antigo, que
+            // garantia application/json via defaultHeader (P4).
+            return requestSpec.contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                    .body(renderBody(body, question, params))
                     .retrieve()
                     .toEntity(String.class);
         }

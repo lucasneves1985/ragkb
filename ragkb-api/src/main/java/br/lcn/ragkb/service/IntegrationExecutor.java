@@ -1,18 +1,9 @@
 package br.lcn.ragkb.service;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.Base64;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -20,66 +11,59 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import br.lcn.ragkb.entity.Integration;
 import br.lcn.ragkb.entity.IntegrationActionType;
-import br.lcn.ragkb.entity.IntegrationAuthType;
 import br.lcn.ragkb.entity.IntegrationExecution;
+import br.lcn.ragkb.metrics.RoutingMetrics;
 import br.lcn.ragkb.repository.IntegrationExecutionRepository;
 import br.lcn.ragkb.whatsapp.WhatsAppSendException;
 import br.lcn.ragkb.whatsapp.WhatsAppService;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * Executa uma integração SCHEDULED: chama a URL com auth e request_template,
- * grava o histórico e dispara a ação configurada (e-mail / WhatsApp). Retry
- * simples: 1 tentativa extra em falha de transporte.
+ * Executa uma integração SCHEDULED: chama a URL, grava o histórico e dispara a
+ * ação configurada (e-mail / WhatsApp). Retry simples: 1 tentativa extra em
+ * falha de transporte.
  *
- * Template da ação (action_template) suporta: {{response}} -> body cru da
- * resposta {{response.rates.BRL}} -> campo aninhado do JSON da resposta
- * {{response.items.0.name}} -> índice de array {{today}} / {{now}} -> data/hora
- * ISO-8601 do momento do disparo Token inexistente no JSON é substituído por ""
- * e registrado em warn.
+ * P4 — consolidação: a chamada HTTP (método GET/POST, auth, placeholders na URL
+ * e no body, parsing leniente) e a renderização da mensagem (action_template,
+ * listas {{response.items.*}}, teto, lista vazia) são DELEGADAS ao
+ * IntegrationHttpClient — eram cópias divergentes deste arquivo. O executor
+ * retém apenas o que é exclusivo do fluxo agendado: retry, persistência do
+ * histórico (IntegrationExecution) e despacho das ações.
  *
- * Fase 2b: a renderização da mensagem (action_template) foi consolidada no
- * IntegrationHttpClient — esta classe delega.
+ * Comportamentos preservados deliberadamente: - truncamento da MENSAGEM da ação
+ * em 3000 caracteres (MESSAGE_MAX_LENGTH, mais conservador que o truncamento de
+ * renderização do cliente); - a ação falhando NÃO marca a execução como FAILED
+ * retroativamente; - RestClientResponseException entra no retry (comportamento
+ * antigo de retrieve() — 4xx/5xx são "falha de transporte" para o retry).
+ *
+ * Mudanças de comportamento que a delegação traz (melhorias conscientes): -
+ * integrações SCHEDULED agora aceitam GET (httpMethod é respeitado); -
+ * {{today}}/{{now}} passam a funcionar também na URL; - parsing leniente
+ * (vírgula final/aspas simples) também aqui; - telemetria (RoutingMetrics)
+ * cobre execuções agendadas.
  */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class IntegrationExecutor {
 
-    private static final Logger log = LoggerFactory.getLogger(IntegrationExecutor.class);
     private static final int MAX_ATTEMPTS = 2;
     private static final long RETRY_DELAY_MS = 2000;
+    private static final int MESSAGE_MAX_LENGTH = 3000;
 
     private final IntegrationExecutionRepository executionRepository;
-    private final IntegrationCryptoService cryptoService;
+    private final IntegrationHttpClient httpClient;
     private final WhatsAppService whatsAppService;
     private final JavaMailSender mailSender;
     private final ObjectMapper objectMapper;
-    private final IntegrationHttpClient httpClient;
-    private final RestClient restClient;
+    private final RoutingMetrics metrics;
 
     @Value("${app.ticket.from-email:}")
     private String fromEmail;
-
-    public IntegrationExecutor(IntegrationExecutionRepository executionRepository,
-            IntegrationCryptoService cryptoService,
-            WhatsAppService whatsAppService,
-            JavaMailSender mailSender,
-            ObjectMapper objectMapper,
-            IntegrationHttpClient httpClient,
-            RestClient.Builder restClientBuilder) {
-        this.executionRepository = executionRepository;
-        this.cryptoService = cryptoService;
-        this.whatsAppService = whatsAppService;
-        this.mailSender = mailSender;
-        this.objectMapper = objectMapper;
-        this.httpClient = httpClient;
-        // Construído UMA vez: defaultHeader no builder injetado acumularia
-        // headers entre execuções (o builder é instância única do campo).
-        this.restClient = restClientBuilder
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .build();
-    }
 
     public void execute(Integration integration) {
         IntegrationExecution execution = new IntegrationExecution(integration.getId());
@@ -96,6 +80,9 @@ public class IntegrationExecutor {
                 break;
             } catch (RestClientException e) {
                 lastError = e;
+                metrics.executionFailed(integration.getName());
+                metrics.executionDuration(integration.getName(),
+                        integration.getHttpMethod().name(), 0);
                 log.warn("Execução da integração '{}' falhou (tentativa {}/{}): {}",
                         integration.getName(), attempt, MAX_ATTEMPTS, e.getMessage());
                 if (attempt < MAX_ATTEMPTS) {
@@ -112,58 +99,23 @@ public class IntegrationExecutor {
         }
 
         String body = response.getBody();
+        metrics.executionSuccess(integration.getName());
+        metrics.executionDuration(integration.getName(),
+                integration.getHttpMethod().name(), 0);
         execution.success(response.getStatusCode().value(), body);
         executionRepository.save(execution);
         dispatchAction(integration, body);
     }
 
-    private ResponseEntity<String> call(Integration integration) {
-        var requestSpec = restClient.post().uri(integration.getUrl());
-        applyAuth(integration, requestSpec);
-
-        String body = integration.getRequestTemplate();
-        if (body != null && !body.isBlank()) {
-            body = renderBuiltins(body);
-            return requestSpec.body(body).retrieve().toEntity(String.class);
-        }
-        return requestSpec.retrieve().toEntity(String.class);
-    }
-
-    private void applyAuth(Integration integration, RestClient.RequestBodySpec requestSpec) {
-        if (!integration.hasCredentials()) {
-            return;
-        }
-        String credentials = cryptoService.decrypt(integration.getCredentialsEncrypted());
-        switch (integration.getAuthType()) {
-            case BEARER ->
-                requestSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + credentials);
-            case BASIC ->
-                requestSpec.header(HttpHeaders.AUTHORIZATION, "Basic "
-                        + Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8)));
-            case HEADER_CUSTOM ->
-                applyCustomHeader(requestSpec, credentials);
-            case NONE -> {
-                /* sem auth */ }
-        }
-    }
-
-    private void applyCustomHeader(RestClient.RequestBodySpec requestSpec, String credentialsJson) {
-        try {
-            JsonNode node = objectMapper.readTree(credentialsJson);
-            requestSpec.header(node.get("header").asText(), node.get("value").asText());
-        } catch (Exception e) {
-            throw new IllegalStateException("Credencial HEADER_CUSTOM inválida na execução.", e);
-        }
-    }
-
     /**
-     * Placeholders suportados: {{today}} e {{now}} (ISO-8601).
+     * Delega ao cliente consolidado: question=null e params vazios — a URL
+     * renderiza apenas os builtins ({{today}}/{{now}}); placeholders
+     * {{param}}/{{question}} em integração SCHEDULED viram vazio com warn (não
+     * fazem sentido em fluxo agendado — revise o cadastro da integração se o
+     * warn aparecer).
      */
-    private String renderBuiltins(String template) {
-        var now = Instant.now();
-        return template
-                .replace("{{today}}", now.toString().substring(0, 10))
-                .replace("{{now}}", now.toString());
+    private ResponseEntity<String> call(Integration integration) {
+        return httpClient.call(integration, null, java.util.Map.of());
     }
 
     private void dispatchAction(Integration integration, String responseBody) {
@@ -171,7 +123,8 @@ public class IntegrationExecutor {
                 || integration.getActionType() == IntegrationActionType.NONE) {
             return;
         }
-        String message = httpClient.renderResponseMessage(integration, responseBody);
+        String message = truncateMessage(
+                httpClient.renderResponseMessage(integration, responseBody));
         try {
             switch (integration.getActionType()) {
                 case EMAIL ->
@@ -187,6 +140,17 @@ public class IntegrationExecutor {
             log.error("Ação '{}' da integração '{}' falhou: {}",
                     integration.getActionType(), integration.getName(), e.getMessage());
         }
+    }
+
+    /**
+     * Teto de mensagem das ações — mais conservador que o truncamento de
+     * renderização do cliente (4000): WhatsApp/e-mail têm limites próprios.
+     */
+    private String truncateMessage(String value) {
+        if (value == null || value.length() <= MESSAGE_MAX_LENGTH) {
+            return value;
+        }
+        return value.substring(0, MESSAGE_MAX_LENGTH) + "…";
     }
 
     private void sendEmail(Integration integration, String body) {
