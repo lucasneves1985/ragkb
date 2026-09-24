@@ -9,5 +9,6 @@ export { conversationsService } from './conversations.service'
 export { ticketsService } from './tickets.service'
 export { businessRulesService } from './businessRules.service'
 export { integrationsService } from './integrations.service'
+
 export { remindersService } from './reminders.service'
 export { whatsappService, appConfigurationsService } from './whatsapp.service'

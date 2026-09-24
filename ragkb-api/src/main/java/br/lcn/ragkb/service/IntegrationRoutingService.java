@@ -18,9 +18,9 @@ import lombok.extern.slf4j.Slf4j;
  * Gate de roteamento em camadas (frente 5, desenho revisado): 1. Gate vetorial
  * determinístico — similaridade pergunta × descrição da integração QUERY. Sem
  * candidato acima do piso → fluxo KB normal. 2. Verificação de intenção via LLM
- * (structured output) APENAS sobre os candidatos — tarefa muito mais fraca que
- * roteamento entre N tools, e o modelo tem poder de VETO, não de entusiasmo. 3.
- * Confirmado → execução direta da integração (sem LLM de resposta).
+ * (structured output) APENAS sobre os candidatos — o modelo tem poder de VETO,
+ * não de entusiasmo. 3. Confirmado → execução direta da integração (sem LLM de
+ * resposta).
  *
  * Fail-safe: qualquer falha na verificação rejeita → KB flow (o caminho
  * arriscado é executar a integração; rejeitar só custa uma resposta pior). Toda
@@ -94,22 +94,37 @@ public class IntegrationRoutingService {
         }
 
         float[] questionEmbedding = embeddingModel.embed(question);
-        List<IntegrationEmbeddingStore.CandidateMatch> candidates
-                = embeddingStore.findCandidates(questionEmbedding, similarityThreshold, MAX_CANDIDATES);
+        List<IntegrationEmbeddingStore.CandidateMatch> top
+                = embeddingStore.findTop(questionEmbedding, MAX_CANDIDATES);
 
-        if (candidates.isEmpty()) {
-            log.info("[routing] Sem candidatos >= {} — fluxo KB normal. Pergunta: '{}'",
-                    similarityThreshold, question);
+        // Telemetria: melhor score SEMPRE no log, mesmo rejeitando — é a base
+        // da calibração do piso (sem isso, falso negativo é invisível).
+        // String.format ANTES do log.info: %.3f não é placeholder do SLF4J
+        // (que só substitui {}) — passado direto, os argumentos deslocavam.
+        if (top.isEmpty()) {
+            log.info("[routing] Nenhuma integração QUERY com embedding — fluxo KB normal. Pergunta: '{}'",
+                    question);
             return Optional.empty();
         }
-        log.info("[routing] Candidatos para '{}': {}", question,
-                candidates.stream()
-                        .map(c -> "%s (%.3f)".formatted(c.name(), c.similarity()))
-                        .collect(Collectors.joining(", ")));
+        log.info(String.format("[routing] Top similaridades para '%s': %s", question,
+                top.stream()
+                        .map(c -> String.format("%s=%.3f", c.name(), c.similarity()))
+                        .collect(Collectors.joining(", "))),
+                question);
+
+        List<IntegrationEmbeddingStore.CandidateMatch> candidates = top.stream()
+                .filter(c -> c.similarity() >= similarityThreshold)
+                .toList();
+        if (candidates.isEmpty()) {
+            log.info(String.format(
+                    "[routing] Melhor score %.3f abaixo do piso %s — fluxo KB normal. Pergunta: '%s'",
+                    top.get(0).similarity(), similarityThreshold, question));
+            return Optional.empty();
+        }
 
         RoutingDecision decision = verifyWithLlm(question, candidates);
-        log.info("[routing] Decisão do LLM: executar={}, integracao={}, motivo={}",
-                decision.executar(), decision.integracao(), decision.motivo());
+        log.info(String.format("[routing] Decisão do LLM: executar=%s, integracao=%s, motivo=%s",
+                decision.executar(), decision.integracao(), decision.motivo()));
 
         if (!Boolean.TRUE.equals(decision.executar())) {
             return Optional.empty();
@@ -124,8 +139,8 @@ public class IntegrationRoutingService {
     private RoutingDecision verifyWithLlm(String question,
             List<IntegrationEmbeddingStore.CandidateMatch> candidates) {
         String candidatesBlock = candidates.stream()
-                .map(c -> "- nome: %s | retorna: %s | similaridade: %.3f"
-                .formatted(c.name(), c.contextDescription(), c.similarity()))
+                .map(c -> String.format("- nome: %s | retorna: %s | similaridade: %.3f",
+                c.name(), c.contextDescription(), c.similarity()))
                 .collect(Collectors.joining("\n"));
         String userPrompt = """
                 Pergunta do usuário: %s
@@ -147,15 +162,17 @@ public class IntegrationRoutingService {
             boolean known = decision.integracao() != null && candidates.stream()
                     .anyMatch(c -> c.name().equals(decision.integracao()));
             if (Boolean.TRUE.equals(decision.executar()) && !known) {
-                log.warn("[routing] LLM aceitou mas citou integração inexistente '{}' — rejeitando",
-                        decision.integracao());
+                log.warn(String.format(
+                        "[routing] LLM aceitou mas citou integração inexistente '%s' — rejeitando",
+                        decision.integracao()));
                 return new RoutingDecision(false, decision.integracao(),
                         "nome de integração não confere com candidatos");
             }
             return decision;
         } catch (Exception e) {
-            log.error("[routing] Falha na verificação LLM — rejeitando (fail-safe para KB): {}",
-                    e.getMessage());
+            log.error(String.format(
+                    "[routing] Falha na verificação LLM — rejeitando (fail-safe para KB): %s",
+                    e.getMessage()));
             return new RoutingDecision(false, null, "falha na verificação: " + e.getMessage());
         }
     }

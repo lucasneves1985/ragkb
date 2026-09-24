@@ -5,6 +5,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,8 @@ import br.lcn.ragkb.dto.IntegrationExecutionDto;
 import br.lcn.ragkb.dto.UpdateIntegrationRequest;
 import br.lcn.ragkb.entity.Integration;
 import br.lcn.ragkb.entity.IntegrationActionType;
+import br.lcn.ragkb.entity.IntegrationAuthType;
+import br.lcn.ragkb.entity.IntegrationHttpMethod;
 import br.lcn.ragkb.entity.IntegrationType;
 import br.lcn.ragkb.exception.DuplicateIntegrationNameException;
 import br.lcn.ragkb.exception.IntegrationNotFoundException;
@@ -32,6 +35,13 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class IntegrationService {
+
+    /**
+     * V11: a URL aceita placeholders {{param}}/{{question}} (path/query),
+     * renderizados em execução pelo IntegrationHttpClient. Chaves {} são
+     * ilegais na RFC 3986 — a validação sanitiza o template ANTES do parse.
+     */
+    private static final Pattern URL_PLACEHOLDER = Pattern.compile("\\{\\{\\s*[^}]+?\\s*}}");
 
     private final IntegrationRepository repository;
     private final IntegrationExecutionRepository executionRepository;
@@ -55,15 +65,17 @@ public class IntegrationService {
         if (repository.existsByNameIgnoreCase(request.name())) {
             throw new DuplicateIntegrationNameException(request.name());
         }
-        validate(request.url(), request.integrationType(), request.scheduleCron(),
+        validate(request.httpMethod(), request.url(), request.integrationType(), request.scheduleCron(),
                 request.scheduleIntervalSeconds(), request.contextDescription(),
                 request.outputSchema(), request.paramsDefinition(),
                 request.actionType(), request.actionTarget(), request.credentials(), request.authType());
 
         Integration integration = new Integration(
                 request.name().trim(), request.description(), request.url().trim(),
+                request.httpMethod(),
                 request.authType(), request.integrationType(),
-                request.scheduleCron(), request.scheduleTimezone(), request.scheduleIntervalSeconds(),
+                request.scheduleCron(),
+                request.scheduleTimezone(), request.scheduleIntervalSeconds(),
                 request.contextDescription(), request.requestTemplate(),
                 request.outputSchema(), request.paramsDefinition(),
                 request.actionType(), request.actionTarget(), request.actionTemplate(),
@@ -83,15 +95,17 @@ public class IntegrationService {
         if (repository.existsByNameIgnoreCaseAndIdNot(request.name(), id)) {
             throw new DuplicateIntegrationNameException(request.name());
         }
-        validate(request.url(), request.integrationType(), request.scheduleCron(),
+        validate(request.httpMethod(), request.url(), request.integrationType(), request.scheduleCron(),
                 request.scheduleIntervalSeconds(), request.contextDescription(),
                 request.outputSchema(), request.paramsDefinition(),
                 request.actionType(), request.actionTarget(), request.credentials(), request.authType());
 
         integration.updateCore(
                 request.name().trim(), request.description(), request.url().trim(),
+                request.httpMethod(),
                 request.authType(), request.integrationType(),
-                request.scheduleCron(), request.scheduleTimezone(), request.scheduleIntervalSeconds(),
+                request.scheduleCron(),
+                request.scheduleTimezone(), request.scheduleIntervalSeconds(),
                 request.contextDescription(), request.requestTemplate(),
                 request.outputSchema(), request.paramsDefinition(),
                 request.actionType(), request.actionTarget(), request.actionTemplate(),
@@ -103,6 +117,18 @@ public class IntegrationService {
         Integration saved = repository.save(integration);
         refreshDescriptionEmbedding(saved);
         return IntegrationDto.from(saved);
+    }
+
+    /**
+     * Toggle de ativação (PATCH dedicado). Nada de revalidação nem de
+     * embedding: o gate já filtra active = true na query SQL, então desativar
+     * remove a integração do roteamento sem tocar no vetor.
+     */
+    @Transactional
+    public IntegrationDto updateActive(String id, boolean active) {
+        Integration integration = find(id);
+        integration.setActive(active);
+        return IntegrationDto.from(repository.save(integration));
     }
 
     @Transactional
@@ -146,10 +172,14 @@ public class IntegrationService {
                 .orElseThrow(() -> new IntegrationNotFoundException(id));
     }
 
-    private void validate(String url, IntegrationType type, String cron, Long intervalSeconds,
+    private void validate(IntegrationHttpMethod httpMethod, String url, IntegrationType type,
+            String cron, Long intervalSeconds,
             String contextDescription, String outputSchema, String paramsDefinition,
             IntegrationActionType actionType, String actionTarget,
-            String credentials, br.lcn.ragkb.entity.IntegrationAuthType authType) {
+            String credentials, IntegrationAuthType authType) {
+        if (httpMethod == null) {
+            throw new InvalidIntegrationException("Método HTTP é obrigatório (GET ou POST).");
+        }
         assertAllowedUrl(url);
         if (type == IntegrationType.SCHEDULED
                 && (cron == null || cron.isBlank()) && intervalSeconds == null) {
@@ -192,10 +222,9 @@ public class IntegrationService {
      * HEADER_CUSTOM exige credenciais em JSON: {"header": "X-Api-Key", "value":
      * "..."}
      */
-    private void validateCredentials(br.lcn.ragkb.entity.IntegrationAuthType authType,
-            String credentials) {
+    private void validateCredentials(IntegrationAuthType authType, String credentials) {
         if (credentials == null || credentials.isBlank()
-                || authType != br.lcn.ragkb.entity.IntegrationAuthType.HEADER_CUSTOM) {
+                || authType != IntegrationAuthType.HEADER_CUSTOM) {
             return;
         }
         try {
@@ -221,13 +250,22 @@ public class IntegrationService {
 
     /**
      * Bloqueio básico de SSRF: só http/https e sem hosts internos/privados.
+     *
+     * V11: a URL é um TEMPLATE com placeholders {{param}} — chaves são ilegais
+     * na RFC 3986, então são substituídas por 'x' ANTES do parse. A checagem de
+     * scheme/host/ranges privados permanece íntegra: os placeholders não
+     * alteram o host, que é a parte que o bloqueio SSRF protege.
+     *
      * Limitação conhecida: DNS rebinding exige resolução fixada no momento da
      * execução — endurecimento futuro junto ao executor.
      */
     private void assertAllowedUrl(String url) {
+        // Sanitiza o template: {{data}} -> x (host/scheme preservados)
+        String sanitized = URL_PLACEHOLDER.matcher(url == null ? "" : url).replaceAll("x");
+
         URI uri;
         try {
-            uri = new URI(url);
+            uri = new URI(sanitized);
         } catch (URISyntaxException e) {
             throw new InvalidIntegrationException("URL inválida: " + url);
         }

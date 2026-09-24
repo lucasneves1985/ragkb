@@ -2,6 +2,7 @@ package br.lcn.ragkb.dto;
 
 import br.lcn.ragkb.entity.IntegrationActionType;
 import br.lcn.ragkb.entity.IntegrationAuthType;
+import br.lcn.ragkb.entity.IntegrationHttpMethod;
 import br.lcn.ragkb.entity.IntegrationType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -15,6 +16,8 @@ public record UpdateIntegrationRequest(
         @NotBlank
         @Size(max = 500)
         String url,
+        @NotNull
+        IntegrationHttpMethod httpMethod,
         @NotNull
         IntegrationAuthType authType,
         /**

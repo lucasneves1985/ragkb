@@ -284,8 +284,9 @@ public class QueryService {
     }
 
     /**
-     * Execução final. Falha → sugestão de chamado; NUNCA recai automaticamente
-     * na KB (dados "meio antigos de outra fonte" seriam piores que falha
+     * Execução final. Falha → sugestão de chamado com motivo EXPLÍCITO de falha
+     * de integração (não "não encontrei na base"); NUNCA recai automaticamente
+     * na KB (dados "meio antigos de outra fonte" seriam piores que uma falha
      * explícita).
      */
     private AnswerResponse executeIntegration(Integration integration,
@@ -302,7 +303,9 @@ public class QueryService {
                     null, effectiveConversationId);
         } else {
             paramStateService.clear(effectiveConversationId);
-            response = ticketService.suggestTicket(question, userId, List.of(), effectiveConversationId);
+            response = ticketService.suggestTicket(question, userId, List.of(), effectiveConversationId,
+                    "A consulta à integração '" + integration.getName()
+                    + "' falhou no momento (" + execution.content() + ").");
         }
 
         conversationService.recordInteraction(effectiveConversationId, question, response);

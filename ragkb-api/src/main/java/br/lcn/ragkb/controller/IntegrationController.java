@@ -7,6 +7,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import br.lcn.ragkb.dto.CreateIntegrationRequest;
 import br.lcn.ragkb.dto.IntegrationDto;
 import br.lcn.ragkb.dto.IntegrationExecutionDto;
+import br.lcn.ragkb.dto.UpdateIntegrationActiveRequest;
 import br.lcn.ragkb.dto.UpdateIntegrationRequest;
 import br.lcn.ragkb.service.IntegrationService;
 import jakarta.validation.Valid;
@@ -64,6 +66,17 @@ public class IntegrationController {
             @Valid @RequestBody UpdateIntegrationRequest request,
             Authentication auth) {
         return service.update(id, request, auth.getName());
+    }
+
+    /**
+     * Toggle de ativação — endpoint dedicado. O PUT completo é para edição de
+     * conteúdo; o toggle só inverte o boolean.
+     */
+    @PatchMapping("/{id}/active")
+    @PreAuthorize("hasRole('ADMIN')")
+    public IntegrationDto updateActive(@PathVariable String id,
+            @Valid @RequestBody UpdateIntegrationActiveRequest request) {
+        return service.updateActive(id, request.active());
     }
 
     @DeleteMapping("/{id}")

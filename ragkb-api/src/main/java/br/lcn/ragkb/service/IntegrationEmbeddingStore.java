@@ -10,14 +10,19 @@ import org.springframework.stereotype.Repository;
  * Acesso nativo (JDBC) à coluna pgvector description_embedding das integrações.
  * Fora do mapeamento JPA de propósito: Hibernate não mapeia o tipo vector sem
  * converter customizado, e o gate precisa de busca por distância coseno nativa.
+ *
+ * Mudança de calibração: a busca retorna o TOP-N SEM filtro de threshold — o
+ * filtro fica no IntegrationRoutingService, que loga o melhor score mesmo
+ * quando rejeita. Sem isso, um piso mal calibrado é invisível ("Sem candidatos"
+ * não diz quanto a pergunta tirou).
  */
 @Repository
 public class IntegrationEmbeddingStore {
 
     /**
-     * Candidatas QUERY ativas com similaridade acima do piso, ordenadas.
+     * Top-N integrações QUERY ativas por similaridade, SEM filtro de piso.
      */
-    private static final String FIND_CANDIDATES = """
+    private static final String FIND_TOP_CANDIDATES = """
             SELECT i.id,
                    i.name,
                    i.context_description,
@@ -26,7 +31,6 @@ public class IntegrationEmbeddingStore {
             WHERE i.integration_type = 'QUERY'
               AND i.active = true
               AND i.description_embedding IS NOT NULL
-              AND 1 - (i.description_embedding <=> cast(:vec as vector)) >= :threshold
             ORDER BY similarity DESC
             LIMIT :limit
             """;
@@ -47,12 +51,11 @@ public class IntegrationEmbeddingStore {
 
     }
 
-    public List<CandidateMatch> findCandidates(float[] questionEmbedding, double threshold, int limit) {
+    public List<CandidateMatch> findTop(float[] questionEmbedding, int limit) {
         var params = new MapSqlParameterSource()
                 .addValue("vec", toPgVector(questionEmbedding))
-                .addValue("threshold", threshold)
                 .addValue("limit", limit);
-        return jdbc.query(FIND_CANDIDATES, params, (rs, rowNum) -> new CandidateMatch(
+        return jdbc.query(FIND_TOP_CANDIDATES, params, (rs, rowNum) -> new CandidateMatch(
                 rs.getString("id"),
                 rs.getString("name"),
                 rs.getString("context_description"),

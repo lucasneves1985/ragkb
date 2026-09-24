@@ -3,8 +3,6 @@ package br.lcn.ragkb.service;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +28,6 @@ import br.lcn.ragkb.whatsapp.WhatsAppService;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Executa uma integração SCHEDULED: chama a URL com auth e request_template,
@@ -42,26 +39,23 @@ import lombok.extern.slf4j.Slf4j;
  * {{response.items.0.name}} -> índice de array {{today}} / {{now}} -> data/hora
  * ISO-8601 do momento do disparo Token inexistente no JSON é substituído por ""
  * e registrado em warn.
+ *
+ * Fase 2b: a renderização da mensagem (action_template) foi consolidada no
+ * IntegrationHttpClient — esta classe delega.
  */
-@Slf4j
 @Service
 public class IntegrationExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(IntegrationExecutor.class);
-
     private static final int MAX_ATTEMPTS = 2;
     private static final long RETRY_DELAY_MS = 2000;
-    private static final int MESSAGE_MAX_LENGTH = 3000;
-
-    private static final Pattern TEMPLATE_TOKEN = Pattern.compile("\\{\\{\\s*([^}]+?)\\s*}}");
-    private static final Pattern ARRAY_INDEX = Pattern.compile("(.+?)\\[(\\d+)]");
-    private static final String RESPONSE_ROOT = "response";
 
     private final IntegrationExecutionRepository executionRepository;
     private final IntegrationCryptoService cryptoService;
     private final WhatsAppService whatsAppService;
     private final JavaMailSender mailSender;
     private final ObjectMapper objectMapper;
+    private final IntegrationHttpClient httpClient;
     private final RestClient restClient;
 
     @Value("${app.ticket.from-email:}")
@@ -72,12 +66,14 @@ public class IntegrationExecutor {
             WhatsAppService whatsAppService,
             JavaMailSender mailSender,
             ObjectMapper objectMapper,
+            IntegrationHttpClient httpClient,
             RestClient.Builder restClientBuilder) {
         this.executionRepository = executionRepository;
         this.cryptoService = cryptoService;
         this.whatsAppService = whatsAppService;
         this.mailSender = mailSender;
         this.objectMapper = objectMapper;
+        this.httpClient = httpClient;
         // Construído UMA vez: defaultHeader no builder injetado acumularia
         // headers entre execuções (o builder é instância única do campo).
         this.restClient = restClientBuilder
@@ -118,7 +114,6 @@ public class IntegrationExecutor {
         String body = response.getBody();
         execution.success(response.getStatusCode().value(), body);
         executionRepository.save(execution);
-
         dispatchAction(integration, body);
     }
 
@@ -176,7 +171,7 @@ public class IntegrationExecutor {
                 || integration.getActionType() == IntegrationActionType.NONE) {
             return;
         }
-        String message = renderMessage(integration, responseBody);
+        String message = httpClient.renderResponseMessage(integration, responseBody);
         try {
             switch (integration.getActionType()) {
                 case EMAIL ->
@@ -192,93 +187,6 @@ public class IntegrationExecutor {
             log.error("Ação '{}' da integração '{}' falhou: {}",
                     integration.getActionType(), integration.getName(), e.getMessage());
         }
-    }
-
-    private String renderMessage(Integration integration, String responseBody) {
-        String response = responseBody == null ? "" : responseBody;
-
-        if (integration.getActionTemplate() == null || integration.getActionTemplate().isBlank()) {
-            return truncateMessage(response);
-        }
-
-        // Builtins primeiro ({{today}}/{{now}}), depois extração do JSON da resposta
-        String template = renderBuiltins(integration.getActionTemplate());
-        JsonNode root = parseOrNull(response);
-
-        Matcher matcher = TEMPLATE_TOKEN.matcher(template);
-        StringBuilder rendered = new StringBuilder();
-        while (matcher.find()) {
-            String token = matcher.group(1).trim();
-            String value = resolveToken(token, root, response);
-            matcher.appendReplacement(rendered, Matcher.quoteReplacement(value));
-        }
-        matcher.appendTail(rendered);
-        return truncateMessage(rendered.toString());
-    }
-
-    private JsonNode parseOrNull(String responseBody) {
-        if (responseBody == null || responseBody.isBlank()) {
-            return null;
-        }
-        try {
-            return objectMapper.readTree(responseBody);
-        } catch (Exception e) {
-            log.warn("Resposta da integração não é JSON válido; tokens {{response.*}} ficarão vazios.");
-            return null;
-        }
-    }
-
-    private String resolveToken(String token, JsonNode root, String rawResponse) {
-        if (RESPONSE_ROOT.equals(token)) {
-            return rawResponse;
-        }
-        if (!token.startsWith(RESPONSE_ROOT + ".")) {
-            log.warn("Token '{{{{{}}}}}' desconhecido no action_template — será substituído por vazio.", token);
-            return "";
-        }
-        JsonNode node = navigate(root, token.substring(RESPONSE_ROOT.length() + 1));
-        if (node == null || node.isMissingNode() || node.isNull()) {
-            log.warn("Token '{{{{{}}}}}' não encontrado no JSON da resposta — será substituído por vazio.", token);
-            return "";
-        }
-        // Textual via asText() (sem aspas); objetos/arrays via toString()
-        return node.isValueNode() ? node.asText() : node.toString();
-    }
-
-    /**
-     * Navega por caminho pontilhado, com suporte a índice de array (items[0] ou
-     * items.0).
-     */
-    private JsonNode navigate(JsonNode root, String path) {
-        if (root == null || path == null || path.isBlank()) {
-            return null;
-        }
-        JsonNode node = root;
-        for (String part : path.split("\\.")) {
-            if (node == null) {
-                return null;
-            }
-            Matcher index = ARRAY_INDEX.matcher(part);
-            if (index.matches()) {
-                node = node.get(index.group(1));
-                if (node != null && node.isArray()) {
-                    node = node.get(Integer.parseInt(index.group(2)));
-                }
-            } else if (node.isArray() && part.matches("\\d+")) {
-                node = node.get(Integer.parseInt(part));
-            } else {
-                node = node.get(part);
-            }
-
-        }
-        return node;
-    }
-
-    private String truncateMessage(String value) {
-        if (value == null || value.length() <= MESSAGE_MAX_LENGTH) {
-            return value;
-        }
-        return value.substring(0, MESSAGE_MAX_LENGTH) + "…";
     }
 
     private void sendEmail(Integration integration, String body) {

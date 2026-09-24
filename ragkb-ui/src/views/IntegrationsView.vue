@@ -7,6 +7,7 @@ import {
   useCreateIntegration,
   useDeleteIntegration,
   useIntegrations,
+  useSetActiveIntegration,
   useUpdateIntegration,
 } from '@/composables'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
@@ -18,13 +19,14 @@ import type { Integration, UpdateIntegrationRequest } from '@/types'
 const { integrations, isLoading, isError } = useIntegrations()
 const { createIntegration, creating } = useCreateIntegration()
 const { updateIntegration, updating } = useUpdateIntegration()
+const { setActive, toggling } = useSetActiveIntegration()
 const { deleteIntegration } = useDeleteIntegration()
 
 const dialog = ref(false)
 const editing = ref<Integration | null>(null)
 const executionsDialog = ref(false)
 const executionTarget = ref<Integration | null>(null)
-const saving = computed(() => creating.value || updating.value)
+const saving = computed(() => creating.value || updating.value || toggling.value)
 
 function openCreate() {
   editing.value = null
@@ -57,26 +59,9 @@ async function handleSubmit(payload: UpdateIntegrationRequest) {
 }
 
 async function handleToggle(integration: Integration) {
-  // credentials omitida — backend mantém a credencial existente
-  const request: UpdateIntegrationRequest = {
-    name: integration.name,
-    description: integration.description ?? undefined,
-    url: integration.url,
-    authType: integration.authType,
-    requestTemplate: integration.requestTemplate ?? undefined,
-    outputSchema: integration.outputSchema ?? undefined,
-    integrationType: integration.integrationType,
-    scheduleCron: integration.scheduleCron ?? undefined,
-    scheduleTimezone: integration.scheduleTimezone ?? undefined,
-    scheduleIntervalSeconds: integration.scheduleIntervalSeconds ?? undefined,
-    contextDescription: integration.contextDescription ?? undefined,
-    paramsDefinition: integration.paramsDefinition ?? undefined,
-    actionType: integration.actionType,
-    actionTarget: integration.actionTarget ?? undefined,
-    actionTemplate: integration.actionTemplate ?? undefined,
-    active: !integration.active,
-  }
-  await updateIntegration({ id: integration.id, request })
+  // PATCH dedicado: só inverte o boolean — sem reenviar payload completo,
+  // sem revalidar, sem risco de sobrescrever edição concorrente
+  await setActive({ id: integration.id, active: !integration.active })
 }
 
 async function handleDelete(integration: Integration) {

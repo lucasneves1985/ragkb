@@ -41,6 +41,8 @@ export interface IntegrationExecution {
   errorMessage: string | null
 }
 
+export type IntegrationHttpMethod = 'GET' | 'POST'
+
 export interface CreateIntegrationRequest {
   name: string
   description?: string

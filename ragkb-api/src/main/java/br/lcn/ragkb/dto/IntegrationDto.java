@@ -5,6 +5,7 @@ import java.time.Instant;
 import br.lcn.ragkb.entity.Integration;
 import br.lcn.ragkb.entity.IntegrationActionType;
 import br.lcn.ragkb.entity.IntegrationAuthType;
+import br.lcn.ragkb.entity.IntegrationHttpMethod;
 import br.lcn.ragkb.entity.IntegrationType;
 
 public record IntegrationDto(
@@ -12,6 +13,7 @@ public record IntegrationDto(
         String name,
         String description,
         String url,
+        IntegrationHttpMethod httpMethod,
         IntegrationAuthType authType,
         boolean hasCredentials,
         String requestTemplate,
@@ -34,6 +36,7 @@ public record IntegrationDto(
     public static IntegrationDto from(Integration i) {
         return new IntegrationDto(
                 i.getId(), i.getName(), i.getDescription(), i.getUrl(),
+                i.getHttpMethod(),
                 i.getAuthType(), i.hasCredentials(), i.getRequestTemplate(),
                 i.getOutputSchema(), i.getIntegrationType(),
                 i.getScheduleCron(), i.getScheduleTimezone(), i.getScheduleIntervalSeconds(),

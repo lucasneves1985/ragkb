@@ -55,6 +55,22 @@ export function useUpdateIntegration() {
   return { updateIntegration: mutateAsync, updating, errorMessage }
 }
 
+export function useSetActiveIntegration() {
+  const queryClient = useQueryClient()
+  const errorMessage = ref('')
+
+  const { mutateAsync, isPending: toggling } = useMutation({
+    mutationFn: ({ id, active }: { id: string; active: boolean }) =>
+      integrationsService.setActive(id, active),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: INTEGRATIONS_KEY }),
+    onError: (error) => {
+      errorMessage.value = extractMessage(error) ?? 'Não foi possível alterar o status da integração.'
+    },
+  })
+
+  return { setActive: mutateAsync, toggling, errorMessage }
+}
+
 export function useDeleteIntegration() {
   const queryClient = useQueryClient()
   const errorMessage = ref('')
