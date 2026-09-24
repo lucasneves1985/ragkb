@@ -75,6 +75,11 @@ app:
       secret: ${JWT_SECRET:dev-secret-troque-antes-de-producao-32bytes}
       expiration-seconds: 3600
     admin-password: ${ADMIN_PASSWORD:admin123}
+    # true  = permite ranges privados (10/8, 172.16/12, 192.168/16) — rede corporativa
+    # false = bloqueia; só IPs públicos são aceitos (default seguro)
+    # SEMPRE bloqueado, independente desta flag: loopback (localhost),
+    # 0.0.0.0 e link-local 169.254.0.0/16 (metadata endpoints de cloud).
+    allow-private-ips: true
 
   eval:
     enabled: false

@@ -254,7 +254,9 @@ function handleSubmit() {
           placeholder="Cotação de {{response.date}}: 1 {{response.base}} = R$ {{response.rates.BRL}}" />
         <div v-if="form.integrationType === 'QUERY' && form.actionType === 'NONE'" class="hint">
           Para integrações de consulta, este template formata a resposta exibida no chat
-          (use <span v-pre>{{response.campo}}</span> para extrair campos do JSON retornado).
+          (use <span v-pre>{{response.campo}}</span> para campos; para listas,
+          <span v-pre>{{response.*.campo}}</span> repete por item, com <span v-pre>{{response.length}}</span> para o
+          total).
         </div>
       </el-form-item>
     </el-form>

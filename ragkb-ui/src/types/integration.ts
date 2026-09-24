@@ -3,12 +3,15 @@ export type IntegrationType = 'SCHEDULED' | 'QUERY'
 export type IntegrationAuthType = 'NONE' | 'BEARER' | 'BASIC' | 'HEADER_CUSTOM'
 export type IntegrationActionType = 'NONE' | 'EMAIL' | 'WHATSAPP'
 export type IntegrationExecutionStatus = 'RUNNING' | 'SUCCESS' | 'FAILED'
+export type IntegrationHttpMethod = 'GET' | 'POST'
+
 
 export interface Integration {
   id: string
   name: string
   description: string | null
   url: string
+  httpMethod: IntegrationHttpMethod
   authType: IntegrationAuthType
   hasCredentials: boolean
   requestTemplate: string | null
@@ -41,12 +44,13 @@ export interface IntegrationExecution {
   errorMessage: string | null
 }
 
-export type IntegrationHttpMethod = 'GET' | 'POST'
+
 
 export interface CreateIntegrationRequest {
   name: string
   description?: string
   url: string
+  httpMethod: IntegrationHttpMethod
   authType: IntegrationAuthType
   credentials?: string
   requestTemplate?: string

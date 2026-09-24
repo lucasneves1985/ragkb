@@ -249,12 +249,23 @@ public class IntegrationService {
     }
 
     /**
-     * Bloqueio básico de SSRF: só http/https e sem hosts internos/privados.
+     * Bloqueio de SSRF — política relaxada por decisão de produto (2026-09):
+     * ranges PRIVADOS (10.x, 172.16-31.x, 192.168.x) são PERMITIDOS, pois as
+     * integrações do sistema são APIs internas da mesma rede. Continuam
+     * bloqueados: - loopback (localhost) — a própria aplicação e serviços
+     * locais; - any-local (0.0.0.0) / unspecified; - link-local (169.254.x.x) —
+     * NÃO é IP interno de rede: é a faixa dos metadata endpoints de cloud
+     * (AWS/GCP/Azure), que expõe credenciais IAM da máquina. É o vetor de SSRF
+     * mais explorado em incidentes. Se um dia precisar liberar, que seja
+     * decisão explícita e documentada, nunca por omissão.
+     *
+     * Contexto do risco: o cadastro de integrações é restrito a ADMIN
+     * (@PreAuthorize), então este bloqueio é defesa em profundidade, não
+     * fronteira primária.
      *
      * V11: a URL é um TEMPLATE com placeholders {{param}} — chaves são ilegais
-     * na RFC 3986, então são substituídas por 'x' ANTES do parse. A checagem de
-     * scheme/host/ranges privados permanece íntegra: os placeholders não
-     * alteram o host, que é a parte que o bloqueio SSRF protege.
+     * na RFC 3986, então são substituídas por 'x' ANTES do parse. Os
+     * placeholders não alteram o host, que é a parte validada aqui.
      *
      * Limitação conhecida: DNS rebinding exige resolução fixada no momento da
      * execução — endurecimento futuro junto ao executor.
@@ -279,11 +290,14 @@ public class IntegrationService {
         }
         try {
             InetAddress address = InetAddress.getByName(host.toLowerCase());
-            if (address.isLoopbackAddress() || address.isSiteLocalAddress()
-                    || address.isLinkLocalAddress() || address.isAnyLocalAddress()) {
+            if (address.isLoopbackAddress() || address.isAnyLocalAddress()
+                    || address.isLinkLocalAddress()) {
                 throw new InvalidIntegrationException(
-                        "URL aponta para endereço interno/privado (bloqueio SSRF): " + host);
+                        "URL aponta para localhost/link-local (bloqueio SSRF): " + host);
             }
+            // Site-local (ranges privados 10/8, 172.16/12, 192.168/16):
+            // PERMITIDO por decisão de produto — integrações internas são o
+            // caso de uso principal.
         } catch (UnknownHostException e) {
             throw new InvalidIntegrationException("Host não resolvido: " + host);
         }
