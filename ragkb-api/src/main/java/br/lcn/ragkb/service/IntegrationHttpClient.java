@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import br.lcn.ragkb.entity.Integration;
+import br.lcn.ragkb.metrics.RoutingMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -74,6 +75,7 @@ public class IntegrationHttpClient {
     private final IntegrationCryptoService cryptoService;
     private final ObjectMapper objectMapper;
     private final RestClient.Builder restClientBuilder;
+    private final RoutingMetrics metrics;
 
     /**
      * Executa a chamada HTTP da integração.
@@ -176,7 +178,7 @@ public class IntegrationHttpClient {
         String template = integration.getActionTemplate()
                 .replace("{{today}}", now.toString().substring(0, 10))
                 .replace("{{now}}", now.toString());
-        JsonNode root = parseOrNull(response);
+        JsonNode root = parseOrNull(integration.getName(), response);
 
         // Lista: template com tokens de item E array localizável no caminho declarado
         Matcher itemMatcher = ITEM_TOKEN.matcher(template);
@@ -370,27 +372,28 @@ public class IntegrationHttpClient {
     }
 
     /**
-     * Parse do body da resposta, em duas tentativas: 1. Jackson estrito
-     * (padrão); 2. fallback leniente — vírgulas finais e aspas simples (APIs
-     * internas frequentemente emitem JSON com desvios). Se ambas falharem, loga
-     * o TRECHO inicial do body para diagnóstico — sem isso, toda falha de
-     * parsing é diagnosticada às cegas. Nota: o trecho pode conter dados da
-     * resposta; mantido em WARN e curto de propósito por ser o momento exato de
-     * diagnóstico.
+     * Parse do body da resposta, em duas tentativas: estrito → leniente. P3:
+     * cada desfecho vira counter — parse(outcome=lenient) alto é o medidor
+     * objetivo de API desviando do contrato JSON.
      */
-    private JsonNode parseOrNull(String responseBody) {
+    private JsonNode parseOrNull(String integrationName, String responseBody) {
         if (responseBody == null || responseBody.isBlank()) {
+            metrics.parseOutcome(integrationName, "empty");
             return null;
         }
         try {
-            return objectMapper.readTree(responseBody);
+            JsonNode node = objectMapper.readTree(responseBody);
+            metrics.parseOutcome(integrationName, "strict");
+            return node;
         } catch (JsonProcessingException strict) {
             try {
                 JsonNode lenient = LENIENT_MAPPER.readTree(responseBody);
+                metrics.parseOutcome(integrationName, "lenient");
                 log.warn("Resposta da integração parseada em modo LENIENTE (JSON com desvios, "
                         + "ex.: vírgula final) — avalie corrigir a origem.");
                 return lenient;
             } catch (JsonProcessingException lenientEx) {
+                metrics.parseOutcome(integrationName, "invalid");
                 log.warn("Resposta da integração NÃO é JSON (nem leniente) — tokens ficarão vazios. "
                         + "Trecho inicial do body: [{}]",
                         excerpt(responseBody));

@@ -26,8 +26,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-
-
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -43,11 +41,19 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/actuator/health").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/media/articles/**").permitAll()
-                        .requestMatchers("/api/documents/**").authenticated()
-                        .requestMatchers("/api/query", "/api/tickets/**", "/api/conversations/**").authenticated()
-                        .anyRequest().authenticated())
+                // Endpoints de observabilidade liberados SEM auth, um a um
+                // (nunca /actuator/** inteiro — o que entra no yaml entra
+                // aqui também, explicitamente). Pressuposto: backend em
+                // rede privada. Se um dia houver exposição à internet,
+                // estes matchers passam a exigir role ou token.
+                // /actuator/prometheus entra aqui QUANDO a etapa 2
+                // (Prometheus) for ativada, nunca antes.
+                .requestMatchers("/actuator/health", "/actuator/info", "/actuator/metrics", "/actuator/prometheus").permitAll()
+                .requestMatchers("/api/auth/login").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/media/articles/**").permitAll()
+                .requestMatchers("/api/documents/**").authenticated()
+                .requestMatchers("/api/query", "/api/tickets/**", "/api/conversations/**").authenticated()
+                .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
         return http.build();
     }
@@ -58,7 +64,6 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of("*"));
         configuration.setAllowedMethods(List.of("*"));
         configuration.setAllowedHeaders(List.of("*"));
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

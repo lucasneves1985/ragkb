@@ -1,0 +1,68 @@
+{
+  "title": "RAGKB — Roteamento e Integrações",
+  "uid": "ragkb-routing",
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Gate — candidatos vs descartados (por hora)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "sum by (outcome) (rate(ragkb_routing_gate_total[1h]))", "legendFormat": "{{outcome}}" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Verificação LLM — taxa de VETO (24h)",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 8 },
+      "targets": [
+        { "expr": "sum(rate(ragkb_routing_verification_total{decision=\"vetoed\"}[24h])) / sum(rate(ragkb_routing_verification_total[24h])) * 100" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent" }, "overrides": [] }
+    },
+    {
+      "id": 3,
+      "title": "Score de similaridade — p50/p90 por integração",
+      "type": "timeseries",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 8 },
+      "targets": [
+        { "expr": "ragkb_routing_gate_score{quantile=\"0.5\"}", "legendFormat": "p50 {{integration}}" },
+        { "expr": "ragkb_routing_gate_score{quantile=\"0.9\"}", "legendFormat": "p90 {{integration}}" }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Execução HTTP — sucesso vs falha por integração",
+      "type": "barchart",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "sum by (integration, outcome) (increase(ragkb_integration_execution_total[24h]))", "legendFormat": "{{integration}} {{outcome}}" }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Parse do body — strict/lenient/invalid (24h)",
+      "type": "piechart",
+      "gridPos": { "x": 12, "y": 8, "w": 6, "h": 8 },
+      "targets": [
+        { "expr": "sum by (outcome) (increase(ragkb_integration_parse_total[24h]))", "legendFormat": "{{outcome}}" }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Latência HTTP — p95 por integração",
+      "type": "timeseries",
+      "gridPos": { "x": 18, "y": 8, "w": 6, "h": 8 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum by (le, integration) (rate(ragkb_integration_http_duration_seconds_bucket[1h])))", "legendFormat": "p95 {{integration}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 1
+}

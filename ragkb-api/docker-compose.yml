@@ -24,7 +24,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
-      
+
   waha:
     image: devlikeapro/waha:latest
     environment:
@@ -43,7 +43,33 @@ services:
       - waha-media:/app/.media
     restart: unless-stopped
 
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      # Provisiona datasource e dashboard automaticamente (ver arquivos abaixo)
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_DEFAULT_THEME: dark
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
 volumes:
   pgdata:
   waha-sessions:
   waha-media:
+  prometheus-data:
+  grafana-data:

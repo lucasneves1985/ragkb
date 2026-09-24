@@ -1,0 +1,12 @@
+# Scrape do backend a cada 15s pela rede interna do compose.
+# 'api' resolve pelo nome do serviço do docker-compose — NÃO localhost,
+# que dentro do container Prometheus apontaria para ele mesmo.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: ragkb-api
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["host.docker.internal:8080"]

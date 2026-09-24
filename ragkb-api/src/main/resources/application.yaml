@@ -101,6 +101,12 @@ management:
     web:
       exposure:
         include: health,info,metrics,prometheus
+  metrics:
+    distribution:
+      # Histograma de percentis para TODAS as métricas ragkb.* — sem isso,
+      # o Grafana calcula p95 apenas aproximado; com isso, buckets reais.
+      percentiles-histogram:
+        ragkb: true
 ragkb:
   media:
     path: ${RAGKB_MEDIA_PATH:/var/ragkb/media/articles}

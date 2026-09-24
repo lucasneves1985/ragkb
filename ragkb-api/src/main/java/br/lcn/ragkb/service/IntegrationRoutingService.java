@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import br.lcn.ragkb.entity.IntegrationType;
+import br.lcn.ragkb.metrics.RoutingMetrics;
 import br.lcn.ragkb.repository.IntegrationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,10 @@ import lombok.extern.slf4j.Slf4j;
  * Fail-safe: qualquer falha na verificação rejeita → KB flow (o caminho
  * arriscado é executar a integração; rejeitar só custa uma resposta pior). Toda
  * decisão é logada com scores — base para calibrar o threshold.
+ *
+ * P3: desfechos de gate e verificação também viram métricas (RoutingMetrics) —
+ * a distribuição de scores inclui a cauda rejeitada, que é a base da
+ * recalibração do piso com dados reais.
  */
 @Slf4j
 @Service
@@ -67,6 +72,7 @@ public class IntegrationRoutingService {
     private final IntegrationEmbeddingStore embeddingStore;
     private final EmbeddingModel embeddingModel;
     private final ChatClient chatClient;
+    private final RoutingMetrics metrics;
 
     @Value("${app.routing.enabled:false}")
     private boolean enabled;
@@ -102,31 +108,39 @@ public class IntegrationRoutingService {
         // String.format ANTES do log.info: %.3f não é placeholder do SLF4J
         // (que só substitui {}) — passado direto, os argumentos deslocavam.
         if (top.isEmpty()) {
-            log.info("[routing] Nenhuma integração QUERY com embedding — fluxo KB normal. Pergunta: '{}'",
-                    question);
+            metrics.gateNoCandidate();
+            log.info("[routing] Nenhuma integração QUERY com embedding — fluxo KB normal.");
             return Optional.empty();
         }
+        // Correção: o argumento 'question' extra aqui era ignorado pelo SLF4J
+        // (sem placeholder para ele) — removido.
         log.info(String.format("[routing] Top similaridades para '%s': %s", question,
                 top.stream()
                         .map(c -> String.format("%s=%.3f", c.name(), c.similarity()))
-                        .collect(Collectors.joining(", "))),
-                question);
+                        .collect(Collectors.joining(", "))));
+
+        // P3: TODOS os scores vão para a distribuição — incluindo os abaixo do
+        // piso. É exatamente a cauda rejeitada que informa a recalibração.
+        top.forEach(c -> metrics.gateScore(c.name(), c.similarity()));
 
         List<IntegrationEmbeddingStore.CandidateMatch> candidates = top.stream()
                 .filter(c -> c.similarity() >= similarityThreshold)
                 .toList();
         if (candidates.isEmpty()) {
+            metrics.gateNoCandidate();
             log.info(String.format(
                     "[routing] Melhor score %.3f abaixo do piso %s — fluxo KB normal. Pergunta: '%s'",
                     top.get(0).similarity(), similarityThreshold, question));
             return Optional.empty();
         }
+        metrics.gateCandidate();
 
         RoutingDecision decision = verifyWithLlm(question, candidates);
         log.info(String.format("[routing] Decisão do LLM: executar=%s, integracao=%s, motivo=%s",
                 decision.executar(), decision.integracao(), decision.motivo()));
 
         if (!Boolean.TRUE.equals(decision.executar())) {
+            // vetado/error já contados dentro de verifyWithLlm
             return Optional.empty();
         }
         return candidates.stream()
@@ -156,6 +170,7 @@ public class IntegrationRoutingService {
                     .call()
                     .entity(RoutingDecision.class);
             if (decision == null) {
+                metrics.verificationError();
                 return new RoutingDecision(false, null, "verificação sem resposta");
             }
             // Aceitou mas citou nome inexistente → trata como rejeição
@@ -165,14 +180,21 @@ public class IntegrationRoutingService {
                 log.warn(String.format(
                         "[routing] LLM aceitou mas citou integração inexistente '%s' — rejeitando",
                         decision.integracao()));
+                metrics.verificationVetoed();
                 return new RoutingDecision(false, decision.integracao(),
                         "nome de integração não confere com candidatos");
+            }
+            if (Boolean.TRUE.equals(decision.executar())) {
+                metrics.verificationConfirmed(decision.integracao());
+            } else {
+                metrics.verificationVetoed();
             }
             return decision;
         } catch (Exception e) {
             log.error(String.format(
                     "[routing] Falha na verificação LLM — rejeitando (fail-safe para KB): %s",
                     e.getMessage()));
+            metrics.verificationError();
             return new RoutingDecision(false, null, "falha na verificação: " + e.getMessage());
         }
     }
