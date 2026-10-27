@@ -26,7 +26,10 @@ services:
       retries: 10
 
   waha:
-    image: devlikeapro/waha:latest
+    #MACOS
+    image: devlikeapro/waha:arm
+    #WINDOWS
+    #image: devlikeapro/waha:latest
     environment:
       WAHA_DASHBOARD_USERNAME: admin
       WAHA_DASHBOARD_PASSWORD: admin123
