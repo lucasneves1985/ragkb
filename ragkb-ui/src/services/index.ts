@@ -11,4 +11,5 @@ export { businessRulesService } from './businessRules.service'
 export { integrationsService } from './integrations.service'
 
 export { remindersService } from './reminders.service'
+export { certificateMonitorsService } from './certificateMonitors.service'
 export { whatsappService, appConfigurationsService } from './whatsapp.service'
