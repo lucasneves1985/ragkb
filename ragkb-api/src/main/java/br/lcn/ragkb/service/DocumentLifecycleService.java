@@ -1,6 +1,7 @@
 package br.lcn.ragkb.service;
 
 import br.lcn.ragkb.dto.DocumentDto;
+import br.lcn.ragkb.dto.UpdateDocumentAccessRequest;
 import br.lcn.ragkb.entity.ConflictStatus;
 import br.lcn.ragkb.entity.DocumentMetadata;
 import br.lcn.ragkb.entity.DocumentStatus;
@@ -78,6 +79,46 @@ public class DocumentLifecycleService {
         doc.setStatus(DocumentStatus.ACTIVE);
         doc.setAllowedRoles(roles);
         doc.setChunkCount(chunks.size());
+        return DocumentDto.from(metadataRepository.save(doc));
+    }
+
+    @Transactional
+    public DocumentDto updateAllowedSectors(String documentId, List<String> allowedSectors) {
+        if (allowedSectors == null || allowedSectors.isEmpty()) {
+            throw new IllegalArgumentException("Informe ao menos um setor válido com acesso ao documento.");
+        }
+        List<String> sectors = allowedSectors.stream()
+                .filter(sector -> sector != null && !sector.isBlank())
+                .map(String::trim)
+                .distinct()
+                .toList();
+        if (sectors.isEmpty()) {
+            throw new IllegalArgumentException("Informe ao menos um setor válido com acesso ao documento.");
+        }
+
+        DocumentMetadata doc = metadataRepository.findById(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException(documentId));
+
+        if (doc.getStatus() == DocumentStatus.ACTIVE) {
+            if (doc.getSourceText() == null || doc.getSourceText().isBlank()) {
+                throw new IllegalStateException("Documento sem texto-fonte armazenado; não é possível atualizar o acesso sem reenviar o arquivo.");
+            }
+
+            List<Document> chunks = split(doc.getSourceText());
+            chunks.forEach(chunk -> chunk.getMetadata().putAll(Map.of(
+                    "documentId", doc.getId(),
+                    "sector", doc.getSector(),
+                    "allowedRoles", doc.getAllowedRoles(),
+                    "allowedSectors", sectors,
+                    "contentHash", doc.getContentHash()
+            )));
+
+            vectorStore.delete("documentId == '" + documentId + "'");
+            vectorStore.add(chunks);
+            doc.setChunkCount(chunks.size());
+        }
+
+        doc.setAllowedSectors(sectors);
         return DocumentDto.from(metadataRepository.save(doc));
     }
 

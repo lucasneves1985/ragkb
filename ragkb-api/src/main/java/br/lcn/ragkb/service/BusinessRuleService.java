@@ -168,6 +168,15 @@ public class BusinessRuleService {
         List<BusinessRule> rules = isAdmin
                 ? repository.findAll()
                 : repository.findByStatusNotOrAuthorUsername(BusinessRuleStatus.DRAFT, username);
+
+        if (!isAdmin) {
+            String userSector = userService.findByUsername(username);
+            rules = rules.stream()
+                    .filter(rule -> rule.getAuthorUsername().equals(username)
+                            || (userSector != null && rule.getSectorNames().stream()
+                                    .anyMatch(sector -> sector.equalsIgnoreCase(userSector))))
+                    .toList();
+        }
         return rules.stream().map(BusinessRuleDto::from).toList();
     }
 

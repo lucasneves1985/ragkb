@@ -2,6 +2,7 @@ package br.lcn.ragkb.controller;
 
 import br.lcn.ragkb.dto.DocumentActionRequest;
 import br.lcn.ragkb.dto.DocumentDto;
+import br.lcn.ragkb.dto.UpdateDocumentAccessRequest;
 import br.lcn.ragkb.service.DocumentLifecycleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,5 +41,12 @@ public class DocumentLifecycleController {
             default -> throw new IllegalArgumentException(
                     "Ação inválida: " + request.action() + ". Use ARCHIVE ou REACTIVATE");
         };
+    }
+
+    @PatchMapping("/{id}/access")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
+    public DocumentDto updateAccess(@PathVariable String id,
+                                    @Valid @RequestBody UpdateDocumentAccessRequest request) {
+        return lifecycleService.updateAllowedSectors(id, request.allowedSectors());
     }
 }

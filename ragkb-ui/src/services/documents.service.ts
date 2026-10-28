@@ -4,6 +4,7 @@ import type {
   KnowledgeDocument,
   DocumentActionRequest,
   IngestDocumentRequest,
+  UpdateDocumentAccessRequest,
 } from '@/types'
 
 export const documentsService = {
@@ -31,4 +32,7 @@ export const documentsService = {
 
   changeStatus: (id: string, request: DocumentActionRequest) =>
     http.patch<KnowledgeDocument>(`/documents/${id}`, request).then((r) => r.data),
+
+  updateAccess: (id: string, request: UpdateDocumentAccessRequest) =>
+    http.patch<KnowledgeDocument>(`/documents/${id}/access`, request).then((r) => r.data),
 }

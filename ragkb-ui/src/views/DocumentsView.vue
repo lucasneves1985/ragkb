@@ -8,13 +8,15 @@ import {
   useUploadDocument,
   useArchiveDocument,
   useReactivateDocument,
+  useUpdateDocumentAccess,
 } from '@/composables'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
 import PageHeading from '@/components/layout/PageHeading.vue'
 import DocumentFilters from '@/components/documents/DocumentFilters.vue'
 import DocumentTable from '@/components/documents/DocumentTable.vue'
 import DocumentUploadDialog from '@/components/documents/DocumentUploadDialog.vue'
-import type { DocumentUploadPayload } from '@/types'
+import DocumentAccessDialog from '@/components/documents/DocumentAccessDialog.vue'
+import type { DocumentUploadPayload, KnowledgeDocument } from '@/types'
 
 const { documents, isLoading, isError, refetch } = useDocuments()
 const { sectors } = useSectors()
@@ -22,11 +24,14 @@ const { sectors } = useSectors()
 const { uploadDocument, uploading } = useUploadDocument()
 const { archiveDocument } = useArchiveDocument()
 const { reactivateDocument } = useReactivateDocument()
+const { updateDocumentAccess, updatingAccess } = useUpdateDocumentAccess()
 
 const search = ref('')
 const sector = ref('')
 const status = ref('')
 const dialog = ref(false)
+const accessDialog = ref(false)
+const editingAccess = ref<KnowledgeDocument | null>(null)
 
 const filtered = computed(() => {
   if (!documents.value) return []
@@ -53,6 +58,22 @@ async function reactivate(id: string) {
     ElMessage.success('Documento reativado.')
   } catch {
     ElMessage.error('Erro ao reativar documento.')
+  }
+}
+
+function editAccess(document: KnowledgeDocument) {
+  editingAccess.value = document
+  accessDialog.value = true
+}
+
+async function saveAccess(allowedSectors: string[]) {
+  if (!editingAccess.value) return
+  try {
+    await updateDocumentAccess({ id: editingAccess.value.id, allowedSectors })
+    ElMessage.success('Acessos do documento atualizados.')
+    accessDialog.value = false
+  } catch {
+    ElMessage.error('Não foi possível atualizar os setores com acesso.')
   }
 }
 
@@ -115,7 +136,7 @@ function reset() {
           :count="filtered.length"
         />
 
-        <DocumentTable :documents="filtered" @archive="archive" @reactivate="reactivate" />
+        <DocumentTable :documents="filtered" @archive="archive" @reactivate="reactivate" @edit-access="editAccess" />
       </section>
 
       <DocumentUploadDialog
@@ -124,6 +145,13 @@ function reset() {
         :documents="documents ?? []"
         :uploading="uploading"
         @submit="handleUpload"
+      />
+      <DocumentAccessDialog
+        v-model="accessDialog"
+        :document="editingAccess"
+        :sectors="sectors ?? []"
+        :saving="updatingAccess"
+        @submit="saveAccess"
       />
     </div>
   </ErrorBoundary>

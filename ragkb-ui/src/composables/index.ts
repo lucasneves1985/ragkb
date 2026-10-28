@@ -1,7 +1,7 @@
 // ragkb-ui/src/composables/index.ts
 export { queryKeys } from './queryKeys'
 
-export { useDocuments, useUploadDocument, useArchiveDocument, useReactivateDocument } from './useDocuments'
+export { useDocuments, useUploadDocument, useArchiveDocument, useReactivateDocument, useUpdateDocumentAccess } from './useDocuments'
 export { useSectors } from './useSectors'
 export { useConflicts, useScanConflicts, useUpdateConflict } from './useConflicts'
 export { useConversations, useDeleteConversation } from './useConversations'

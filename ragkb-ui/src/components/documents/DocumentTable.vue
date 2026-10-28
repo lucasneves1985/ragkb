@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Edit } from '@element-plus/icons-vue'
 import type { DocumentStatus, KnowledgeDocument } from '@/types'
 
 defineProps<{
@@ -8,6 +9,7 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'archive', id: string): void
   (e: 'reactivate', id: string): void
+  (e: 'edit-access', document: KnowledgeDocument): void
 }>()
 
 function tag(s: DocumentStatus) {
@@ -40,8 +42,16 @@ function statusLabel(s: DocumentStatus) {
       </template>
     </el-table-column>
     <el-table-column prop="chunkCount" label="Chunks" width="90" />
-    <el-table-column label="Ações" width="160">
+    <el-table-column label="Setores com acesso" min-width="170">
       <template #default="{ row }">
+        <el-tag v-for="sector in row.allowedSectors" :key="sector" size="small" effect="plain" class="sector-tag">
+          {{ sector }}
+        </el-tag>
+      </template>
+    </el-table-column>
+    <el-table-column label="Ações" width="190">
+      <template #default="{ row }">
+        <el-button text :icon="Edit" @click="emit('edit-access', row)">Acessos</el-button>
         <el-button v-if="row.status === 'ACTIVE'" text type="warning" @click="emit('archive', row.id)">
           Arquivar
         </el-button>
@@ -73,4 +83,6 @@ function statusLabel(s: DocumentStatus) {
   color: #9aa4b1;
   font: 10px 'DM Mono';
 }
+
+.sector-tag { margin: 2px 4px 2px 0; }
 </style>

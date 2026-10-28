@@ -1,7 +1,8 @@
 // composables/useBusinessRules.ts
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { businessRulesService } from '@/services'
+import { useAuthStore } from '@/stores/auth'
 import type { CreateBusinessRuleRequest, UpdateBusinessRuleRequest } from '@/types'
 
 const RULES_KEY = ['business-rules']
@@ -13,8 +14,9 @@ function extractMessage(error: unknown): string | undefined {
 // Padrão do projeto (useSectors/useArticles): retorna objeto próprio,
 // nunca o UseQueryReturnType cru — mantém a convenção única entre composables.
 export function useBusinessRules() {
+  const auth = useAuthStore()
   const query = useQuery({
-    queryKey: RULES_KEY,
+    queryKey: computed(() => [...RULES_KEY, auth.username]),
     queryFn: businessRulesService.list,
   })
 
@@ -80,8 +82,9 @@ export function useArchiveBusinessRule() {
 }
 
 export function usePortalBusinessRules() {
+  const auth = useAuthStore()
   const query = useQuery({
-    queryKey: ['business-rules-portal'],
+    queryKey: computed(() => ['business-rules-portal', auth.username]),
     queryFn: () => businessRulesService.portal(),
   })
 

@@ -17,6 +17,10 @@ export interface DocumentActionRequest {
   allowedRoles?: string[]
 }
 
+export interface UpdateDocumentAccessRequest {
+  allowedSectors: string[]
+}
+
 export interface IngestDocumentRequest {
   sector: string
   allowedSectors: string[]

@@ -114,3 +114,13 @@ export function useReactivateDocument() {
     updating: mutation.isPending,
   }
 }
+
+export function useUpdateDocumentAccess() {
+  const queryClient = useQueryClient()
+  const mutation = useMutation({
+    mutationFn: ({ id, allowedSectors }: { id: string; allowedSectors: string[] }) =>
+      documentsService.updateAccess(id, { allowedSectors }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.documents.lists() }),
+  })
+  return { updateDocumentAccess: mutation.mutateAsync, updatingAccess: mutation.isPending }
+}

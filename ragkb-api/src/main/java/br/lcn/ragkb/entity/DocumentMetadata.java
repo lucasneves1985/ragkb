@@ -94,6 +94,10 @@ public class DocumentMetadata {
         this.allowedRoles = roles != null ? new ArrayList<>(roles) : new ArrayList<>();
     }
 
+    public void setAllowedSectors(List<String> sectors) {
+        this.allowedSectors = sectors != null ? new ArrayList<>(sectors) : new ArrayList<>();
+    }
+
     public void setChunkCount(Integer chunkCount) {
         this.chunkCount = chunkCount;
     }
