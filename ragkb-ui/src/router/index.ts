@@ -64,6 +64,11 @@ const router = createRouter({
       meta: { requiresAuth: true, roles: ['ADMIN', 'EDITOR'] },
     },
     {
+      path: '/certificates',
+      component: () => import('../views/CertificateMonitorsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/reminders',
       component: () => import('../views/RemindersView.vue'),
       meta: { requiresAuth: true },
