@@ -121,6 +121,7 @@ function reset() {
       <DocumentUploadDialog
         v-model="dialog"
         :sectors="sectors ?? []"
+        :documents="documents ?? []"
         :uploading="uploading"
         @submit="handleUpload"
       />

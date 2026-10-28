@@ -49,6 +49,9 @@ public class AppUser {
     @Column(nullable = false, length = 150)
     private String email;
 
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
     @Column(length = 40)
     private String phone;
 
@@ -74,6 +77,10 @@ public class AppUser {
         this.fullName = fullName;
         this.email = email;
         this.phone = phone;
+    }
+
+    public void updateAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 
     public void replaceRoles(List<String> roles) {

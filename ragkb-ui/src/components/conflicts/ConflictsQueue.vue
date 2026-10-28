@@ -43,7 +43,7 @@ function filename(id: string) {
       :class="{ selected: item.id === selectedId }"
       @click="$emit('select', item.id)"
     >
-      <span class="score">{{ Math.round((item.similarityScore ?? 0) * 100) }}%</span>
+      <span class="score">{{ Math.round((item.score ?? 0) * 100) }}%</span>
       <div>
         <b>{{ filename(item.documentIdA) }}</b>
         <small>vs. {{ filename(item.documentIdB) }}</small>

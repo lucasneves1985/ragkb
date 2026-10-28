@@ -14,17 +14,35 @@ import {
   User,
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
+import { useQueryClient } from '@tanstack/vue-query'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppTopbar from '@/components/layout/AppTopbar.vue'
 import type { NavItem } from '@/types'
+import { MY_PROFILE_KEY, useMyProfile } from '@/composables/useMyProfile'
+import { resolveAvatarUrl } from '@/services/users.service'
 
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const queryClient = useQueryClient()
+const { profile } = useMyProfile()
 
 const collapsed = ref(false)
 const loggedIn = computed(() => auth.isAuthenticated)
+const displayName = computed(() => profile.value?.fullName || auth.username)
+const profileInitials = computed(() => {
+  const initials = profile.value?.fullName
+    ?.trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase()
+  return initials || auth.initials
+})
+const avatarUrl = computed(() => resolveAvatarUrl(profile.value?.avatarUrl))
 
 watch(loggedIn, (authed) => {
   if (authed && route.path === '/login') {
@@ -68,6 +86,7 @@ const items = computed<NavItem[]>(() => [
 
 function logout() {
   auth.logout()
+  queryClient.removeQueries({ queryKey: MY_PROFILE_KEY })
   router.push('/login')
 }
 </script>
@@ -79,8 +98,9 @@ function logout() {
     <AppSidebar :collapsed="collapsed" :items="items" @toggle="collapsed = !collapsed" />
 
     <el-container direction="vertical">
-      <AppTopbar :username="auth.username" :initials="auth.initials" :roles="auth.roles"
-        @new-query="router.push('/chat')" @logout="logout" />
+      <AppTopbar :username="displayName" :initials="profileInitials" :roles="auth.roles"
+        :avatar-url="avatarUrl"
+        @new-query="router.push('/chat')" @preferences="router.push('/preferences')" @logout="logout" />
 
       <el-main class="content">
         <router-view />

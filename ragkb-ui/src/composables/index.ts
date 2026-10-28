@@ -7,6 +7,7 @@ export { useConflicts, useScanConflicts, useUpdateConflict } from './useConflict
 export { useConversations, useDeleteConversation } from './useConversations'
 export { useChat } from './useChat'
 export { useUsers } from './useUsers'
+export { useMyProfile } from './useMyProfile'
 export { useTickets } from './useTickets'
 export {
   useArticles,

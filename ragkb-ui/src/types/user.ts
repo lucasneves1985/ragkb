@@ -4,6 +4,7 @@ export interface User {
   username: string
   fullName: string
   email: string
+  avatarUrl: string | null
   phone: string | null
   roles: string[]
   sectorId: number
@@ -29,4 +30,15 @@ export interface UpdateUserRequest {
   sectorId: number
   password?: string
   enabled?: boolean
+}
+
+export interface UpdateOwnProfileRequest {
+  fullName: string
+  email: string
+}
+
+export interface ChangeOwnPasswordRequest {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
 }

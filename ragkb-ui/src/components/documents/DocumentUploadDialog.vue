@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import UploadSpinner from './UploadSpinner.vue'
-import type { DocumentUploadPayload, Sector } from '@/types'
+import type { DocumentUploadPayload, KnowledgeDocument, Sector } from '@/types'
 
 const props = defineProps<{
   modelValue: boolean
   sectors: Sector[]
+  documents: KnowledgeDocument[]
   uploading: boolean
 }>()
 
@@ -23,6 +24,16 @@ const form = reactive({
   allowedSectors: [] as string[],
   roles: ['ROLE_USER'],
   supersedes: '',
+})
+
+const activeDocuments = computed(() => props.documents.filter(
+  (document) => document.status === 'ACTIVE' && (!form.sector || document.sector === form.sector),
+))
+
+watch(() => form.sector, () => {
+  if (form.supersedes && !activeDocuments.value.some((document) => document.id === form.supersedes)) {
+    form.supersedes = ''
+  }
 })
 
 watch(
@@ -105,6 +116,17 @@ function submit() {
           <el-option v-for="s in sectors" :key="s.id" :label="s.name" :value="s.name" />
         </el-select>
       </el-form-item>
+      <el-form-item label="Substitui documento ativo (opcional)">
+        <el-select v-model="form.supersedes" clearable filterable placeholder="Não substituir documento">
+          <el-option
+            v-for="document in activeDocuments"
+            :key="document.id"
+            :label="`${document.filename} · ${document.sector}`"
+            :value="document.id"
+          />
+        </el-select>
+        <span class="field-hint">Após a ingestão bem-sucedida, o documento selecionado será marcado como substituído.</span>
+      </el-form-item>
     </el-form>
 
     <template #footer>
@@ -127,5 +149,13 @@ function submit() {
   margin-left: 10px;
   color: #168463;
   font-size: 12px;
+}
+
+.field-hint {
+  display: block;
+  margin-top: 5px;
+  color: #8490a1;
+  font-size: 11px;
+  line-height: 1.45;
 }
 </style>
