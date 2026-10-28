@@ -37,14 +37,27 @@ public interface BusinessRuleRepository extends JpaRepository<BusinessRule, Stri
     @Query(value = """
             SELECT r.id FROM business_rules r
             WHERE r.status = 'PUBLISHED'
-              AND r.embedding IS NOT NULL
+              AND (
+                    (r.embedding IS NOT NULL
+                     AND 1 - (r.embedding <=> CAST(:qv AS vector)) >= :similarityThreshold)
+                    OR r.title ILIKE '%' || CAST(:query AS text) || '%'
+                    OR r.description ILIKE '%' || CAST(:query AS text) || '%'
+              )
               AND (CAST(:sector AS text) IS NULL OR EXISTS (
                     SELECT 1 FROM business_rule_sectors s
                     WHERE s.rule_id = r.id AND s.sector_name = CAST(:sector AS text)))
-            ORDER BY r.embedding <=> CAST(:qv AS vector)
+            ORDER BY CASE
+                         WHEN r.title ILIKE '%' || CAST(:query AS text) || '%'
+                           OR r.description ILIKE '%' || CAST(:query AS text) || '%'
+                         THEN 0 ELSE 1
+                     END,
+                     r.embedding <=> CAST(:qv AS vector)
             LIMIT 20
             """, nativeQuery = true)
-    List<String> semanticSearchIds(@Param("sector") String sector, @Param("qv") String queryVector);
+    List<String> semanticSearchIds(@Param("sector") String sector,
+                                   @Param("qv") String queryVector,
+                                   @Param("query") String query,
+                                   @Param("similarityThreshold") double similarityThreshold);
 
     @Modifying
     @Query(value = """

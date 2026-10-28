@@ -67,6 +67,8 @@ spring:
           starttls:
             enable: true
 app:
+  business-rules:
+    similarity-threshold: ${BUSINESS_RULES_SIMILARITY_THRESHOLD:0.70}
   routing:
     enabled: true
     similarity-threshold: 0.70

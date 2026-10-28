@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Refresh } from '@element-plus/icons-vue'
+import { Refresh, RefreshRight } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import {
   useConflicts,
@@ -55,9 +55,11 @@ function reset() {
         eyebrow="QUALIDADE DA BASE"
         title="Triagem de conflitos"
         description="Analise potenciais divergências encontradas entre documentos ativos."
+        :on-refresh="refetch"
+        :refreshing="isLoading"
       >
         <template #actions>
-          <el-button class="primary-button" :icon="Refresh" :loading="scanning" @click="scan">
+          <el-button class="primary-button" :icon="RefreshRight" :loading="scanning" @click="scan">
             Escanear conflitos
           </el-button>
         </template>

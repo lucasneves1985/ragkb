@@ -18,7 +18,7 @@ const visibleItems = computed(() => props.items.filter((entry) => entry.visible)
 </script>
 
 <template>
-  <el-aside :width="collapsed ? '76px' : '250px'" class="sidebar">
+  <el-aside :width="collapsed ? '76px' : '250px'" :class="['sidebar', { 'is-collapsed': collapsed }]">
     <div class="brand">
       <div class="brand-mark">R</div>
       <span v-show="!collapsed">rag<span>kb</span></span>
@@ -27,7 +27,7 @@ const visibleItems = computed(() => props.items.filter((entry) => entry.visible)
     <div v-show="!collapsed" class="workspace-label">BASE DE CONHECIMENTO</div>
 
     <!-- Área rolável: com o menu crescendo, itens nunca mais são cortados -->
-    <div class="nav-scroll">
+    <div :class="['nav-scroll', { 'is-collapsed': collapsed }]">
       <el-menu :default-active="route.path" :collapse="collapsed" :collapse-transition="false" router class="nav-menu">
         <el-menu-item v-for="item in visibleItems" :key="item.to" :index="item.to">
           <el-icon>
@@ -59,6 +59,10 @@ const visibleItems = computed(() => props.items.filter((entry) => entry.visible)
   transition: width 0.2s;
   overflow: hidden;
   height: 100vh;
+}
+
+.sidebar.is-collapsed {
+  padding-inline: 0;
 }
 
 .brand {
@@ -106,6 +110,10 @@ const visibleItems = computed(() => props.items.filter((entry) => entry.visible)
   /* esconde a barra quando não precisa, mas mantém rolagem disponível */
   scrollbar-width: thin;
   scrollbar-color: #273b4b transparent;
+}
+
+.nav-scroll.is-collapsed {
+  scrollbar-gutter: stable;
 }
 
 .nav-scroll::-webkit-scrollbar {

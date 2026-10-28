@@ -120,7 +120,8 @@ function reset() {
   <ErrorBoundary @retry="reset">
     <div>
       <PageHeading eyebrow="BASE DE CONHECIMENTO" title="Artigos"
-        description="Conteúdo editorial indexado para consultas da IA — somente o texto é ingerido.">
+        description="Conteúdo editorial indexado para consultas da IA — somente o texto é ingerido."
+        :on-refresh="refetch" :refreshing="isLoading">
         <template #actions>
           <el-button class="primary-button" :icon="DocumentAdd" :loading="loadingDetail" @click="openCreate">
             Novo artigo

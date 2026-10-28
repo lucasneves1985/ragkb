@@ -81,7 +81,8 @@ async function toggleEnabled(user: User) {
   <ErrorBoundary @retry="reset">
     <div>
       <PageHeading eyebrow="CONTROLE DE ACESSO" title="Usuários"
-        description="Defina quem pode consultar e administrar a base de conhecimento.">
+        description="Defina quem pode consultar e administrar a base de conhecimento."
+        :on-refresh="reset">
         <template #actions>
           <el-button class="primary-button" :icon="Plus" @click="createDrawer = true">
             Novo usuário

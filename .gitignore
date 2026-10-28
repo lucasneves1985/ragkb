@@ -19,6 +19,7 @@ Thumbs.db
 
 # ===== Backend (Spring Boot / Maven) =====
 ragkb-api/target/
+ragkb-api/data/
 *.log
 
 # ===== Frontend (Vue / Vite) =====

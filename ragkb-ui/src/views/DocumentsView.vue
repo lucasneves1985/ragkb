@@ -85,6 +85,8 @@ function reset() {
         eyebrow="BASE DE CONHECIMENTO"
         title="Documentos"
         description="Base de conhecimento indexada"
+        :on-refresh="refetch"
+        :refreshing="isLoading"
       >
         <template #actions>
           <el-button class="primary-button" :icon="DocumentAdd" @click="dialog = true">

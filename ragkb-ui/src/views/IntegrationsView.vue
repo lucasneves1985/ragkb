@@ -1,7 +1,7 @@
 <!-- views/IntegrationsView.vue -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Connection, DocumentAdd } from '@element-plus/icons-vue'
+import { Connection, DocumentAdd, Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   useCreateIntegration,
@@ -16,7 +16,7 @@ import IntegrationEditorDialog from '@/components/integrations/IntegrationEditor
 import IntegrationExecutionsDialog from '@/components/integrations/IntegrationExecutionsDialog.vue'
 import type { Integration, UpdateIntegrationRequest } from '@/types'
 
-const { integrations, isLoading, isError } = useIntegrations()
+const { integrations, isLoading, isError, refetch } = useIntegrations()
 const { createIntegration, creating } = useCreateIntegration()
 const { updateIntegration, updating } = useUpdateIntegration()
 const { setActive, toggling } = useSetActiveIntegration()
@@ -26,7 +26,17 @@ const dialog = ref(false)
 const editing = ref<Integration | null>(null)
 const executionsDialog = ref(false)
 const executionTarget = ref<Integration | null>(null)
+const refreshing = ref(false)
 const saving = computed(() => creating.value || updating.value || toggling.value)
+
+async function refreshList() {
+  refreshing.value = true
+  try {
+    await refetch()
+  } finally {
+    refreshing.value = false
+  }
+}
 
 function openCreate() {
   editing.value = null
@@ -84,9 +94,13 @@ async function handleDelete(integration: Integration) {
         <h2><el-icon class="title-icon">
             <Connection />
           </el-icon> Integrações</h2>
-        <el-button class="primary-button" type="primary" :icon="DocumentAdd" @click="openCreate">
-          Nova integração
-        </el-button>
+        <div class="header-actions">
+          <el-button text circle :icon="Refresh" :loading="refreshing" title="Atualizar lista"
+            aria-label="Atualizar lista" @click="refreshList" />
+          <el-button class="primary-button" type="primary" :icon="DocumentAdd" @click="openCreate">
+            Nova integração
+          </el-button>
+        </div>
       </div>
 
       <section v-if="isLoading || saving" class="surface loading">Carregando…</section>
@@ -108,6 +122,12 @@ async function handleDelete(integration: Integration) {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .title-icon {
