@@ -10,6 +10,7 @@ const props = defineProps<{
   messages: Message[]
   loading: boolean
   initials: string
+  avatarUrl?: string
   ticket: { subject: string; description: string }
 }>()
 
@@ -51,7 +52,11 @@ defineExpose({ scrollToBottom })
 <template>
   <div ref="container" class="messages">
     <article v-for="message in messages" :key="message.id" class="message" :class="message.from">
-      <div class="avatar">{{ message.from === 'user' ? initials : 'R' }}</div>
+      <div class="avatar">
+        <img v-if="message.from === 'user' && avatarUrl" class="avatar-image" :src="avatarUrl" alt="Foto do usuário" />
+        <img v-else-if="message.from !== 'user'" class="avatar-image" src="/avatar.png" alt="ragkb" />
+        <span v-else>{{ initials }}</span>
+      </div>
       <div class="bubble">
         <div v-if="message.text" class="message-text" v-html="renderMarkdown(message.text)"></div>
 
@@ -102,13 +107,21 @@ defineExpose({ scrollToBottom })
     </article>
 
     <div v-if="loading" class="message assistant">
-      <div class="avatar">R</div>
+      <div class="avatar"><img class="avatar-image" src="/favicon-32x32.png" alt="ragkb" /></div>
       <div class="bubble typing"><i></i><i></i><i></i></div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.avatar-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
 .source-link {
   color: #168463;
   text-decoration: none;

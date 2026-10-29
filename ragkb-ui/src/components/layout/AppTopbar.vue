@@ -6,11 +6,13 @@ defineProps<{
   username: string
   initials: string
   roles: string[]
+  avatarUrl?: string
 }>()
 
 const emit = defineEmits<{
   (e: 'new-query'): void
   (e: 'logout'): void
+  (e: 'preferences'): void
 }>()
 </script>
 
@@ -29,7 +31,9 @@ const emit = defineEmits<{
         :username="username"
         :initials="initials"
         :roles="roles"
+        :avatar-url="avatarUrl"
         @logout="emit('logout')"
+        @preferences="emit('preferences')"
       />
     </div>
   </el-header>

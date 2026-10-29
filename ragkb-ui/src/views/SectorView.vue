@@ -60,6 +60,7 @@ function reset() {
         eyebrow="GOVERNANÇA DA BASE"
         title="Setores"
         description="Defina os departamentos que controlam o acesso a usuários e documentos."
+        :on-refresh="refetch"
       />
 
       <section class="surface">

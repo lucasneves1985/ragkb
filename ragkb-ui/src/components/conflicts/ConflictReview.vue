@@ -33,7 +33,7 @@ function update(action: ConflictActionRequest['action']) {
         <h2>
           Comparação semântica
           <el-tag type="warning" effect="light">
-            {{ Math.round((conflict.similarityScore ?? 0) * 100) }}% de similaridade
+            {{ Math.round((conflict.score ?? 0) * 100) }}% de similaridade
           </el-tag>
         </h2>
       </div>

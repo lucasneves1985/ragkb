@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,9 @@ public class BusinessRuleService {
     private final BusinessRuleRepository repository;
     private final BusinessRuleEmbeddingService embeddingService;
     private final UserService userService;
+
+    @Value("${app.business-rules.similarity-threshold:0.70}")
+    private double similarityThreshold;
 
     @Transactional
     public BusinessRuleDto create(CreateBusinessRuleRequest request, String username, boolean isAdmin) {
@@ -164,6 +168,15 @@ public class BusinessRuleService {
         List<BusinessRule> rules = isAdmin
                 ? repository.findAll()
                 : repository.findByStatusNotOrAuthorUsername(BusinessRuleStatus.DRAFT, username);
+
+        if (!isAdmin) {
+            String userSector = userService.findByUsername(username);
+            rules = rules.stream()
+                    .filter(rule -> rule.getAuthorUsername().equals(username)
+                            || (userSector != null && rule.getSectorNames().stream()
+                                    .anyMatch(sector -> sector.equalsIgnoreCase(userSector))))
+                    .toList();
+        }
         return rules.stream().map(BusinessRuleDto::from).toList();
     }
 
@@ -192,7 +205,7 @@ public class BusinessRuleService {
 
         // Busca semântica: permissão aplicada no próprio SQL, antes do ranking.
         String queryVector = embeddingService.embedQueryToLiteral(query);
-        List<String> ids = repository.semanticSearchIds(sector, queryVector);
+        List<String> ids = repository.semanticSearchIds(sector, queryVector, query, similarityThreshold);
         Map<String, BusinessRule> byId = repository.findAllById(ids).stream()
                 .collect(Collectors.toMap(BusinessRule::getId, Function.identity()));
 

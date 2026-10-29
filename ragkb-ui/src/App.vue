@@ -2,7 +2,10 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
+  Bell,
+  Lock,
   ChatDotRound,
+  Connection,
   Document,
   FolderOpened,
   List,
@@ -12,17 +15,35 @@ import {
   User,
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
+import { useQueryClient } from '@tanstack/vue-query'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppTopbar from '@/components/layout/AppTopbar.vue'
 import type { NavItem } from '@/types'
+import { MY_PROFILE_KEY, useMyProfile } from '@/composables/useMyProfile'
+import { resolveAvatarUrl } from '@/services/users.service'
 
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const queryClient = useQueryClient()
+const { profile } = useMyProfile()
 
 const collapsed = ref(false)
 const loggedIn = computed(() => auth.isAuthenticated)
+const displayName = computed(() => profile.value?.fullName || auth.username)
+const profileInitials = computed(() => {
+  const initials = profile.value?.fullName
+    ?.trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase()
+  return initials || auth.initials
+})
+const avatarUrl = computed(() => resolveAvatarUrl(profile.value?.avatarUrl))
 
 watch(loggedIn, (authed) => {
   if (authed && route.path === '/login') {
@@ -58,11 +79,16 @@ const items = computed<NavItem[]>(() => [
   },
   { label: 'Conflitos', to: '/conflicts', icon: Document, visible: auth.hasRole('ADMIN') },
   { label: 'Setores', to: '/sectors', icon: OfficeBuilding, visible: auth.hasRole('ADMIN') },
+  { label: 'Integrações', to: '/integrations', icon: Connection, visible: auth.hasAnyRole(['ADMIN', 'EDITOR']) },
+  { label: 'Certificados SSL', to: '/certificates', icon: Lock, visible: true },
+  { label: 'Lembretes', to: '/reminders', icon: Bell, visible: true },
+  { label: 'WhatsApp', to: '/whatsapp', icon: ChatDotRound, visible: auth.hasRole('ADMIN') },
   { label: 'Usuários', to: '/users', icon: User, visible: auth.hasRole('ADMIN') },
 ])
 
 function logout() {
   auth.logout()
+  queryClient.removeQueries({ queryKey: MY_PROFILE_KEY })
   router.push('/login')
 }
 </script>
@@ -74,8 +100,9 @@ function logout() {
     <AppSidebar :collapsed="collapsed" :items="items" @toggle="collapsed = !collapsed" />
 
     <el-container direction="vertical">
-      <AppTopbar :username="auth.username" :initials="auth.initials" :roles="auth.roles"
-        @new-query="router.push('/chat')" @logout="logout" />
+      <AppTopbar :username="displayName" :initials="profileInitials" :roles="auth.roles"
+        :avatar-url="avatarUrl"
+        @new-query="router.push('/chat')" @preferences="router.push('/preferences')" @logout="logout" />
 
       <el-main class="content">
         <router-view />

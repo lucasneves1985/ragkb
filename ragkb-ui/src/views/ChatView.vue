@@ -1,13 +1,16 @@
 ﻿<script setup lang="ts">
-import { onMounted } from 'vue'
-import { useChat, useConversations } from '@/composables'
+import { computed, onMounted } from 'vue'
+import { useChat, useConversations, useMyProfile } from '@/composables'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
 import ChatSidebar from '@/components/chat/ChatSidebar.vue'
 import ChatMessageList from '@/components/chat/ChatMessageList.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import { ref } from 'vue'
+import { resolveAvatarUrl } from '@/services/users.service'
 
 const showHistory = ref(true)
+const { profile } = useMyProfile()
+const avatarUrl = computed(() => resolveAvatarUrl(profile.value?.avatarUrl))
 
 const {
   auth,
@@ -73,6 +76,7 @@ function reset() {
           :messages="messages"
           :loading="loading"
           :initials="auth.initials"
+          :avatar-url="avatarUrl"
           :ticket="ticket"
           @update:ticket="Object.assign(ticket, $event)"
           @open-ticket="openTicket"

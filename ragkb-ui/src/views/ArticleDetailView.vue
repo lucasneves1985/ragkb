@@ -19,9 +19,17 @@ const isNotFound = ref(false)
 
 // Conteúdo é HTML sanitizado no backend — DOMPurify é defesa em
 // profundidade na renderização, mesmo padrão do chat
-const sanitizedContent = computed(() =>
-  article.value ? DOMPurify.sanitize(article.value.content) : '',
-)
+const sanitizedContent = computed(() => {
+  if (!article.value) return ''
+
+  const sanitized = DOMPurify.sanitize(article.value.content)
+  const document = new DOMParser().parseFromString(sanitized, 'text/html')
+  document.querySelectorAll('a[href]').forEach((link) => {
+    link.setAttribute('target', '_blank')
+    link.setAttribute('rel', 'noopener noreferrer')
+  })
+  return document.body.innerHTML
+})
 
 const canManage = computed(() => {
   const a = article.value

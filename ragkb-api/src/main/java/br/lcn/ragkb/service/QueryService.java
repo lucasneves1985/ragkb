@@ -1,9 +1,13 @@
 package br.lcn.ragkb.service;
 
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -17,12 +21,17 @@ import org.springframework.stereotype.Service;
 import br.lcn.ragkb.dto.AnswerResponse;
 import br.lcn.ragkb.dto.ConversationDetailDto;
 import br.lcn.ragkb.dto.RedisChatMessageDto;
+import br.lcn.ragkb.dto.ReminderDto;
 import br.lcn.ragkb.dto.SourceReferenceDto;
 import br.lcn.ragkb.entity.AppRole;
 import br.lcn.ragkb.entity.DocumentMetadata;
+import br.lcn.ragkb.entity.Integration;
 import br.lcn.ragkb.repository.DocumentMetadataRepository;
+import br.lcn.ragkb.repository.IntegrationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class QueryService {
@@ -30,6 +39,19 @@ public class QueryService {
     // Valor empírico — calibrar com o ThresholdCalibrationRunner, não é definitivo
     private static final double SIMILARITY_THRESHOLD = 0.65;
     private static final int TOP_K = 6;
+
+    /**
+     * Detecção determinística de intenção de lembrete (frente 4).
+     */
+    private static final Pattern REMINDER_INTENT = Pattern.compile(
+            "^\\s*(me\\s+lembre|me\\s+lembra|lembre-me|lembra-?me"
+            + "|quero\\s+um\\s+lembrete|crie\\s+um\\s+lembrete|criar\\s+um\\s+lembrete"
+            + "|lembrar\\s+de|lembrete\\s*:)\\b.*",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+
+    private static final ZoneId ZONE = ZoneId.of("America/Sao_Paulo");
+    private static final DateTimeFormatter REMINDER_TIME_FORMAT
+            = DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm").withZone(ZONE);
 
     private static final String SYSTEM_PROMPT = """
             Você é um assistente de base de conhecimento corporativa.
@@ -50,6 +72,12 @@ public class QueryService {
     private final ConversationService conversationService;
     private final RedisChatHistoryService redisChatHistoryService;
     private final UserService userService;
+    private final ReminderService reminderService;
+    private final IntegrationRoutingService routingService;
+    private final IntegrationQueryExecutor queryExecutor;
+    private final IntegrationRepository integrationRepository;
+    private final IntegrationParamService paramService;
+    private final RedisIntegrationParamStateService paramStateService;
 
     public AnswerResponse ask(String question, String conversationId, Authentication auth) {
         // Contexto do usuário resolvido AQUI, não no controller
@@ -62,6 +90,38 @@ public class QueryService {
         // Cria ou recupera a conversa persistida — usa SEMPRE o id retornado
         ConversationDetailDto conversation = conversationService.getOrCreateConversation(conversationId, userId, question);
         String effectiveConversationId = conversation.id();
+
+        // ── Intent: lembrete (frente 4) — interceptado antes de qualquer busca ──
+        if (REMINDER_INTENT.matcher(question.trim()).matches()) {
+            return handleReminderIntent(question, userId, effectiveConversationId);
+        }
+
+        // ── Frente 5: roteamento em camadas + coleta de parâmetros (fase 2) ──
+        if (routingService.isEnabled()) {
+            // 1. Coleta em andamento? A mensagem é tratada como resposta da coleta
+            var pendingOpt = paramStateService.get(effectiveConversationId);
+            if (pendingOpt.isPresent()) {
+                var pendingIntegration = integrationRepository.findById(pendingOpt.get().integrationId());
+                if (pendingIntegration.isPresent() && pendingIntegration.get().isActive()) {
+                    return handlePendingParams(pendingIntegration.get(), pendingOpt.get(),
+                            question, userId, effectiveConversationId);
+                }
+                // Integração sumiu/desativou — estado órfão, segue fluxo normal
+                paramStateService.clear(effectiveConversationId);
+            }
+
+            // 2. Gate vetorial + verificação de intenção
+            var outcome = routingService.decide(question);
+            if (outcome.isPresent()) {
+                var integrationOpt = integrationRepository.findById(outcome.get().integrationId());
+                if (integrationOpt.isPresent()) {
+                    return handleIntegrationQuery(integrationOpt.get(),
+                            question, userId, effectiveConversationId);
+                }
+                log.warn("[routing] Integração '{}' confirmada mas não encontrada — fluxo KB normal",
+                        outcome.get().integrationName());
+            }
+        }
 
         boolean isAdmin = roles.contains(AppRole.ROLE_ADMIN.name());
 
@@ -118,8 +178,8 @@ public class QueryService {
         // Mapeia documentIds para filenames
         List<String> docIds = hits.stream()
                 .map(doc -> doc.getMetadata().get("documentId") != null
-                        ? doc.getMetadata().get("documentId").toString()
-                        : "")
+                ? doc.getMetadata().get("documentId").toString()
+                : "")
                 .toList();
         Map<String, String> filenameMap = metadataRepository.findAllById(docIds).stream()
                 .collect(Collectors.toMap(DocumentMetadata::getId, DocumentMetadata::getFilename));
@@ -149,8 +209,6 @@ public class QueryService {
                 .content();
 
         // Fontes estruturadas: documento (label) ou artigo (label + link).
-        // sourceIds mantém os labels em string — é o que recordInteraction
-        // persiste em ChatMessage e o que o reload de conversa consome.
         List<String> sourceIds = new ArrayList<>();
         Map<String, SourceReferenceDto> sourceMap = new LinkedHashMap<>();
         for (Document doc : hits) {
@@ -167,6 +225,124 @@ public class QueryService {
         redisChatHistoryService.addMessage(effectiveConversationId, "USER", question);
         redisChatHistoryService.addMessage(effectiveConversationId, "ASSISTANT", answer);
 
+        return response;
+    }
+
+    /**
+     * Integração confirmada pelo roteamento. Fase 2: se tem params_definition
+     * com required, extrai da pergunta; faltando, pergunta ao usuário e grava
+     * estado no Redis — a PRÓXIMA mensagem da conversa é tratada como resposta.
+     */
+    private AnswerResponse handleIntegrationQuery(Integration integration,
+            String question, String userId,
+            String effectiveConversationId) {
+        Map<String, String> params = Map.of();
+        if (paramService.hasRequiredParams(integration)) {
+            var extracted = paramService.extract(integration, question);
+            var missing = paramService.findMissingRequired(integration, extracted);
+            if (!missing.isEmpty()) {
+                paramStateService.save(effectiveConversationId, integration.getId(), extracted);
+                return askForParams(integration, missing, effectiveConversationId);
+            }
+            params = extracted;
+        }
+        return executeIntegration(integration, params, question, userId, effectiveConversationId);
+    }
+
+    /**
+     * Continuação da coleta: a mensagem atual é tentativa de resposta dos
+     * parâmetros.
+     */
+    private AnswerResponse handlePendingParams(Integration integration,
+            RedisIntegrationParamStateService.PendingParamState pending,
+            String question, String userId,
+            String effectiveConversationId) {
+        var extracted = paramService.extract(integration, question);
+        Map<String, String> merged = new HashMap<>(pending.params());
+        merged.putAll(extracted);
+
+        var missing = paramService.findMissingRequired(integration, merged);
+        if (!missing.isEmpty()) {
+            paramStateService.save(effectiveConversationId, integration.getId(), merged);
+            return askForParams(integration, missing, effectiveConversationId);
+        }
+        paramStateService.clear(effectiveConversationId);
+        return executeIntegration(integration, merged, question, userId, effectiveConversationId);
+    }
+
+    private AnswerResponse askForParams(Integration integration,
+            List<IntegrationParamService.ParamField> missing,
+            String effectiveConversationId) {
+        String ask = paramService.buildAskMessage(integration, missing);
+        AnswerResponse response = new AnswerResponse("PARAM_REQUIRED", ask,
+                List.of(integration.getName()),
+                List.of(SourceReferenceDto.fromDocument(integration.getName())),
+                null, effectiveConversationId);
+        conversationService.recordInteraction(effectiveConversationId, ask, response);
+        redisChatHistoryService.addMessage(effectiveConversationId, "ASSISTANT", ask);
+        return response;
+    }
+
+    /**
+     * Execução final. Falha → sugestão de chamado com motivo EXPLÍCITO de falha
+     * de integração (não "não encontrei na base"); NUNCA recai automaticamente
+     * na KB (dados "meio antigos de outra fonte" seriam piores que uma falha
+     * explícita).
+     */
+    private AnswerResponse executeIntegration(Integration integration,
+            Map<String, String> params,
+            String question, String userId,
+            String effectiveConversationId) {
+        var execution = queryExecutor.execute(integration, question, params);
+
+        AnswerResponse response;
+        if (execution.success()) {
+            response = new AnswerResponse("INTEGRATION_RESULT", execution.content(),
+                    List.of(integration.getName()),
+                    List.of(SourceReferenceDto.fromDocument(integration.getName())),
+                    null, effectiveConversationId);
+        } else {
+            paramStateService.clear(effectiveConversationId);
+            response = ticketService.suggestTicket(question, userId, List.of(), effectiveConversationId,
+                    "A consulta à integração '" + integration.getName()
+                    + "' falhou no momento (" + execution.content() + ").");
+        }
+
+        conversationService.recordInteraction(effectiveConversationId, question, response);
+        redisChatHistoryService.addMessage(effectiveConversationId, "USER", question);
+        redisChatHistoryService.addMessage(effectiveConversationId, "ASSISTANT", response.answer());
+        return response;
+    }
+
+    /**
+     * Intent de lembrete: mesma lógica da frente 4 (inalterada).
+     */
+    private AnswerResponse handleReminderIntent(String question, String userId, String effectiveConversationId) {
+        ReminderDto reminder;
+        try {
+            reminder = reminderService.create(question, userId, effectiveConversationId);
+        } catch (IllegalArgumentException e) {
+            String message = e.getMessage() != null ? e.getMessage()
+                    : "Não consegui criar o lembrete. Informe a data e a hora explicitamente.";
+            AnswerResponse response = new AnswerResponse("REMINDER_REJECTED", message,
+                    List.of(), List.of(), null, effectiveConversationId);
+            conversationService.recordInteraction(effectiveConversationId, question, response);
+            redisChatHistoryService.addMessage(effectiveConversationId, "USER", question);
+            redisChatHistoryService.addMessage(effectiveConversationId, "ASSISTANT", message);
+            return response;
+        }
+
+        String summary = reminder.summary() == null || reminder.summary().isBlank()
+                ? question
+                : reminder.summary();
+        String message = "Lembrete agendado: %s. Vou te lembrar no WhatsApp em %s.".formatted(
+                summary.trim(),
+                REMINDER_TIME_FORMAT.format(reminder.remindAt()));
+
+        AnswerResponse response = AnswerResponse.fromReminder(message, effectiveConversationId);
+        conversationService.recordInteraction(effectiveConversationId, question, response);
+        redisChatHistoryService.addMessage(effectiveConversationId, "USER", question);
+        redisChatHistoryService.addMessage(effectiveConversationId, "ASSISTANT", message);
         return response;
     }
 

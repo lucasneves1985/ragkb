@@ -34,12 +34,26 @@ export function useChat({ messagesContainer }: { messagesContainer?: Ref<HTMLEle
         type: 'DOCUMENT',
         label,
       }))
-      messages.value.push({
-        from: 'assistant',
-        text: response.answer,
-        sources: response.sources ?? fallbackSources,
-        timestamp: new Date().toISOString(),
-      })
+      if (response.status === 'TICKET_SUGGESTED' && response.ticketSuggestion) {
+        // Fluxo ao vivo: popula o formulário igual ao reload (mapHistoryMessage)
+        ticket.value = {
+          subject: response.ticketSuggestion.subject,
+          description: response.ticketSuggestion.description,
+        }
+        messages.value.push({
+          from: 'assistant',
+          text: response.answer,
+          ticket: true,
+          timestamp: new Date().toISOString(),
+        })
+      } else {
+        messages.value.push({
+          from: 'assistant',
+          text: response.answer,
+          sources: response.sources ?? fallbackSources,
+          timestamp: new Date().toISOString(),
+        })
+      }
       if (response.conversationId) {
         currentConversationId.value = response.conversationId
       }

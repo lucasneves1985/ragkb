@@ -19,8 +19,22 @@ export interface SourceReference {
   url?: string
 }
 
+// União espelha AnswerResponse do backend (frentes 4 e 5):
+//   KNOWLEDGE       — resposta via base de conhecimento
+//   TICKET_SUGGESTED— conhecimento não localizado OU falha de integração
+//   REMINDER_*      — lembrete criado / rejeitado (frente 4)
+//   INTEGRATION_RESULT — resultado de integração QUERY (frente 5)
+//   PARAM_REQUIRED  — coleta de parâmetro em andamento (fase 2 da frente 5)
+export type AnswerStatus =
+  | 'KNOWLEDGE'
+  | 'TICKET_SUGGESTED'
+  | 'REMINDER_CREATED'
+  | 'REMINDER_REJECTED'
+  | 'INTEGRATION_RESULT'
+  | 'PARAM_REQUIRED'
+
 export interface AnswerResponse {
-  status: 'KNOWLEDGE' | 'TICKET_SUGGESTED'
+  status: AnswerStatus
   answer?: string
   sourceIds?: string[]
   sources?: SourceReference[]

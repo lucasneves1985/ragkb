@@ -72,6 +72,9 @@ function onToggle(user: User) {
 .users-caption {
   display: flex;
   align-items: center;
+  justify-content: right;
+  padding-top: 8px;
+  padding-right: 8px;
   gap: 6px;
   margin-bottom: 10px;
   color: var(--el-text-color-secondary);

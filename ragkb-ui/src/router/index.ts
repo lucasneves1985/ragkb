@@ -7,6 +7,11 @@ const router = createRouter({
   routes: [
     { path: '/', redirect: '/chat' },
     { path: '/login', component: LoginView },
+    {
+      path: '/preferences',
+      component: () => import('../views/PreferencesView.vue'),
+      meta: { requiresAuth: true },
+    },
     { path: '/chat', component: () => import('../views/ChatView.vue'), meta: { requiresAuth: true } },
     {
       path: '/documents',
@@ -53,13 +58,40 @@ const router = createRouter({
       component: () => import('../views/BusinessRulesView.vue'),
       meta: { requiresAuth: true, roles: ['ADMIN', 'EDITOR', 'USER'] },
     },
+    {
+      path: '/integrations',
+      component: () => import('../views/IntegrationsView.vue'),
+      meta: { requiresAuth: true, roles: ['ADMIN', 'EDITOR'] },
+    },
+    {
+      path: '/certificates',
+      component: () => import('../views/CertificateMonitorsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/reminders',
+      component: () => import('../views/RemindersView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/whatsapp',
+      component: () => import('../views/WhatsAppPanelView.vue'),
+      meta: { requiresAuth: true, roles: ['ADMIN'] },
+    },
   ],
 })
 
-router.beforeEach((to) => {
+router.beforeEach((to, from) => {
   const auth = useAuthStore()
+  const session = JSON.parse(localStorage.getItem('ragkb-session') || 'null')
+  console.log('[guard]', from.fullPath, '→', to.fullPath, {
+    isAuthenticated: auth.isAuthenticated,
+    roles: auth.roles,
+    expiresAt: session?.expiresAt,
+    now: Date.now(),
+    expirada: session ? session.expiresAt <= Date.now() : 'sem sessão',
+  })
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    // Preserva o destino — o login devolve o usuário para onde ele ia
     return { path: '/login', query: { redirect: to.fullPath } }
   }
   const roles = to.meta.roles as string[] | undefined

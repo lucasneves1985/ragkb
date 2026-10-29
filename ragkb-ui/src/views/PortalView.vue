@@ -57,7 +57,8 @@ function reset() {
   <ErrorBoundary @retry="reset">
     <div>
       <PageHeading eyebrow="PORTAL DE CONHECIMENTO" title="Artigos publicados"
-        description="Navegue pelos artigos da base — visíveis conforme os setores com acesso." />
+        description="Navegue pelos artigos da base — visíveis conforme os setores com acesso."
+        :on-refresh="refetch" :refreshing="isLoading" />
 
       <div class="portal-filters">
         <el-input v-model="searchInput" placeholder="Buscar por título…" :prefix-icon="Search" clearable

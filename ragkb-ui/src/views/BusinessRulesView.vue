@@ -27,7 +27,7 @@ const auth = useAuthStore()
 // Padrão wrapped do projeto: { rules, isLoading, isError, refetch }
 const { rules: managedRules, isLoading, isError, refetch } = useBusinessRules()
 // Portal: publicadas ∩ setor — fonte inicial do ROLE_USER.
-const { portalRules, isLoadingPortal } = usePortalBusinessRules()
+const { portalRules, isLoadingPortal, refetchPortal } = usePortalBusinessRules()
 const { sectors } = useSectors()
 const { articles } = useArticles()
 
@@ -56,6 +56,7 @@ const isReadOnly = computed(() => !auth.hasAnyRole(['ADMIN', 'EDITOR']))
 const searchQuery = ref('')
 const searchResults = ref<BusinessRule[] | null>(null)
 const searching = ref(false)
+const refreshing = ref(false)
 
 async function runSearch() {
   const query = searchQuery.value.trim()
@@ -76,6 +77,19 @@ async function runSearch() {
 function clearSearch() {
   searchQuery.value = ''
   searchResults.value = null
+}
+
+async function refreshRules() {
+  refreshing.value = true
+  try {
+    if (searchResults.value !== null) {
+      await runSearch()
+    } else {
+      await Promise.all([refetch(), refetchPortal()])
+    }
+  } finally {
+    refreshing.value = false
+  }
 }
 
 const isSmartSearch = computed(() => searchResults.value !== null)
@@ -148,7 +162,8 @@ async function handleArchive(id: string) {
 <template>
   <ErrorBoundary @retry="refetch">
     <div>
-      <PageHeading eyebrow="BASE DE CONHECIMENTO" title="Regras de negócio">
+      <PageHeading eyebrow="BASE DE CONHECIMENTO" title="Regras de negócio" :on-refresh="refreshRules"
+        :refreshing="refreshing">
         <template #actions>
           <div class="search-group">
             <el-input v-model="searchQuery" placeholder="Descreva o que procura… (busca inteligente, publicadas)"

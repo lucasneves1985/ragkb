@@ -1,10 +1,14 @@
 package br.lcn.ragkb.service;
 
-import br.lcn.ragkb.dto.IngestRequest;
-import br.lcn.ragkb.entity.DocumentMetadata;
-import br.lcn.ragkb.exception.DuplicateDocumentException;
-import br.lcn.ragkb.repository.DocumentMetadataRepository;
-import lombok.RequiredArgsConstructor;
+import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.tika.TikaDocumentReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
@@ -14,14 +18,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import br.lcn.ragkb.dto.IngestRequest;
+import br.lcn.ragkb.entity.DocumentMetadata;
+import br.lcn.ragkb.exception.DuplicateDocumentException;
+import br.lcn.ragkb.repository.DocumentMetadataRepository;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
