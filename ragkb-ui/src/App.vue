@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   Bell,
   Lock,
+  Postcard,
   ChatDotRound,
   Connection,
   Document,
@@ -53,6 +54,7 @@ watch(loggedIn, (authed) => {
 
 const items = computed<NavItem[]>(() => [
   { label: 'Assistente', to: '/chat', icon: ChatDotRound, visible: true },
+  { label: 'Cards', to: '/cards', icon: Postcard, visible: true },
   {
     label: 'Documentos',
     to: '/documents',
@@ -100,8 +102,7 @@ function logout() {
     <AppSidebar :collapsed="collapsed" :items="items" @toggle="collapsed = !collapsed" />
 
     <el-container direction="vertical">
-      <AppTopbar :username="displayName" :initials="profileInitials" :roles="auth.roles"
-        :avatar-url="avatarUrl"
+      <AppTopbar :username="displayName" :initials="profileInitials" :roles="auth.roles" :avatar-url="avatarUrl"
         @new-query="router.push('/chat')" @preferences="router.push('/preferences')" @logout="logout" />
 
       <el-main class="content">

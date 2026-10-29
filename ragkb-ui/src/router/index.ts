@@ -74,6 +74,11 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/cards',
+      component: () => import('../views/CardsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/whatsapp',
       component: () => import('../views/WhatsAppPanelView.vue'),
       meta: { requiresAuth: true, roles: ['ADMIN'] },

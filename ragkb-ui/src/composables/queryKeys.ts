@@ -28,4 +28,14 @@ export const queryKeys = {
     all: ['articles'] as const,
     lists: () => [...queryKeys.articles.all, 'list'] as const,
   },
+  projects: {
+    all: ['projects'] as const,
+    lists: () => [...queryKeys.projects.all, 'list'] as const,
+  },
+  cards: {
+    all: ['cards'] as const,
+    board: (projectId: string, includeClosed: boolean) =>
+      [...queryKeys.cards.all, 'board', projectId, includeClosed] as const,
+    detail: (id: string) => [...queryKeys.cards.all, 'detail', id] as const,
+  },
 } as const
