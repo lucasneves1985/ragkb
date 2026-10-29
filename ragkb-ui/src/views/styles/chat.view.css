@@ -188,9 +188,15 @@
 .avatar {
   display: grid;
   place-items: center;
-  flex: 0 0 30px;
-  height: 30px;
-  border-radius: 9px;
+  flex: 0 0 20px;
+  width: 20px;
+  min-width: 20px;
+  max-width: 20px;
+  height: 20px;
+  min-height: 20px;
+  max-height: 20px;
+  border-radius: 50%;
+  overflow: hidden;
   background: #dff3eb;
   color: #168463;
   font: 500 11px 'DM Mono';
