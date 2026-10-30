@@ -12,6 +12,7 @@ import br.lcn.ragkb.entity.CardChunkType;
 import br.lcn.ragkb.entity.CardComment;
 import br.lcn.ragkb.entity.EmbeddingStatus;
 import br.lcn.ragkb.repository.CardChunkRepository;
+import br.lcn.ragkb.repository.CardChunkScore;
 import br.lcn.ragkb.repository.CardCommentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -69,8 +70,13 @@ public class CardEmbeddingService {
         return toLiteral(embeddingModel.embed(query));
     }
 
-    public List<String> semanticSearchChunkIds(String projectId, String query, double similarityThreshold) {
-        return chunkRepository.semanticSearchChunkIds(
+    /**
+     * Busca híbrida com scores — o corte de relevância (margem relativa ao
+     * melhor score) é responsabilidade do chamador (CardQueryService).
+     */
+    public List<CardChunkScore> semanticSearchCandidates(String projectId, String query,
+            double similarityThreshold) {
+        return chunkRepository.semanticSearchCandidates(
                 projectId, embedQueryToLiteral(query), query, similarityThreshold);
     }
 

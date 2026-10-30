@@ -1,6 +1,7 @@
 <!-- views/CardsView.vue -->
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import {
@@ -16,6 +17,7 @@ import ErrorBoundary from '@/components/ErrorBoundary.vue'
 import PageHeading from '@/components/layout/PageHeading.vue'
 import ProjectDialog from '@/components/cards/ProjectDialog.vue'
 import CardDetailDialog from '@/components/cards/CardDetailDialog.vue'
+import CardsAssistantWidget from '@/components/cards/CardsAssistantWidget.vue'
 import { CARD_STATUSES, CARD_STATUS_COLORS, CARD_STATUS_LABELS, isClosedStatus } from '@/types'
 import type { Card, CardStatus, Project } from '@/types'
 
@@ -202,6 +204,20 @@ function openDetail(card: Card) {
   detailCardId.value = card.id
 }
 
+// ── Deep-link: /cards?project=X&card=Y (URLs manuais) ─────
+const route = useRoute()
+
+onMounted(() => {
+  const project = typeof route.query.project === 'string' ? route.query.project : undefined
+  const card = typeof route.query.card === 'string' ? route.query.card : undefined
+  if (project) {
+    selectedProjectId.value = project
+  }
+  if (card) {
+    detailCardId.value = card
+  }
+})
+
 function refresh() {
   refetchProjects()
   refetchBoard()
@@ -306,6 +322,9 @@ function refresh() {
       <ProjectDialog :open="projectDialogOpen" :project="projectBeingEdited" @close="projectDialogOpen = false" />
 
       <CardDetailDialog :card-id="detailCardId" @close="detailCardId = null" />
+
+      <!-- Widget flutuante de consulta -->
+      <CardsAssistantWidget @open-card="detailCardId = $event" />
     </div>
   </ErrorBoundary>
 </template>

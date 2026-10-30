@@ -156,4 +156,13 @@ export function useDeleteAttachment() {
   })
 }
 
+// ── Assistente de tarefas ─────────────────────────────────
+
+export function useAskCards() {
+  return useMutation({
+    mutationFn: (request: { question: string; projectId?: string }) =>
+      cardsService.askCards(request),
+  })
+}
+
 export { extractMessage as extractCardsErrorMessage }

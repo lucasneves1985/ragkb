@@ -121,3 +121,25 @@ export interface CreateCommentRequest {
 export interface UpdateCommentRequest {
   content: string
 }
+
+// ── Assistente de tarefas ─────────────────────────────────
+
+export interface CardAskRequest {
+  question: string
+  /** Filtro opcional de projeto; omitido busca em todos. */
+  projectId?: string
+}
+
+export interface CardReference {
+  cardId: string
+  cardTitle: string
+  projectId: string
+  projectName: string
+  status: CardStatus
+}
+
+export interface CardAnswerResponse {
+  status: 'ANSWERED' | 'NO_MATCH'
+  answer: string
+  cards: CardReference[]
+}

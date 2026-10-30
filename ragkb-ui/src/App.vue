@@ -54,6 +54,12 @@ watch(loggedIn, (authed) => {
 
 const items = computed<NavItem[]>(() => [
   { label: 'Assistente', to: '/chat', icon: ChatDotRound, visible: true },
+  {
+    label: 'Portal',
+    to: '/portal',
+    icon: Reading, // importe de '@element-plus/icons-vue'
+    visible: true, // todos os autenticados
+  },
   { label: 'Cards', to: '/cards', icon: Postcard, visible: true },
   {
     label: 'Documentos',
@@ -73,12 +79,7 @@ const items = computed<NavItem[]>(() => [
     icon: List,
     visible: true,
   },
-  {
-    label: 'Portal',
-    to: '/portal',
-    icon: Reading, // importe de '@element-plus/icons-vue'
-    visible: true, // todos os autenticados
-  },
+
   { label: 'Conflitos', to: '/conflicts', icon: Document, visible: auth.hasRole('ADMIN') },
   { label: 'Setores', to: '/sectors', icon: OfficeBuilding, visible: auth.hasRole('ADMIN') },
   { label: 'Integrações', to: '/integrations', icon: Connection, visible: auth.hasAnyRole(['ADMIN', 'EDITOR']) },

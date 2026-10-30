@@ -28,3 +28,13 @@ ragkb-ui/dist/
 ragkb-ui/.vite/
 ragkb-ui/.env.local
 ragkb-ui/.env.*.local
+
+# Claude Code — apenas o local (settings.json compartilhada pode ser commitada)
+.claude/settings.local.json
+
+# Codex — config local do projeto
+.codex/
+
+# Antigravity — rules locais (remova se quiser versioná-las para o time)
+.agents/
+.agent/

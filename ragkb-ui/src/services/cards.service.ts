@@ -2,6 +2,8 @@
 import { http } from './http'
 import type {
   Card,
+  CardAnswerResponse,
+  CardAskRequest,
   CardAttachment,
   CardComment,
   CardDetail,
@@ -67,4 +69,8 @@ export const cardsService = {
     anchor.click()
     URL.revokeObjectURL(url)
   },
+
+  /** Pergunta em linguagem natural sobre tarefas (assistente dedicado). */
+  askCards: (request: CardAskRequest) =>
+    http.post<CardAnswerResponse>('/cards/query', request).then((r) => r.data),
 }

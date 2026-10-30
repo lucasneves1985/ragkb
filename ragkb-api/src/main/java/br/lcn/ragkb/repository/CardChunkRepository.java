@@ -35,26 +35,30 @@ public interface CardChunkRepository extends JpaRepository<CardChunk, String> {
     @Query("update CardChunk c set c.embeddingStatus = :status where c.id = :id")
     void updateEmbeddingStatus(@Param("id") String id, @Param("status") EmbeddingStatus status);
 
-    // ── Busca semântica híbrida (vetorial + ILIKE), mesmo padrão
-    //    do BusinessRuleRepository.semanticSearchIds. Retorna chunk ids
-    //    ordenados por relevância; o join com cards acontece no service.
-    //    NÃO filtra por status — cards encerrados entram (decisão 3.3). ──
+    // ── Busca semântica híbrida retornando SCORES (não apenas ids).
+    //    Match lexical (ILIKE) e match vetorial coexistem; o corte de
+    //    relevância é RELATIVO ao melhor score e acontece no service
+    //    (CardQueryService) — threshold absoluto fixo não funciona para
+    //    queries curtas (falso positivo) E perguntas longas (recall baixo)
+    //    ao mesmo tempo. NÃO filtra por status — cards encerrados entram
+    //    (decisão 3.3). ──
     @Query(value = """
-            SELECT ch.id FROM card_chunks ch
+            SELECT ch.id AS id,
+                   ch.content ILIKE '%' || CAST(:query AS text) || '%' AS lexical,
+                   CASE WHEN ch.embedding IS NOT NULL
+                        THEN 1 - (ch.embedding <=> CAST(:qv AS vector))
+                        ELSE 0 END AS similarity
+            FROM card_chunks ch
             WHERE (CAST(:projectId AS text) IS NULL OR ch.project_id = CAST(:projectId AS text))
               AND (
-                    (ch.embedding IS NOT NULL
-                     AND 1 - (ch.embedding <=> CAST(:qv AS vector)) >= :similarityThreshold)
-                    OR ch.content ILIKE '%' || CAST(:query AS text) || '%'
+                    ch.content ILIKE '%' || CAST(:query AS text) || '%'
+                    OR (ch.embedding IS NOT NULL
+                        AND 1 - (ch.embedding <=> CAST(:qv AS vector)) >= :similarityThreshold)
                   )
-            ORDER BY CASE
-                        WHEN ch.content ILIKE '%' || CAST(:query AS text) || '%'
-                        THEN 0 ELSE 1
-                     END,
-                     ch.embedding <=> CAST(:qv AS vector)
-            LIMIT 20
+            ORDER BY lexical DESC, similarity DESC
+            LIMIT 40
             """, nativeQuery = true)
-    List<String> semanticSearchChunkIds(@Param("projectId") String projectId,
+    List<CardChunkScore> semanticSearchCandidates(@Param("projectId") String projectId,
             @Param("qv") String queryVector,
             @Param("query") String query,
             @Param("similarityThreshold") double similarityThreshold);
