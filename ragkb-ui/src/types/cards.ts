@@ -100,6 +100,8 @@ export interface UpdateProjectRequest {
 export interface CreateCardRequest {
   title: string
   description?: string
+  /** Criação estilo Trello direto na coluna; omitido = PENDENTE. */
+  status?: CardStatus
 }
 
 export interface UpdateCardRequest {

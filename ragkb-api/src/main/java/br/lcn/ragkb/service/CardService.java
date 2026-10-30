@@ -40,14 +40,21 @@ public class CardService {
     private final CardAttachmentService attachmentService;
     private final CardEmbeddingService embeddingService;
 
+    /**
+     * Criação estilo Trello: status inicial opcional (null = PENDENTE). O
+     * evento de criação é null -> status informado; NUNCA uma transição
+     * PENDENTE -> alvo, que poluiria o histórico consumido pelo assistente.
+     */
     @Transactional
     public CardDto create(String projectId, CreateCardRequest request) {
         ensureProjectExists(projectId);
-        Card card = new Card(projectId, request.title().trim(), request.description(),
-                nextPosition(projectId, CardStatus.PENDENTE));
+        CardStatus initialStatus = request.status() == null
+                ? CardStatus.PENDENTE
+                : parseStatus(request.status().name());
+        Card card = new Card(projectId, request.title().trim(), request.description(), 0);
+        card.moveTo(initialStatus, nextPosition(projectId, initialStatus));
         cardRepository.save(card);
-        // Criação também é evento: from_status null -> PENDENTE.
-        statusEventRepository.save(new CardStatusEvent(card.getId(), null, card.getStatus()));
+        statusEventRepository.save(new CardStatusEvent(card.getId(), null, initialStatus));
         embeddingService.reembedCard(card);
         return CardDto.from(card);
     }

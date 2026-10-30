@@ -1,6 +1,6 @@
 <!-- views/CardsView.vue -->
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import {
@@ -123,23 +123,30 @@ async function removeProject() {
   }
 }
 
-// ── Criação de card ───────────────────────────────────────
-const newCardOpen = ref(false)
-const newCardTitle = ref('')
-const newCardDescription = ref('')
+// ── Composer inline por coluna (estilo Trello) ────────────
+// Regras: só salva no botão "Adicionar"; Esc cancela; clique fora cancela.
+const composerStatus = ref<CardStatus | null>(null)
+const composerTitle = ref('')
+const composerInput = ref<HTMLTextAreaElement>()
+const composerEl = ref<HTMLElement>()
 const creatingCard = ref(false)
 const { mutateAsync: createCard } = useCreateCard()
 
-function openNewCard() {
-  newCardTitle.value = ''
-  newCardDescription.value = ''
-  newCardOpen.value = true
+function openComposer(status: CardStatus) {
+  composerStatus.value = status
+  composerTitle.value = ''
+  nextTick(() => composerInput.value?.focus())
 }
 
-async function submitNewCard() {
-  if (!selectedProjectId.value) return
-  const trimmed = newCardTitle.value.trim()
-  if (!trimmed) {
+function closeComposer() {
+  composerStatus.value = null
+  composerTitle.value = ''
+}
+
+async function submitComposer() {
+  if (!selectedProjectId.value || !composerStatus.value) return
+  const title = composerTitle.value.trim()
+  if (!title) {
     ElMessage.warning('Informe o título da tarefa.')
     return
   }
@@ -147,19 +154,26 @@ async function submitNewCard() {
   try {
     await createCard({
       projectId: selectedProjectId.value,
-      request: {
-        title: trimmed,
-        description: newCardDescription.value.trim() || undefined,
-      },
+      request: { title, status: composerStatus.value },
     })
-    newCardOpen.value = false
-    ElMessage.success('Tarefa criada em Pendente!')
+    closeComposer()
+    ElMessage.success(`Tarefa criada em ${CARD_STATUS_LABELS[composerStatus.value as CardStatus]}!`)
   } catch (error) {
     ElMessage.error(extractCardsErrorMessage(error))
   } finally {
     creatingCard.value = false
   }
 }
+
+function onDocumentClick(event: MouseEvent) {
+  if (!composerStatus.value) return
+  if (composerEl.value && !composerEl.value.contains(event.target as Node)) {
+    closeComposer()
+  }
+}
+
+onMounted(() => document.addEventListener('click', onDocumentClick))
+onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick))
 
 // ── Exclusão de card ──────────────────────────────────────
 const { mutateAsync: deleteCard } = useDeleteCard()
@@ -223,13 +237,6 @@ function refresh() {
         <div class="spacer" />
 
         <el-switch v-model="includeClosed" active-text="Mostrar encerradas" />
-
-        <el-button type="primary" class="primary-button" :disabled="!selectedProjectId" @click="openNewCard">
-          <el-icon>
-            <Plus />
-          </el-icon>
-          Nova tarefa
-        </el-button>
       </section>
 
       <div v-if="!projects?.length" class="column-hint">
@@ -266,33 +273,37 @@ function refresh() {
               </div>
             </article>
 
-            <div v-if="!cardsByStatus[status].length && isClosedStatus(status) && !includeClosed" class="column-hint">
-              Ative "Mostrar encerradas" para ver estas tarefas.
+            <!-- Composer inline: aberto nesta coluna -->
+            <div v-if="composerStatus === status" ref="composerEl" class="composer" @click.stop>
+              <textarea ref="composerInput" v-model="composerTitle" class="composer-input" rows="2" maxlength="200"
+                placeholder="Digite o título da tarefa…" @keydown.esc.prevent="closeComposer" />
+              <div class="composer-actions">
+                <el-button size="small" type="primary" class="primary-button" :loading="creatingCard"
+                  :disabled="!composerTitle.trim()" @click="submitComposer">
+                  Adicionar
+                </el-button>
+                <el-button size="small" text @click="closeComposer">Cancelar</el-button>
+              </div>
             </div>
-            <div v-else-if="!cardsByStatus[status].length" class="column-empty">—</div>
+
+            <template v-else>
+              <div v-if="!cardsByStatus[status].length && isClosedStatus(status) && !includeClosed" class="column-hint">
+                Ative "Mostrar encerradas" para ver estas tarefas.
+              </div>
+              <div v-else-if="!cardsByStatus[status].length" class="column-empty">—</div>
+            </template>
+          </div>
+
+          <div class="column-add">
+            <button v-if="composerStatus !== status" type="button" class="column-add-trigger"
+              @click.stop="openComposer(status)">
+              + Adicionar tarefa
+            </button>
           </div>
         </div>
       </div>
 
       <ProjectDialog :open="projectDialogOpen" :project="projectBeingEdited" @close="projectDialogOpen = false" />
-
-      <el-dialog v-model="newCardOpen" title="Nova tarefa" width="460px">
-        <el-form label-position="top">
-          <el-form-item label="Título" required>
-            <el-input v-model="newCardTitle" maxlength="200" placeholder="Ex.: Enviar nota fiscal ao fornecedor" />
-          </el-form-item>
-          <el-form-item label="Descrição">
-            <el-input v-model="newCardDescription" type="textarea" :rows="3"
-              placeholder="Contexto da tarefa (opcional)" />
-          </el-form-item>
-        </el-form>
-        <template #footer>
-          <el-button @click="newCardOpen = false">Cancelar</el-button>
-          <el-button type="primary" class="primary-button" :loading="creatingCard" @click="submitNewCard">
-            Criar
-          </el-button>
-        </template>
-      </el-dialog>
 
       <CardDetailDialog :card-id="detailCardId" @close="detailCardId = null" />
     </div>

@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ChatDotRound, Delete, Download, Paperclip } from '@element-plus/icons-vue'
+import { ChatDotRound, Delete, Download, Paperclip, Plus } from '@element-plus/icons-vue'
 import {
   useCardDetail,
   useUpdateCard,
@@ -82,6 +82,7 @@ async function saveCard() {
 
 // ── Status ────────────────────────────────────────────────
 const moving = ref(false)
+const historyOpen = ref(false)
 
 async function changeStatus(status: CardStatus) {
   if (!detail.value || detail.value.status === status) return
@@ -214,103 +215,133 @@ function formatDate(value: string): string {
 </script>
 
 <template>
-  <el-dialog v-model="visible" title="Detalhe da tarefa" width="640px" top="6vh">
+  <el-dialog v-model="visible" title="Detalhe da tarefa" width="900px" top="5vh">
     <div v-if="isLoading || !detail" class="column-hint">Carregando…</div>
 
-    <template v-else>
-      <!-- Título e descrição -->
-      <template v-if="!editing">
-        <h3 class="detail-title">{{ detail.title }}</h3>
-        <p class="detail-description">{{ detail.description || 'Sem descrição.' }}</p>
-        <el-button size="small" text type="primary" @click="editing = true">Editar</el-button>
-      </template>
+    <div v-else class="card-detail-grid">
+      <!-- Coluna principal: título, descrição, status, anexos -->
+      <div class="card-detail-main">
+        <template v-if="!editing">
+          <h3 class="detail-title">{{ detail.title }}</h3>
+          <p class="detail-description">{{ detail.description || 'Sem descrição.' }}</p>
+          <el-button size="small" text type="primary" @click="editing = true">Editar</el-button>
+        </template>
 
-      <template v-else>
-        <el-input v-model="title" maxlength="200" placeholder="Título" class="card-detail-section" />
-        <el-input v-model="description" type="textarea" :rows="4" placeholder="Descrição" class="card-detail-section" />
-        <div class="card-detail-section">
-          <el-button size="small" @click="editing = false">Cancelar</el-button>
-          <el-button size="small" type="primary" class="primary-button" :loading="savingCard" @click="saveCard">
-            Salvar
-          </el-button>
-        </div>
-      </template>
-
-      <!-- Status -->
-      <h4>Status</h4>
-      <el-select :model-value="detail.status" :loading="moving"
-        @update:model-value="(value: CardStatus) => changeStatus(value)">
-        <el-option v-for="status in CARD_STATUSES" :key="status" :value="status" :label="CARD_STATUS_LABELS[status]" />
-      </el-select>
-
-      <!-- Comentários -->
-      <h4><el-icon>
-          <ChatDotRound />
-        </el-icon> Comentários ({{ detail.comments.length }})</h4>
-      <div v-for="comment in detail.comments" :key="comment.id" class="comment-item">
-        <template v-if="editingCommentId === comment.id">
-          <el-input v-model="editText" type="textarea" :rows="3" />
+        <template v-else>
+          <el-input v-model="title" maxlength="200" placeholder="Título" class="card-detail-section" />
+          <el-input v-model="description" type="textarea" :rows="4" placeholder="Descrição"
+            class="card-detail-section" />
           <div class="card-detail-section">
-            <el-button size="small" @click="editingCommentId = null">Cancelar</el-button>
-            <el-button size="small" type="primary" class="primary-button" @click="submitCommentEdit">
+            <el-button size="small" @click="editing = false">Cancelar</el-button>
+            <el-button size="small" type="primary" class="primary-button" :loading="savingCard" @click="saveCard">
               Salvar
             </el-button>
           </div>
         </template>
-        <template v-else>
-          <div class="comment-content">{{ comment.content }}</div>
-          <div class="comment-date">
-            {{ formatDate(comment.createdAt) }}
-            <el-button size="small" text type="primary" @click="startEditComment(comment)">Editar</el-button>
-            <el-button size="small" text type="danger" @click="removeComment(comment)">Excluir</el-button>
-          </div>
-        </template>
+
+        <!-- Status, com o histórico acessível por botão -->
+        <div class="section-heading">
+          <h4>Status</h4>
+          <el-button size="small" text type="primary" @click="historyOpen = true">Histórico</el-button>
+        </div>
+        <el-select :model-value="detail.status" :loading="moving"
+          @update:model-value="(value: CardStatus) => changeStatus(value)">
+          <el-option v-for="status in CARD_STATUSES" :key="status" :value="status"
+            :label="CARD_STATUS_LABELS[status]" />
+        </el-select>
+
+        <!-- Anexos: mesmo padrão da seção de status -->
+        <div class="section-heading">
+          <h4><el-icon>
+              <Paperclip />
+            </el-icon> Anexos ({{ detail.attachments.length }})</h4>
+          <el-button size="small" text type="primary" :loading="uploading" @click="pickFile">
+            <el-icon>
+              <Plus />
+            </el-icon>
+            Adicionar
+          </el-button>
+        </div>
+        <input ref="fileInput" type="file" hidden @change="onFileSelected" />
+        <div v-for="attachment in detail.attachments" :key="attachment.id" class="attachment-item">
+          <span class="attachment-name">{{ attachment.fileName }}</span>
+          <span class="attachment-size">{{ formatSize(attachment.sizeBytes) }}</span>
+          <el-button size="small" text type="primary" @click="download(attachment.id, attachment.fileName)">
+            <el-icon>
+              <Download />
+            </el-icon>
+          </el-button>
+          <el-button size="small" text type="danger" @click="removeAttachment(attachment.id, attachment.fileName)">
+            <el-icon>
+              <Delete />
+            </el-icon>
+          </el-button>
+        </div>
       </div>
-      <el-input v-model="newComment" type="textarea" :rows="2" placeholder="Escreva um comentário…" />
-      <div class="card-detail-section">
+
+      <!-- Coluna lateral: campo de comentário no TOPO, lista abaixo -->
+      <div class="card-detail-side">
+        <h4><el-icon>
+            <ChatDotRound />
+          </el-icon> Comentários ({{ detail.comments.length }})</h4>
+
+        <el-input v-model="newComment" type="textarea" :rows="2" placeholder="Escreva um comentário…"
+          class="comment-input" />
         <el-button size="small" type="primary" class="primary-button" :loading="addingComment"
           :disabled="!newComment.trim()" @click="submitComment">
           Comentar
         </el-button>
-      </div>
 
-      <!-- Anexos -->
-      <h4><el-icon>
-          <Paperclip />
-        </el-icon> Anexos ({{ detail.attachments.length }})</h4>
-      <input ref="fileInput" type="file" hidden @change="onFileSelected" />
-      <div v-for="attachment in detail.attachments" :key="attachment.id" class="attachment-item">
-        <span class="attachment-name">{{ attachment.fileName }}</span>
-        <span class="attachment-size">{{ formatSize(attachment.sizeBytes) }}</span>
-        <el-button size="small" text type="primary" @click="download(attachment.id, attachment.fileName)">
-          <el-icon>
-            <Download />
-          </el-icon>
-        </el-button>
-        <el-button size="small" text type="danger" @click="removeAttachment(attachment.id, attachment.fileName)">
-          <el-icon>
-            <Delete />
-          </el-icon>
-        </el-button>
-      </div>
-      <el-button size="small" :loading="uploading" @click="pickFile">Enviar anexo</el-button>
+        <div class="comments-scroll">
+          <div v-for="comment in detail.comments" :key="comment.id" class="comment-item">
+            <template v-if="editingCommentId === comment.id">
+              <el-input v-model="editText" type="textarea" :rows="3" />
+              <div class="card-detail-section">
+                <el-button size="small" @click="editingCommentId = null">Cancelar</el-button>
+                <el-button size="small" type="primary" class="primary-button" @click="submitCommentEdit">
+                  Salvar
+                </el-button>
+              </div>
+            </template>
+            <template v-else>
+              <div class="comment-content">{{ comment.content }}</div>
+              <div class="comment-date">
+                {{ formatDate(comment.createdAt) }}
+                <el-button size="small" text type="primary" @click="startEditComment(comment)">Editar</el-button>
+                <el-button size="small" text type="danger" @click="removeComment(comment)">Excluir</el-button>
+              </div>
+            </template>
+          </div>
 
-      <!-- Histórico de status -->
-      <h4>Histórico de status</h4>
-      <el-timeline>
-        <el-timeline-item v-for="(event, index) in detail.statusHistory" :key="index"
-          :timestamp="formatDate(event.changedAt)">
-          <template v-if="event.fromStatus">
-            {{ CARD_STATUS_LABELS[event.fromStatus as CardStatus] }} →
-            <strong>{{ CARD_STATUS_LABELS[event.toStatus as CardStatus] }}</strong>
-          </template>
-          <template v-else>
-            Criada como <strong>{{ CARD_STATUS_LABELS[event.toStatus as CardStatus] }}</strong>
-          </template>
-        </el-timeline-item>
-      </el-timeline>
-    </template>
+          <div v-if="!detail.comments.length" class="column-hint">
+            Nenhum comentário ainda.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal do histórico de status -->
+    <el-dialog v-model="historyOpen" title="Histórico de status" width="480px" append-to-body>
+      <div v-if="!detail" class="column-hint">Carregando…</div>
+      <template v-else>
+        <el-timeline>
+          <el-timeline-item v-for="(event, index) in detail.statusHistory" :key="index"
+            :timestamp="formatDate(event.changedAt)">
+            <template v-if="event.fromStatus">
+              {{ CARD_STATUS_LABELS[event.fromStatus as CardStatus] }} →
+              <strong>{{ CARD_STATUS_LABELS[event.toStatus as CardStatus] }}</strong>
+            </template>
+            <template v-else>
+              Criada como <strong>{{ CARD_STATUS_LABELS[event.toStatus as CardStatus] }}</strong>
+            </template>
+          </el-timeline-item>
+        </el-timeline>
+        <div v-if="!detail.statusHistory.length" class="column-hint">
+          Nenhuma transição registrada.
+        </div>
+      </template>
+    </el-dialog>
   </el-dialog>
 </template>
 
-<style src="@/views/styles/cards.view.css"></style>
+<style lang="css" src="@/views/styles/cards.view.css"></style>
