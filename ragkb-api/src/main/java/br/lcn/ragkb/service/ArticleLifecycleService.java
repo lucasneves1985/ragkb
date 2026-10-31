@@ -43,14 +43,12 @@ public class ArticleLifecycleService {
     }
 
     /**
-     * Detail view — read-only page (chat source link, portal) and editor dialog.
-     * Visibility mirrors the vector-store sector filter that allowed the
-     * agent to cite the article in the first place:
-     * - ADMIN: everything.
-     * - Author: own articles in any status.
-     * - Any authenticated user: PUBLISHED articles whose allowedSectors
-     *   include the user's sector.
-     * Anything else: 404 (does not reveal existence).
+     * Detail view — read-only page (chat source link, portal) and editor
+     * dialog. Visibility mirrors the vector-store sector filter that allowed
+     * the agent to cite the article in the first place: - ADMIN: everything. -
+     * Author: own articles in any status. - Any authenticated user: PUBLISHED
+     * articles whose allowedSectors include the user's sector. Anything else:
+     * 404 (does not reveal existence).
      */
     @Transactional(readOnly = true)
     public ArticleDetailDto getDetail(String id, String username, boolean isAdmin) {
@@ -114,9 +112,9 @@ public class ArticleLifecycleService {
     }
 
     /**
-     * Visibility: ADMIN sees everything; EDITOR sees published articles
-     * plus own drafts. DRAFTS are never ingested, so the agent can never
-     * retrieve unpublished content — this listing is management-only.
+     * Visibility: ADMIN sees everything; EDITOR sees published articles plus
+     * own drafts. DRAFTS are never ingested, so the agent can never retrieve
+     * unpublished content — this listing is management-only.
      */
     @Transactional(readOnly = true)
     public List<ArticleDto> list(String username, boolean isAdmin) {
@@ -125,6 +123,18 @@ public class ArticleLifecycleService {
                 : articleRepository.findByStatusNotOrAuthorUsername(
                         ArticleStatus.DRAFT, username);
         return articles.stream().map(this::toDto).toList();
+    }
+
+    @Transactional
+    public ArticleDto unarchive(String id, String username, boolean isAdmin) {
+        Article article = findOwned(id, username, isAdmin);
+        if (article.getStatus() != ArticleStatus.ARCHIVED) {
+            throw new IllegalStateException("Somente artigos arquivados podem ser reativados");
+        }
+
+        article.restore();
+
+        return toDto(articleRepository.save(article));
     }
 
     /**
@@ -183,7 +193,7 @@ public class ArticleLifecycleService {
     }
 
     private void validateSectorPermission(String sector, List<String> allowedSectors,
-                                          String username, boolean isAdmin) {
+            String username, boolean isAdmin) {
         if (allowedSectors == null || allowedSectors.isEmpty()) {
             throw new IllegalArgumentException("allowedSectors é obrigatório e não pode ser vazio");
         }

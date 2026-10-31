@@ -15,7 +15,8 @@ export {
   useUpdateArticle,
   usePublishArticle,
   useArchiveArticle,
-  useUploadArticleImage
+  useUploadArticleImage,
+  useUnarchiveArticle
 } from './useArticles'
 export { usePortalArticles } from './usePortalArticles'
 export * from './useBusinessRules'

@@ -58,10 +58,10 @@ function statusType(s: ReminderStatus) {
           </el-icon> Lembretes</h2>
       </div>
 
-      <section class="surface create-box">
+      <section class="create-box">
         <el-input v-model="request" placeholder='Ex.: "Reunião de alinhamento amanhã às 15:00"'
           @keyup.enter="handleCreate" />
-        <el-button type="primary" :loading="creating" @click="handleCreate">Agendar</el-button>
+        <el-button type="primary" class="primary-button" :loading="creating" @click="handleCreate">Agendar</el-button>
         <el-button text circle :icon="Refresh" :loading="refreshing" title="Atualizar lista"
           aria-label="Atualizar lista" @click="refreshList" />
       </section>

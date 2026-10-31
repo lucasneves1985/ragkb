@@ -235,10 +235,7 @@ function refresh() {
           <el-option v-for="project in projects ?? []" :key="project.id" :value="project.id" :label="project.name" />
         </el-select>
 
-        <el-button size="small" @click="openNewProject">
-          <el-icon>
-            <Plus />
-          </el-icon>
+        <el-button size="small" type="primary" class="primary-button" :icon="Plus" @click="openNewProject">
           Novo projeto
         </el-button>
 

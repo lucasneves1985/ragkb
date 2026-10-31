@@ -1,5 +1,6 @@
 <!-- components/business-rules/BusinessRuleTable.vue -->
 <script setup lang="ts">
+import { View, Promotion, Edit, Box } from '@element-plus/icons-vue'
 import type { BusinessRule } from '@/types'
 
 defineProps<{
@@ -24,7 +25,6 @@ function tag(s: BusinessRule['status']) {
       ? 'status-archived'
       : 'status-draft'
 }
-
 function statusLabel(s: BusinessRule['status']) {
   return s === 'PUBLISHED' ? 'Publicada' : s === 'ARCHIVED' ? 'Arquivada' : 'Rascunho'
 }
@@ -33,7 +33,6 @@ function statusLabel(s: BusinessRule['status']) {
 function canManage(rule: BusinessRule, currentUsername: string, isAdmin: boolean) {
   return isAdmin || rule.authorUsername === currentUsername
 }
-
 // Regra arquivada = inativa no momento → linha inteira em cinza.
 function rowClass({ row }: { row: BusinessRule }) {
   return row.status === 'ARCHIVED' ? 'archived-row' : ''
@@ -48,38 +47,53 @@ function rowClass({ row }: { row: BusinessRule }) {
         <small>{{ row.authorUsername }} · {{ row.articleIds.length }} artigo(s)</small>
       </template>
     </el-table-column>
-    <el-table-column label="Setores com acesso" min-width="180">
+    <el-table-column label="Setores com acesso" min-width="180" class-name="col-optional">
       <template #default="{ row }">
         <el-tag v-for="sector in row.sectorNames" :key="sector" size="small" effect="plain" class="sector-tag">
           {{ sector }}
         </el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="Status" width="130">
+    <el-table-column label="Status" min-width="110">
       <template #default="{ row }">
         <el-tag :class="tag(row.status)" size="small" effect="light">
           {{ statusLabel(row.status) }}
         </el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="Ações" width="260">
+    <el-table-column label="Ações" width="180" align="center">
       <template #default="{ row }">
-        <el-button text type="primary" @click="$emit('view', row)">Ver</el-button>
-        <template v-if="!readOnly && canManage(row, currentUsername, isAdmin)">
-          <!-- Rascunho e arquivada: publica/republica -->
-          <el-button v-if="row.status === 'DRAFT' || row.status === 'ARCHIVED'" text type="success"
-            @click="$emit('publish', row.id)">
-            {{ row.status === 'ARCHIVED' ? 'Republicar' : 'Publicar' }}
-          </el-button>
-          <!-- Arquivada é imutável: edição só após republicar (guard no backend também) -->
-          <el-button v-if="row.status !== 'ARCHIVED'" text type="primary" @click="$emit('edit', row)">
-            Editar
-          </el-button>
-          <!-- Só publicada pode ser arquivada -->
-          <el-button v-if="row.status === 'PUBLISHED'" text type="warning" @click="$emit('archive', row.id)">
-            Arquivar
-          </el-button>
-        </template>
+        <div class="row-actions">
+          <el-tooltip content="Visualizar regra" placement="top">
+            <el-button text circle type="primary" :icon="View" title="Visualizar regra" aria-label="Visualizar regra"
+              @click="$emit('view', row)" />
+          </el-tooltip>
+          <template v-if="!readOnly && canManage(row, currentUsername, isAdmin)">
+            <!-- Rascunho e arquivada: publica/republica -->
+            <template v-if="row.status === 'DRAFT' || row.status === 'ARCHIVED'">
+              <el-tooltip :content="row.status === 'ARCHIVED' ? 'Republicar regra' : 'Publicar regra'" placement="top">
+                <el-button text circle type="success" :icon="Promotion"
+                  :title="row.status === 'ARCHIVED' ? 'Republicar regra' : 'Publicar regra'"
+                  :aria-label="row.status === 'ARCHIVED' ? 'Republicar regra' : 'Publicar regra'"
+                  @click="$emit('publish', row.id)" />
+              </el-tooltip>
+            </template>
+            <!-- Arquivada é imutável: edição só após republicar (guard no backend também) -->
+            <template v-if="row.status !== 'ARCHIVED'">
+              <el-tooltip content="Editar regra" placement="top">
+                <el-button text circle type="primary" :icon="Edit" title="Editar regra" aria-label="Editar regra"
+                  @click="$emit('edit', row)" />
+              </el-tooltip>
+            </template>
+            <!-- Só publicada pode ser arquivada -->
+            <template v-if="row.status === 'PUBLISHED'">
+              <el-tooltip content="Arquivar regra" placement="top">
+                <el-button text circle type="warning" :icon="Box" title="Arquivar regra" aria-label="Arquivar regra"
+                  @click="$emit('archive', row.id)" />
+              </el-tooltip>
+            </template>
+          </template>
+        </div>
       </template>
     </el-table-column>
   </el-table>
@@ -109,5 +123,32 @@ function rowClass({ row }: { row: BusinessRule }) {
 /* Regra arquivada: linha inteira em cinza (fonte e herdeiros de texto) */
 :deep(tr.archived-row td) {
   color: #9aa4b1;
+}
+
+.row-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+/* O Element Plus aplica margin-left de 12px entre botões adjacentes;
+   aqui o espaçamento é controlado pelo gap do container. */
+.row-actions .el-button+.el-button {
+  margin-left: 0;
+}
+
+/* Ícones levemente maiores que o padrão (14px) do Element Plus. */
+.row-actions .el-button .el-icon {
+  font-size: 18px;
+}
+
+/* Responsividade: colunas secundárias saem em telas estreitas.
+   As células do el-table vivem em subcomponentes, por isso :deep(). */
+@media (max-width: 900px) {
+  .el-table :deep(.col-optional) {
+    display: none;
+  }
 }
 </style>

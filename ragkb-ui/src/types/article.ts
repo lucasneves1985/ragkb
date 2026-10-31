@@ -16,7 +16,7 @@ export interface Article {
 }
 
 export interface ArticleActionRequest {
-  action: 'PUBLISH' | 'ARCHIVE'
+  action: 'PUBLISH' | 'ARCHIVE' | 'UNARCHIVE'
 }
 
 export interface CreateArticleRequest {

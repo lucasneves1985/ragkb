@@ -49,8 +49,8 @@ public class ArticleController {
     @GetMapping("/portal")
     @PreAuthorize("isAuthenticated()")
     public List<ArticleDetailDto> portal(@RequestParam(required = false) String q,
-                                         @RequestParam(required = false) String sector,
-                                         Authentication auth) {
+            @RequestParam(required = false) String sector,
+            Authentication auth) {
         return lifecycleService.listPortal(auth.getName(), isAdmin(auth), q, sector);
     }
 
@@ -66,20 +66,25 @@ public class ArticleController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
     public ArticleDto update(@PathVariable String id,
-                             @Valid @RequestBody UpdateArticleRequest request,
-                             Authentication auth) {
+            @Valid @RequestBody UpdateArticleRequest request,
+            Authentication auth) {
         return lifecycleService.update(id, request, auth.getName(), isAdmin(auth));
     }
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
     public ArticleDto changeStatus(@PathVariable String id,
-                                   @Valid @RequestBody ArticleActionRequest request,
-                                   Authentication auth) {
+            @Valid @RequestBody ArticleActionRequest request,
+            Authentication auth) {
         return switch (request.action()) {
-            case "PUBLISH" -> lifecycleService.publish(id, auth.getName(), isAdmin(auth));
-            case "ARCHIVE" -> lifecycleService.archive(id, auth.getName(), isAdmin(auth));
-            default -> throw new IllegalArgumentException("Ação inválida: " + request.action());
+            case "PUBLISH" ->
+                lifecycleService.publish(id, auth.getName(), isAdmin(auth));
+            case "ARCHIVE" ->
+                lifecycleService.archive(id, auth.getName(), isAdmin(auth));
+            case "UNARCHIVE" ->
+                lifecycleService.unarchive(id, auth.getName(), isAdmin(auth));
+            default ->
+                throw new IllegalArgumentException("Ação inválida: " + request.action());
         };
     }
 

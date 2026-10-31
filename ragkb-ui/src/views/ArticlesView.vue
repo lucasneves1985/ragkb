@@ -11,6 +11,7 @@ import {
   useUpdateArticle,
   usePublishArticle,
   useArchiveArticle,
+  useUnarchiveArticle,
 } from '@/composables'
 import { articlesService } from '@/services'
 import { useAuthStore } from '@/stores/auth'
@@ -28,6 +29,7 @@ const { createArticle, creating } = useCreateArticle()
 const { updateArticle, updating } = useUpdateArticle()
 const { publishArticle } = usePublishArticle()
 const { archiveArticle } = useArchiveArticle()
+const { unarchiveArticle } = useUnarchiveArticle()
 
 const dialog = ref(false)
 const editing = ref<ArticleDetail | null>(null)
@@ -111,6 +113,15 @@ async function handleArchive(id: string) {
   }
 }
 
+async function handleReactivate(id: string) {
+  try {
+    await unarchiveArticle(id)
+    ElMessage.success('Artigo reativado como rascunho.')
+  } catch {
+    ElMessage.error('Não foi possível reativar o artigo.')
+  }
+}
+
 function reset() {
   refetch()
 }
@@ -142,7 +153,7 @@ function reset() {
 
       <section v-else class="surface">
         <ArticleTable :articles="articles ?? []" :current-username="auth.username" :is-admin="isAdmin" @view="openView"
-          @edit="openEdit" @publish="handlePublish" @archive="handleArchive" />
+          @edit="openEdit" @publish="handlePublish" @archive="handleArchive" @reactivate="handleReactivate" />
       </section>
 
       <ArticleEditorDialog v-model="dialog" :sectors="sectors ?? []" :article="editing" :saving="saving"
