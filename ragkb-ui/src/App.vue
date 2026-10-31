@@ -22,11 +22,13 @@ import AppTopbar from '@/components/layout/AppTopbar.vue'
 import type { NavItem } from '@/types'
 import { MY_PROFILE_KEY, useMyProfile } from '@/composables/useMyProfile'
 import { resolveAvatarUrl } from '@/services/users.service'
+import { useThemeStore } from '@/stores/theme'
 
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const theme = useThemeStore()
 const queryClient = useQueryClient()
 const { profile } = useMyProfile()
 
@@ -52,6 +54,11 @@ watch(loggedIn, (authed) => {
     router.replace('/chat')
   }
 })
+
+watch([loggedIn, () => auth.username], ([authed, username]) => {
+  if (authed && username) theme.loadForUser(username)
+  else theme.resetForGuest()
+}, { immediate: true })
 
 const items = computed<NavItem[]>(() => [
   { label: 'Assistente', to: '/chat', icon: ChatDotRound, visible: true },

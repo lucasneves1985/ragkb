@@ -1,0 +1,509 @@
+/* Paleta escura do ragkb. A escolha é aplicada em html[data-theme]. */
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --app-bg: #10151d;
+  --app-surface: #171f2b;
+  --app-surface-raised: #202a37;
+  --app-border: #303c4b;
+  --app-text: #e7edf4;
+  --app-muted: #a2adbb;
+  --app-hover: #263241;
+  --app-accent: #55c79c;
+  --el-color-primary: #55c79c;
+  --el-color-primary-light-3: #3da980;
+  --el-color-primary-light-5: #318968;
+  --el-color-primary-light-7: #286e55;
+  --el-color-primary-light-8: #225b48;
+  --el-color-primary-light-9: #1c493b;
+  --el-color-primary-dark-2: #78d6b2;
+  --el-color-success: #55c79c;
+  --el-color-white: #171f2b;
+  --el-bg-color: #171f2b;
+  --el-bg-color-page: #10151d;
+  --el-bg-color-overlay: #202a37;
+  --el-text-color-primary: #e7edf4;
+  --el-text-color-regular: #c5ced9;
+  --el-text-color-secondary: #a2adbb;
+  --el-text-color-placeholder: #7d8998;
+  --el-text-color-disabled: #697585;
+  --el-border-color: #303c4b;
+  --el-border-color-light: #2a3543;
+  --el-border-color-lighter: #25303d;
+  --el-border-color-extra-light: #202a37;
+  --el-fill-color: #202a37;
+  --el-fill-color-light: #1c2632;
+  --el-fill-color-lighter: #202a37;
+  --el-fill-color-extra-light: #202a37;
+  --el-fill-color-blank: #171f2b;
+  --el-mask-color: rgba(0, 0, 0, 0.68);
+  --el-mask-color-extra-light: rgba(0, 0, 0, 0.24);
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+html[data-theme='dark'] body,
+html[data-theme='dark'] #app,
+html[data-theme='dark'] .app-shell,
+html[data-theme='dark'] .content,
+html[data-theme='dark'] .el-main,
+html[data-theme='dark'] .chat-layout,
+html[data-theme='dark'] .chat-main,
+html[data-theme='dark'] .input-area {
+  background-color: var(--app-bg) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .topbar {
+  background: rgba(23, 31, 43, 0.96) !important;
+  border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .environment,
+html[data-theme='dark'] .content p,
+html[data-theme='dark'] .content small,
+html[data-theme='dark'] .page-heading p,
+html[data-theme='dark'] .muted,
+html[data-theme='dark'] .sub,
+html[data-theme='dark'] .filename + small,
+html[data-theme='dark'] .title + small,
+html[data-theme='dark'] .avatar-actions small,
+html[data-theme='dark'] .side-note,
+html[data-theme='dark'] .card-meta,
+html[data-theme='dark'] .intro-copy,
+html[data-theme='dark'] .intro-footer,
+html[data-theme='dark'] .users-caption,
+html[data-theme='dark'] .drawer-copy,
+html[data-theme='dark'] .loading,
+html[data-theme='dark'] .loading-state,
+html[data-theme='dark'] .error-state,
+html[data-theme='dark'] .empty-state,
+html[data-theme='dark'] .empty-history,
+html[data-theme='dark'] .dialog-copy,
+html[data-theme='dark'] .input-area p,
+html[data-theme='dark'] .widget-hint,
+html[data-theme='dark'] .widget-typing {
+  color: var(--app-muted) !important;
+}
+
+html[data-theme='dark'] h1,
+html[data-theme='dark'] h2,
+html[data-theme='dark'] h3,
+html[data-theme='dark'] h4,
+html[data-theme='dark'] .page-heading h1,
+html[data-theme='dark'] .page-heading h2,
+html[data-theme='dark'] .section-heading h2,
+html[data-theme='dark'] .section-heading h3,
+html[data-theme='dark'] .card-title,
+html[data-theme='dark'] .detail-title,
+html[data-theme='dark'] .card-title,
+html[data-theme='dark'] .login-card h2,
+html[data-theme='dark'] .chat-welcome h1,
+html[data-theme='dark'] .review-title h2,
+html[data-theme='dark'] .fallback-head b,
+html[data-theme='dark'] .el-dialog__title,
+html[data-theme='dark'] .el-drawer__title {
+  color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .surface,
+html[data-theme='dark'] .preference-card,
+html[data-theme='dark'] .portal-card,
+html[data-theme='dark'] .comment-item,
+html[data-theme='dark'] .attachment-item,
+html[data-theme='dark'] .login,
+html[data-theme='dark'] .login-panel,
+html[data-theme='dark'] .login-card,
+html[data-theme='dark'] .assistant-widget,
+html[data-theme='dark'] .assistant-widget-body,
+html[data-theme='dark'] .widget-msg.assistant .widget-bubble,
+html[data-theme='dark'] .card-detail-side,
+html[data-theme='dark'] .board-column,
+html[data-theme='dark'] .task-card,
+html[data-theme='dark'] .composer,
+html[data-theme='dark'] .widget-composer,
+html[data-theme='dark'] .composer-input,
+html[data-theme='dark'] .chat-main .bubble:not(.user .bubble),
+html[data-theme='dark'] .avatar-preview,
+html[data-theme='dark'] .user-name span {
+  background-color: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .surface,
+html[data-theme='dark'] .portal-card,
+html[data-theme='dark'] .preference-card,
+html[data-theme='dark'] .comment-item,
+html[data-theme='dark'] .attachment-item,
+html[data-theme='dark'] .task-card,
+html[data-theme='dark'] .assistant-widget,
+html[data-theme='dark'] .composer,
+html[data-theme='dark'] .widget-composer,
+html[data-theme='dark'] .portal-card .el-card__body {
+  border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .el-card,
+html[data-theme='dark'] .el-dialog,
+html[data-theme='dark'] .el-drawer,
+html[data-theme='dark'] .el-popover.el-popper,
+html[data-theme='dark'] .el-dropdown__popper,
+html[data-theme='dark'] .el-select__popper,
+html[data-theme='dark'] .el-picker__popper,
+html[data-theme='dark'] .el-message-box,
+html[data-theme='dark'] .el-notification,
+html[data-theme='dark'] .el-picker-panel,
+html[data-theme='dark'] .el-date-picker,
+html[data-theme='dark'] .el-time-panel {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .el-dialog__header,
+html[data-theme='dark'] .el-dialog__footer,
+html[data-theme='dark'] .el-drawer__header,
+html[data-theme='dark'] .el-message-box__header,
+html[data-theme='dark'] .el-message-box__btns {
+  border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .el-input__wrapper,
+html[data-theme='dark'] .el-textarea__inner,
+html[data-theme='dark'] .el-select__wrapper,
+html[data-theme='dark'] .el-select .el-input__wrapper,
+html[data-theme='dark'] .el-date-editor .el-input__wrapper,
+html[data-theme='dark'] .el-input-number,
+html[data-theme='dark'] .el-input-number__decrease,
+html[data-theme='dark'] .el-input-number__increase {
+  background: #111923 !important;
+  box-shadow: 0 0 0 1px var(--app-border) inset !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] input,
+html[data-theme='dark'] textarea,
+html[data-theme='dark'] .el-input__inner,
+html[data-theme='dark'] .el-textarea__inner,
+html[data-theme='dark'] .el-select__placeholder,
+html[data-theme='dark'] .el-select__selected-item,
+html[data-theme='dark'] .el-input__count,
+html[data-theme='dark'] .el-range-input {
+  color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] input::placeholder,
+html[data-theme='dark'] textarea::placeholder,
+html[data-theme='dark'] .el-input__inner::placeholder,
+html[data-theme='dark'] .el-textarea__inner::placeholder {
+  color: #8793a2 !important;
+}
+
+html[data-theme='dark'] .el-form-item__label,
+html[data-theme='dark'] .login-card label,
+html[data-theme='dark'] .el-checkbox__label,
+html[data-theme='dark'] .el-radio__label,
+html[data-theme='dark'] .el-switch__label {
+  color: #c5ced9 !important;
+}
+
+html[data-theme='dark'] .el-table,
+html[data-theme='dark'] .el-table tr,
+html[data-theme='dark'] .el-table th.el-table__cell,
+html[data-theme='dark'] .el-table td.el-table__cell,
+html[data-theme='dark'] .el-table__inner-wrapper,
+html[data-theme='dark'] .el-table__body-wrapper,
+html[data-theme='dark'] .el-table__fixed,
+html[data-theme='dark'] .el-table__fixed-right {
+  --el-table-bg-color: var(--app-surface);
+  --el-table-tr-bg-color: var(--app-surface);
+  --el-table-header-bg-color: #1d2734;
+  --el-table-row-hover-bg-color: #202d3b;
+  --el-table-border-color: var(--app-border);
+  --el-table-text-color: var(--app-text);
+  --el-table-header-text-color: #b9c4d1;
+  background: var(--app-surface) !important;
+  color: var(--app-text) !important;
+  border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .el-table .cell,
+html[data-theme='dark'] .el-table th.el-table__cell {
+  color: #cbd4de !important;
+}
+
+html[data-theme='dark'] .el-table__body tr:hover > td.el-table__cell,
+html[data-theme='dark'] .el-table__body tr.current-row > td.el-table__cell {
+  background: var(--app-hover) !important;
+}
+
+html[data-theme='dark'] .el-table__body tr {
+  background: var(--app-surface) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important;
+}
+
+html[data-theme='dark'] .el-table__body td.el-table__cell {
+  border-bottom-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .el-button:not(.el-button--primary):not(.is-text):not(.is-link),
+html[data-theme='dark'] .new-query {
+  --el-button-bg-color: #202a37;
+  --el-button-border-color: #394657;
+  --el-button-text-color: #d7dfe8;
+  --el-button-hover-bg-color: #2a3746;
+  --el-button-hover-border-color: #4c5b6d;
+  --el-button-hover-text-color: #f3f6f9;
+  color: #d7dfe8 !important;
+}
+
+html[data-theme='dark'] .el-button.is-text,
+html[data-theme='dark'] .el-button.is-link {
+  color: #aeb9c7;
+}
+
+html[data-theme='dark'] .el-button.is-text:hover,
+html[data-theme='dark'] .el-button.is-link:hover,
+html[data-theme='dark'] .table-action-neutral {
+  color: rgb(160, 166, 174) !important;
+}
+
+html[data-theme='dark'] .el-button--primary.is-plain {
+  --el-button-bg-color: #1b4438;
+  --el-button-border-color: #28664f;
+  --el-button-text-color: #8be0bd;
+  --el-button-hover-bg-color: #245945;
+  --el-button-hover-border-color: #398568;
+  --el-button-hover-text-color: #b0f0d4;
+}
+
+html[data-theme='dark'] .status-active {
+  --el-tag-bg-color: #183c32;
+  --el-tag-border-color: #28664f;
+  --el-tag-text-color: #8be0bd;
+}
+
+html[data-theme='dark'] .status-archived {
+  --el-tag-bg-color: #29313d;
+  --el-tag-border-color: #414d5c;
+  --el-tag-text-color: #c0c9d4;
+}
+
+html[data-theme='dark'] .status-superseded,
+html[data-theme='dark'] .status-draft {
+  --el-tag-bg-color: #3a3021;
+  --el-tag-border-color: #6a512b;
+  --el-tag-text-color: #f0c77e;
+}
+
+html[data-theme='dark'] .portal-grid .el-card,
+html[data-theme='dark'] .portal-card {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .portal-card:hover {
+  border-color: #398568 !important;
+}
+
+html[data-theme='dark'] .portal-card .card-author,
+html[data-theme='dark'] .portal-card .card-title,
+html[data-theme='dark'] .portal-card .card-excerpt,
+html[data-theme='dark'] .detail-description,
+html[data-theme='dark'] .review p,
+html[data-theme='dark'] .business-rule-detail,
+html[data-theme='dark'] .el-alert__title,
+html[data-theme='dark'] .el-alert__description,
+html[data-theme='dark'] .el-empty__description,
+html[data-theme='dark'] .el-message-box__message,
+html[data-theme='dark'] .el-notification__content {
+  color: #c5ced9 !important;
+}
+
+html[data-theme='dark'] .diff article,
+html[data-theme='dark'] .diff header,
+html[data-theme='dark'] .column-header,
+html[data-theme='dark'] .column-empty,
+html[data-theme='dark'] .column-hint,
+html[data-theme='dark'] .users-caption,
+html[data-theme='dark'] .section-heading,
+html[data-theme='dark'] .card-detail-side,
+html[data-theme='dark'] .widget-references .widget-reference {
+  border-color: var(--app-border) !important;
+  background-color: var(--app-surface-raised) !important;
+}
+
+html[data-theme='dark'] .diff header,
+html[data-theme='dark'] .widget-reference,
+html[data-theme='dark'] .attachment-item {
+  color: #c5ced9 !important;
+}
+
+html[data-theme='dark'] .login-intro {
+  background: radial-gradient(circle at 18% 25%, #245b58, transparent 35%), linear-gradient(140deg, #101a2a, #162d35) !important;
+}
+
+html[data-theme='dark'] .login {
+  background: var(--app-bg) !important;
+}
+
+html[data-theme='dark'] .user .bubble,
+html[data-theme='dark'] .widget-msg.user .widget-bubble {
+  background: #234a43 !important;
+  color: #effbf6 !important;
+}
+
+html[data-theme='dark'] .avatar-preview,
+html[data-theme='dark'] .user-name span {
+  background: #23483c !important;
+  color: #a1e5c6 !important;
+}
+
+html[data-theme='dark'] .status-draft,
+html[data-theme='dark'] .role,
+html[data-theme='dark'] .filename,
+html[data-theme='dark'] .title,
+html[data-theme='dark'] .user-name b,
+html[data-theme='dark'] .task-card-title,
+html[data-theme='dark'] .detail-description,
+html[data-theme='dark'] .comment-content,
+html[data-theme='dark'] .attachment-name,
+html[data-theme='dark'] .widget-reference .ref-title,
+html[data-theme='dark'] .card-detail-grid h4,
+html[data-theme='dark'] .review-title h2,
+html[data-theme='dark'] .score {
+  color: #dbe3ec !important;
+}
+
+html[data-theme='dark'] .board-column {
+  background: #1c2632 !important;
+  border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .column-count {
+  background: #263241 !important;
+  color: #c1cbd7 !important;
+}
+
+html[data-theme='dark'] .conflict-row {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  color: #c5ced9 !important;
+}
+
+html[data-theme='dark'] .conflict-row.selected,
+html[data-theme='dark'] .history.active {
+  background: #1b4438 !important;
+  color: #8be0bd !important;
+}
+
+html[data-theme='dark'] .history {
+  color: #b9c4d1 !important;
+}
+
+html[data-theme='dark'] .history:hover,
+html[data-theme='dark'] .column-add-trigger:hover {
+  background: var(--app-hover) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .column-add-trigger,
+html[data-theme='dark'] .history small,
+html[data-theme='dark'] .message-text strong {
+  color: #b9c4d1 !important;
+}
+
+html[data-theme='dark'] .appearance-controls {
+  background: var(--app-surface-raised) !important;
+  border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .appearance-choice {
+  color: #c5ced9 !important;
+}
+
+html[data-theme='dark'] .comment-item,
+html[data-theme='dark'] .attachment-item,
+html[data-theme='dark'] .el-upload-dragger,
+html[data-theme='dark'] .selected-file,
+html[data-theme='dark'] .composer-input {
+  background: #111923 !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .el-checkbox__inner,
+html[data-theme='dark'] .el-radio__inner {
+  background: #111923;
+  border-color: #566477;
+}
+
+html[data-theme='dark'] .el-menu,
+html[data-theme='dark'] .el-menu--vertical,
+html[data-theme='dark'] .el-dropdown-menu,
+html[data-theme='dark'] .el-select-dropdown,
+html[data-theme='dark'] .el-picker-panel {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .el-select-dropdown__item,
+html[data-theme='dark'] .el-dropdown-menu__item,
+html[data-theme='dark'] .el-picker-panel,
+html[data-theme='dark'] .el-date-table th,
+html[data-theme='dark'] .el-date-table td,
+html[data-theme='dark'] .el-time-spinner__item {
+  color: #c5ced9 !important;
+}
+
+html[data-theme='dark'] .el-select-dropdown__item.hover,
+html[data-theme='dark'] .el-select-dropdown__item:hover,
+html[data-theme='dark'] .el-dropdown-menu__item:hover,
+html[data-theme='dark'] .el-time-spinner__item:hover {
+  background: var(--app-hover) !important;
+}
+
+html[data-theme='dark'] .el-divider,
+html[data-theme='dark'] .el-table__border-left-patch,
+html[data-theme='dark'] .el-table__border-right-patch {
+  background-color: var(--app-border) !important;
+  border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .el-skeleton__item {
+  background: #273342 !important;
+}
+
+html[data-theme='dark'] .el-pagination,
+html[data-theme='dark'] .el-pagination button,
+html[data-theme='dark'] .el-pager li {
+  background: var(--app-surface) !important;
+  color: #c5ced9 !important;
+}
+
+html[data-theme='dark'] .el-pager li.is-active {
+  color: #7ce0b7 !important;
+}
+
+html[data-theme='dark'] .login-brand span,
+html[data-theme='dark'] .eyebrow,
+html[data-theme='dark'] .section-heading > .el-icon {
+  color: #67d2a8 !important;
+}
+
+html[data-theme='dark'] .primary-button {
+  --el-button-bg-color: #168463;
+  --el-button-border-color: #168463;
+  --el-button-hover-bg-color: #0f7253;
+  --el-button-hover-border-color: #0f7253;
+  color: #fff !important;
+}
+
+html[data-theme='dark'] .chat-welcome p:last-child,
+html[data-theme='dark'] .input-area p {
+  color: var(--app-muted) !important;
+}
+
+html[data-theme='dark'] .table-action-neutral {
+  color: rgb(160, 166, 174) !important;
+}

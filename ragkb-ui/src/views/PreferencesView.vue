@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Camera, Lock, User } from '@element-plus/icons-vue'
+import { Camera, Lock, Moon, Sunny, User } from '@element-plus/icons-vue'
 import { useMyProfile } from '@/composables'
 import { resolveAvatarUrl } from '@/services/users.service'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
 import PageHeading from '@/components/layout/PageHeading.vue'
+import { useThemeStore } from '@/stores/theme'
 
 const { profile, isLoading, isError, refetch, updateProfile, changePassword, uploadAvatar, removeAvatar } =
   useMyProfile()
+const theme = useThemeStore()
+const darkMode = computed({
+  get: () => theme.isDark,
+  set: (enabled: boolean) => theme.setMode(enabled ? 'dark' : 'light'),
+})
 
 const profileForm = reactive({ fullName: '', email: '' })
 const passwordForm = reactive({ currentPassword: '', newPassword: '', confirmPassword: '' })
@@ -198,6 +204,28 @@ onBeforeUnmount(() => {
             </el-button>
           </el-form>
         </section>
+
+        <section class="surface preference-card appearance-card">
+          <div class="section-heading">
+            <el-icon><Moon /></el-icon>
+            <div>
+              <h2>Aparência</h2>
+              <p>Escolha o tema usado neste dispositivo. Sua preferência será mantida quando você voltar.</p>
+            </div>
+          </div>
+          <div class="appearance-controls">
+            <div class="appearance-choice">
+              <el-icon><Sunny /></el-icon>
+              <span>Claro</span>
+            </div>
+            <el-switch v-model="darkMode" aria-label="Alternar entre tema claro e escuro"
+              style="--el-switch-on-color: #168463" />
+            <div class="appearance-choice">
+              <el-icon><Moon /></el-icon>
+              <span>Escuro</span>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   </ErrorBoundary>
@@ -212,6 +240,29 @@ onBeforeUnmount(() => {
 
 .preference-card {
   padding: 24px;
+}
+
+.appearance-card {
+  grid-column: 1 / -1;
+}
+
+.appearance-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: fit-content;
+  padding: 12px 14px;
+  border: 1px solid #e8ebf1;
+  border-radius: 10px;
+  background: #f9fafc;
+}
+
+.appearance-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #526077;
+  font-size: 13px;
 }
 
 .section-heading {
@@ -291,6 +342,21 @@ onBeforeUnmount(() => {
 @media (max-width: 900px) {
   .preferences-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .preference-card {
+    padding: 18px;
+  }
+
+  .appearance-controls {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .avatar-editor {
+    align-items: flex-start;
   }
 }
 </style>
