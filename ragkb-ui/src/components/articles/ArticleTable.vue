@@ -33,28 +33,28 @@ function canManage(article: Article, currentUsername: string, isAdmin: boolean) 
 
 <template>
   <el-table :data="articles" style="width: 100%">
-    <el-table-column label="Artigo" min-width="280">
+    <el-table-column label="Artigo" min-width="280" class-name="mobile-label-article">
       <template #default="{ row }">
         <b class="title">{{ row.title }}</b>
         <small>{{ row.authorUsername }} · {{ row.chunkCount }} chunks</small>
       </template>
     </el-table-column>
-    <el-table-column prop="sector" label="Setor" min-width="110" />
-    <el-table-column label="Setores com acesso" min-width="180" class-name="col-optional">
+    <el-table-column prop="sector" label="Setor" min-width="110" class-name="mobile-label-sector" />
+    <el-table-column label="Setores com acesso" min-width="180" class-name="mobile-label-access">
       <template #default="{ row }">
         <el-tag v-for="sector in row.allowedSectors" :key="sector" size="small" effect="plain" class="sector-tag">
           {{ sector }}
         </el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="Status" min-width="110">
+    <el-table-column label="Status" min-width="110" class-name="mobile-label-status">
       <template #default="{ row }">
         <el-tag :class="tag(row.status)" size="small" effect="light">
           {{ statusLabel(row.status) }}
         </el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="Ações" width="180" align="center">
+    <el-table-column label="Ações" width="180" align="center" class-name="mobile-label-actions">
       <template #default="{ row }">
         <!-- Visualizar para todas as linhas: ação de leitura; o gate real
              (autor/setor) é o do GET /articles/{id} -->
@@ -137,11 +137,4 @@ function canManage(article: Article, currentUsername: string, isAdmin: boolean) 
   font-size: 18px;
 }
 
-/* Responsividade: colunas secundárias saem em telas estreitas.
-   As células do el-table vivem em subcomponentes, por isso :deep(). */
-@media (max-width: 900px) {
-  .el-table :deep(.col-optional) {
-    display: none;
-  }
-}
 </style>

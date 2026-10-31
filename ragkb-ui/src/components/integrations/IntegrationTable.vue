@@ -34,33 +34,33 @@ function actionLabel(i: Integration): string {
 
 <template>
   <el-table :data="integrations" style="width: 100%">
-    <el-table-column label="Nome" min-width="200">
+    <el-table-column label="Nome" min-width="200" class-name="mobile-label-name">
       <template #default="{ row }">
         <b>{{ row.name }}</b>
         <div v-if="row.description" class="sub">{{ row.description }}</div>
       </template>
     </el-table-column>
-    <el-table-column label="Tipo" min-width="110">
+    <el-table-column label="Tipo" min-width="110" class-name="mobile-label-type">
       <template #default="{ row }">
         <el-tag size="small" :type="row.integrationType === 'QUERY' ? 'warning' : 'primary'">
           {{ typeLabel(row.integrationType) }}
         </el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="Agendamento" min-width="180" class-name="col-optional">
+    <el-table-column label="Agendamento" min-width="180" class-name="mobile-label-schedule">
       <template #default="{ row }">{{ scheduleLabel(row) }}</template>
     </el-table-column>
-    <el-table-column label="Ação" min-width="180" class-name="col-optional">
+    <el-table-column label="Ação" min-width="180" class-name="mobile-label-action">
       <template #default="{ row }">{{ actionLabel(row) }}</template>
     </el-table-column>
-    <el-table-column label="Status" min-width="90">
+    <el-table-column label="Status" min-width="90" class-name="mobile-label-status">
       <template #default="{ row }">
         <el-tag size="small" :type="row.active ? 'success' : 'info'">
           {{ row.active ? 'Ativa' : 'Inativa' }}
         </el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="Ações" width="180" align="center">
+    <el-table-column label="Ações" width="180" align="center" class-name="mobile-label-actions">
       <template #default="{ row }">
         <div class="row-actions">
           <el-tooltip content="Editar integração" placement="top">
@@ -111,11 +111,4 @@ function actionLabel(i: Integration): string {
   font-size: 18px;
 }
 
-/* Responsividade: colunas secundárias saem em telas estreitas.
-   As células do el-table vivem em subcomponentes, por isso :deep(). */
-@media (max-width: 900px) {
-  .el-table :deep(.col-optional) {
-    display: none;
-  }
-}
 </style>

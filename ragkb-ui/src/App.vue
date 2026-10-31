@@ -31,6 +31,7 @@ const queryClient = useQueryClient()
 const { profile } = useMyProfile()
 
 const collapsed = ref(false)
+const mobileNavOpen = ref(false)
 const loggedIn = computed(() => auth.isAuthenticated)
 const displayName = computed(() => profile.value?.fullName || auth.username)
 const profileInitials = computed(() => {
@@ -100,11 +101,14 @@ function logout() {
   <router-view v-if="!loggedIn" />
 
   <el-container v-else class="app-shell" direction="horizontal">
-    <AppSidebar :collapsed="collapsed" :items="items" @toggle="collapsed = !collapsed" />
+    <div v-if="mobileNavOpen" class="mobile-nav-backdrop" @click="mobileNavOpen = false"></div>
+    <AppSidebar :collapsed="collapsed" :mobile-open="mobileNavOpen" :items="items"
+      @toggle="collapsed = !collapsed" @navigate="mobileNavOpen = false" />
 
     <el-container direction="vertical">
       <AppTopbar :username="displayName" :initials="profileInitials" :roles="auth.roles" :avatar-url="avatarUrl"
-        @new-query="router.push('/chat')" @preferences="router.push('/preferences')" @logout="logout" />
+        @toggle-nav="mobileNavOpen = !mobileNavOpen" @new-query="router.push('/chat')"
+        @preferences="router.push('/preferences')" @logout="logout" />
 
       <el-main class="content">
         <router-view />
@@ -120,6 +124,14 @@ function logout() {
   font-family: Manrope, Arial, sans-serif;
   color: #172033;
   background: #f6f7fb;
+  --el-color-primary: #168463;
+  --el-color-primary-light-3: #4ca384;
+  --el-color-primary-light-5: #82bda4;
+  --el-color-primary-light-7: #b5d7c8;
+  --el-color-primary-light-8: #d0e6dc;
+  --el-color-primary-light-9: #edf7f2;
+  --el-color-primary-dark-2: #0f7253;
+  --el-color-success: #168463;
 }
 
 * {
@@ -141,6 +153,8 @@ textarea {
 }
 
 .app-shell {
+  position: relative;
+  min-width: 0;
   height: 100vh;
   max-height: 100vh;
   overflow: hidden;
@@ -148,9 +162,19 @@ textarea {
 }
 
 .content {
+  min-width: 0;
   padding: 34px 38px;
   overflow: auto;
   height: calc(100vh - 76px);
+}
+
+.content > * {
+  min-width: 0;
+}
+
+.content .el-input,
+.content .el-select {
+  min-width: 0;
 }
 
 .page-heading {
@@ -223,6 +247,29 @@ textarea {
   font-weight: 700;
 }
 
+.el-button--primary {
+  --el-button-bg-color: #168463;
+  --el-button-border-color: #168463;
+  --el-button-text-color: #fff;
+  --el-button-hover-bg-color: #0f7253;
+  --el-button-hover-border-color: #0f7253;
+  --el-button-active-bg-color: #0d644a;
+  --el-button-active-border-color: #0d644a;
+}
+
+.el-button--primary.is-plain {
+  --el-button-bg-color: #edf7f2;
+  --el-button-border-color: #b5d7c8;
+  --el-button-text-color: #146b50;
+  --el-button-hover-bg-color: #dff1e8;
+  --el-button-hover-border-color: #82bda4;
+  --el-button-hover-text-color: #0f7253;
+}
+
+.mobile-nav-backdrop {
+  display: none;
+}
+
 .primary-button span,
 .primary-button .el-icon {
   color: #fff !important;
@@ -246,6 +293,133 @@ textarea {
   font-size: 13px;
 }
 
+@media (max-width: 760px) {
+  /* Em telas estreitas, cada linha vira um cartão vertical com o rótulo do campo. */
+  .el-table,
+  .el-table__inner-wrapper,
+  .el-table__body-wrapper,
+  .el-table__body-wrapper .el-scrollbar__view {
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .el-table__header-wrapper,
+  .el-table__fixed,
+  .el-table__fixed-right,
+  .el-table__fixed-header-wrapper,
+  .el-table__fixed-body-wrapper {
+    display: none !important;
+  }
+
+  .el-table__body {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .el-table__body tbody {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+    align-items: start;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .el-table__body tr {
+    display: block !important;
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid #e8ebf1;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(22, 31, 48, 0.04);
+  }
+
+  .el-table__body td.el-table__cell {
+    display: grid !important;
+    grid-template-columns: minmax(92px, 36%) minmax(0, 1fr);
+    align-items: start;
+    gap: 8px;
+    width: 100%;
+    min-height: 38px;
+    padding: 8px 11px !important;
+    border-bottom: 1px solid #f0f2f5 !important;
+    background: transparent !important;
+  }
+
+  .el-table__body td.el-table__cell:last-child {
+    border-bottom: 0 !important;
+  }
+
+  .el-table__body td.el-table__cell::before {
+    color: #778499;
+    content: '';
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .el-table__body td .cell {
+    min-width: 0;
+    padding: 0 !important;
+    overflow: visible;
+    color: #344054;
+    font-size: 12px;
+    line-height: 1.45;
+    text-align: right;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .el-table__body td.mobile-label-article::before { content: 'Artigo'; }
+  .el-table__body td.mobile-label-rule::before { content: 'Regra'; }
+  .el-table__body td.mobile-label-file::before { content: 'Arquivo'; }
+  .el-table__body td.mobile-label-name::before { content: 'Nome'; }
+  .el-table__body td.mobile-label-sector::before { content: 'Setor'; }
+  .el-table__body td.mobile-label-access::before { content: 'Acesso'; }
+  .el-table__body td.mobile-label-status::before { content: 'Status'; }
+  .el-table__body td.mobile-label-actions::before { content: 'Ações'; }
+  .el-table__body td.mobile-label-type::before { content: 'Tipo'; }
+  .el-table__body td.mobile-label-schedule::before { content: 'Agendamento'; }
+  .el-table__body td.mobile-label-action::before { content: 'Ação'; }
+  .el-table__body td.mobile-label-id::before { content: 'ID'; }
+  .el-table__body td.mobile-label-user::before { content: 'Usuário'; }
+  .el-table__body td.mobile-label-email::before { content: 'E-mail'; }
+  .el-table__body td.mobile-label-roles::before { content: 'Papéis'; }
+  .el-table__body td.mobile-label-active::before { content: 'Ativo'; }
+  .el-table__body td.mobile-label-chunks::before { content: 'Chunks'; }
+  .el-table__body td.mobile-label-check-time::before { content: 'Verificação'; }
+  .el-table__body td.mobile-label-threshold::before { content: 'Alerta antes'; }
+  .el-table__body td.mobile-label-channel::before { content: 'Canal'; }
+  .el-table__body td.mobile-label-last-check::before { content: 'Última checagem'; }
+  .el-table__body td.mobile-label-reminder::before { content: 'Lembrete'; }
+  .el-table__body td.mobile-label-remind-at::before { content: 'Lembrar em'; }
+  .el-table__body td.mobile-label-retries::before { content: 'Nº tentativas'; }
+  .el-table__body td.mobile-label-started::before { content: 'Início'; }
+  .el-table__body td.mobile-label-attempt::before { content: 'Tentativa'; }
+  .el-table__body td.mobile-label-http::before { content: 'HTTP'; }
+  .el-table__body td.mobile-label-response::before { content: 'Resposta / erro'; }
+  .el-table__body td.mobile-label-checked-at::before { content: 'Data'; }
+  .el-table__body td.mobile-label-result::before { content: 'Resultado'; }
+  .el-table__body td.mobile-label-days-left::before { content: 'Dias restantes'; }
+  .el-table__body td.mobile-label-detail::before { content: 'Detalhe'; }
+  .el-table__body td.mobile-label-actions .row-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  .el-table__body td.mobile-label-actions .el-button {
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  .el-table__body .el-tag {
+    max-width: 100%;
+    white-space: normal;
+  }
+}
+
 .el-dialog {
   border-radius: 16px;
 }
@@ -257,15 +431,62 @@ textarea {
 
 @media (max-width: 760px) {
   .content {
-    padding: 24px 16px;
+    padding: 20px 14px;
   }
 
   .page-heading {
     display: block;
   }
 
-  .page-heading .el-button {
-    margin-top: 15px;
+  .page-heading .heading-actions {
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+
+  .mobile-nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1999;
+    background: rgba(15, 23, 42, 0.48);
+  }
+
+  .el-dialog {
+    max-width: calc(100vw - 24px);
+    margin: 12px auto !important;
+  }
+
+  .el-drawer {
+    max-width: calc(100vw - 12px);
+  }
+
+  .el-dialog__body {
+    max-height: calc(100dvh - 180px);
+    overflow-y: auto;
+  }
+
+  .content .header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .content .header > :first-child {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .content {
+    padding: 16px 10px;
+  }
+
+  .page-heading h1 {
+    font-size: 23px;
+  }
+
+  .el-button + .el-button {
+    margin-left: 4px;
   }
 }
 </style>

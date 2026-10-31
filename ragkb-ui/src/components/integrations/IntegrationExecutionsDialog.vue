@@ -38,17 +38,17 @@ function statusType(s: IntegrationExecutionStatus) {
     @update:model-value="emit('update:modelValue', $event)">
     <section v-if="isLoadingExecutions" class="loading">Carregando…</section>
     <el-table v-else :data="executions ?? []" style="width: 100%">
-      <el-table-column label="Início" width="180">
+      <el-table-column label="Início" width="180" class-name="mobile-label-started">
         <template #default="{ row }">{{ new Date(row.startedAt).toLocaleString('pt-BR') }}</template>
       </el-table-column>
-      <el-table-column label="Status" width="110">
+      <el-table-column label="Status" width="110" class-name="mobile-label-status">
         <template #default="{ row }">
           <el-tag size="small" :type="statusType(row.status)">{{ row.status }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="Tent." width="90" prop="attempt" />
-      <el-table-column label="HTTP" width="70" prop="httpStatus" />
-      <el-table-column label="Resposta / Erro" min-width="300">
+      <el-table-column label="Tent." width="90" prop="attempt" class-name="mobile-label-attempt" />
+      <el-table-column label="HTTP" width="70" prop="httpStatus" class-name="mobile-label-http" />
+      <el-table-column label="Resposta / Erro" min-width="300" class-name="mobile-label-response">
         <template #default="{ row }">
           <span v-if="row.errorMessage" class="error-text">{{ row.errorMessage }}</span>
           <code v-else class="response-code">{{ (row.responseBody ?? '').slice(0, 120) }}</code>

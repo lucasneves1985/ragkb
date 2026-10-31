@@ -27,29 +27,29 @@ function statusLabel(s: DocumentStatus) {
 
 <template>
   <el-table :data="documents" style="width: 100%">
-    <el-table-column label="Arquivo" min-width="265">
+    <el-table-column label="Arquivo" min-width="265" class-name="mobile-label-file">
       <template #default="{ row }">
         <b class="filename">{{ row.filename }}</b>
         <small>{{ row.id }}</small>
       </template>
     </el-table-column>
-    <el-table-column prop="sector" label="Setor" width="140" />
-    <el-table-column label="Status" width="130">
+    <el-table-column prop="sector" label="Setor" width="140" class-name="mobile-label-sector" />
+    <el-table-column label="Status" width="130" class-name="mobile-label-status">
       <template #default="{ row }">
         <el-tag :class="tag(row.status)" size="small" effect="light">
           {{ statusLabel(row.status) }}
         </el-tag>
       </template>
     </el-table-column>
-    <el-table-column prop="chunkCount" label="Chunks" width="90" />
-    <el-table-column label="Setores com acesso" min-width="170">
+    <el-table-column prop="chunkCount" label="Chunks" width="90" class-name="mobile-label-chunks" />
+    <el-table-column label="Setores com acesso" min-width="170" class-name="mobile-label-access">
       <template #default="{ row }">
         <el-tag v-for="sector in row.allowedSectors" :key="sector" size="small" effect="plain" class="sector-tag">
           {{ sector }}
         </el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="Ações" width="190">
+    <el-table-column label="Ações" width="190" class-name="mobile-label-actions">
       <template #default="{ row }">
         <el-button text :icon="Edit" @click="emit('edit-access', row)">Acessos</el-button>
         <el-button v-if="row.status === 'ACTIVE'" text type="warning" @click="emit('archive', row.id)">

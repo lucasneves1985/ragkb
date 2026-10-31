@@ -41,27 +41,27 @@ function rowClass({ row }: { row: BusinessRule }) {
 
 <template>
   <el-table :data="rules" style="width: 100%" :row-class-name="rowClass">
-    <el-table-column label="Regra" min-width="280">
+    <el-table-column label="Regra" min-width="280" class-name="mobile-label-rule">
       <template #default="{ row }">
         <b class="title">{{ row.title }}</b>
         <small>{{ row.authorUsername }} · {{ row.articleIds.length }} artigo(s)</small>
       </template>
     </el-table-column>
-    <el-table-column label="Setores com acesso" min-width="180" class-name="col-optional">
+    <el-table-column label="Setores com acesso" min-width="180" class-name="mobile-label-access">
       <template #default="{ row }">
         <el-tag v-for="sector in row.sectorNames" :key="sector" size="small" effect="plain" class="sector-tag">
           {{ sector }}
         </el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="Status" min-width="110">
+    <el-table-column label="Status" min-width="110" class-name="mobile-label-status">
       <template #default="{ row }">
         <el-tag :class="tag(row.status)" size="small" effect="light">
           {{ statusLabel(row.status) }}
         </el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="Ações" width="180" align="center">
+    <el-table-column label="Ações" width="180" align="center" class-name="mobile-label-actions">
       <template #default="{ row }">
         <div class="row-actions">
           <el-tooltip content="Visualizar regra" placement="top">
@@ -144,11 +144,4 @@ function rowClass({ row }: { row: BusinessRule }) {
   font-size: 18px;
 }
 
-/* Responsividade: colunas secundárias saem em telas estreitas.
-   As células do el-table vivem em subcomponentes, por isso :deep(). */
-@media (max-width: 900px) {
-  .el-table :deep(.col-optional) {
-    display: none;
-  }
-}
 </style>

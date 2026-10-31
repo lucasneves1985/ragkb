@@ -70,21 +70,21 @@ function statusType(s: ReminderStatus) {
       <section v-else-if="isError" class="surface">Erro ao carregar.</section>
       <section v-else class="surface">
         <el-table :data="reminders ?? []" style="width: 100%">
-          <el-table-column label="Lembrete" min-width="260">
+          <el-table-column label="Lembrete" min-width="260" class-name="mobile-label-reminder">
             <template #default="{ row }">
               <b>{{ row.summary ?? row.originalRequest }}</b>
             </template>
           </el-table-column>
-          <el-table-column label="Lembrar em" width="180">
+          <el-table-column label="Lembrar em" width="180" class-name="mobile-label-remind-at">
             <template #default="{ row }">{{ new Date(row.remindAt).toLocaleString('pt-BR') }}</template>
           </el-table-column>
-          <el-table-column label="Status" width="120">
+          <el-table-column label="Status" width="120" class-name="mobile-label-status">
             <template #default="{ row }">
               <el-tag size="small" :type="statusType(row.status)">{{ row.status }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="Nº Tent." width="100" prop="retryCount" />
-          <el-table-column label="Ações" width="120">
+          <el-table-column label="Nº Tent." width="100" prop="retryCount" class-name="mobile-label-retries" />
+          <el-table-column label="Ações" width="120" class-name="mobile-label-actions">
             <template #default="{ row }">
               <el-button v-if="row.status === 'PENDING'" text type="danger"
                 @click="handleCancel(row.id)">Cancelar</el-button>
@@ -117,5 +117,19 @@ function statusType(s: ReminderStatus) {
   text-align: center;
   color: #718096;
   font-size: 13px;
+}
+
+@media (max-width: 600px) {
+  .create-box {
+    flex-wrap: wrap;
+  }
+
+  .create-box .el-input {
+    flex: 1 1 100%;
+  }
+
+  .create-box .el-button:not(.is-circle) {
+    flex: 1;
+  }
 }
 </style>

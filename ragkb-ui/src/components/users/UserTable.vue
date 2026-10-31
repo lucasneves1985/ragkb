@@ -27,8 +27,8 @@ function onToggle(user: User) {
   </div>
 
   <el-table :data="users" style="width: 100%">
-    <el-table-column prop="id" label="ID" width="80" />
-    <el-table-column label="Usuário" min-width="240">
+    <el-table-column prop="id" label="ID" width="80" class-name="mobile-label-id" />
+    <el-table-column label="Usuário" min-width="240" class-name="mobile-label-user">
       <template #default="{ row }">
         <div class="user-name">
           <el-tag class="username-chip" size="small" effect="plain">
@@ -38,27 +38,27 @@ function onToggle(user: User) {
         </div>
       </template>
     </el-table-column>
-    <el-table-column prop="email" label="E-mail" min-width="220" show-overflow-tooltip />
-    <el-table-column label="Papéis atribuídos" min-width="200">
+    <el-table-column prop="email" label="E-mail" min-width="220" show-overflow-tooltip class-name="mobile-label-email" />
+    <el-table-column label="Papéis atribuídos" min-width="200" class-name="mobile-label-roles">
       <template #default="{ row }">
         <el-tag v-for="role in row.roles" :key="role" class="role" size="small" effect="plain">
           {{ role }}
         </el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="Setor" min-width="160">
+    <el-table-column label="Setor" min-width="160" class-name="mobile-label-sector">
       <template #default="{ row }">
         <el-tag class="role" size="small" type="info" effect="plain">
           {{ row.sectorName }}
         </el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="Ativo" width="110">
+    <el-table-column label="Ativo" width="110" class-name="mobile-label-active">
       <template #default="{ row }">
         <el-switch :model-value="row.enabled" style="--el-switch-on-color: #168463" @change="onToggle(row)" />
       </template>
     </el-table-column>
-    <el-table-column label="Ações" width="110" fixed="right">
+    <el-table-column label="Ações" width="110" class-name="mobile-label-actions">
       <template #default="{ row }">
         <el-button link type="primary" :icon="Edit" @click="emit('edit', row)">
           Editar

@@ -13,16 +13,16 @@ function date(value: string | null) { return value ? new Date(value).toLocaleStr
 
 <template>
   <el-table :data="monitors" style="width: 100%" empty-text="Nenhuma URL monitorada ainda.">
-    <el-table-column label="URL" min-width="220"><template #default="{ row }">{{ row.url }}</template></el-table-column>
-    <el-table-column label="Verificação" min-width="100" class-name="col-optional"><template #default="{ row }">{{
+    <el-table-column label="URL" min-width="220" class-name="mobile-label-name"><template #default="{ row }">{{ row.url }}</template></el-table-column>
+    <el-table-column label="Verificação" min-width="100" class-name="mobile-label-check-time"><template #default="{ row }">{{
       row.checkTime }}</template></el-table-column>
-    <el-table-column label="Alerta antes" min-width="110" class-name="col-optional"><template #default="{ row }">{{
+    <el-table-column label="Alerta antes" min-width="110" class-name="mobile-label-threshold"><template #default="{ row }">{{
       row.alertThresholdDays }} dias</template></el-table-column>
-    <el-table-column label="Canal" min-width="90" class-name="col-optional"><template #default="{ row }">{{
+    <el-table-column label="Canal" min-width="90" class-name="mobile-label-channel"><template #default="{ row }">{{
       row.notificationChannel === 'EMAIL' ? 'E-mail' : 'WhatsApp' }}</template></el-table-column>
-    <el-table-column label="Última checagem" min-width="160"><template #default="{ row }">{{ date(row.lastCheckedAt)
+    <el-table-column label="Última checagem" min-width="160" class-name="mobile-label-last-check"><template #default="{ row }">{{ date(row.lastCheckedAt)
         }}</template></el-table-column>
-    <el-table-column label="Ações" width="180" align="center"><template #default="{ row }">
+    <el-table-column label="Ações" width="180" align="center" class-name="mobile-label-actions"><template #default="{ row }">
         <div class="row-actions">
           <el-tooltip content="Checar o certificado agora" placement="top">
             <el-button text circle :icon="Refresh" :loading="checking" title="Checar o certificado agora"
@@ -65,11 +65,4 @@ function date(value: string | null) { return value ? new Date(value).toLocaleStr
   font-size: 18px;
 }
 
-/* Responsividade: colunas secundárias saem em telas estreitas.
-   As células do el-table vivem em subcomponentes, por isso :deep(). */
-@media (max-width: 900px) {
-  .el-table :deep(.col-optional) {
-    display: none;
-  }
-}
 </style>
