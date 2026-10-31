@@ -65,7 +65,7 @@ function rowClass({ row }: { row: BusinessRule }) {
       <template #default="{ row }">
         <div class="row-actions">
           <el-tooltip content="Visualizar regra" placement="top">
-            <el-button text circle type="primary" :icon="View" title="Visualizar regra" aria-label="Visualizar regra"
+            <el-button text circle type="primary" class="table-action-neutral" :icon="View" title="Visualizar regra" aria-label="Visualizar regra"
               @click="$emit('view', row)" />
           </el-tooltip>
           <template v-if="!readOnly && canManage(row, currentUsername, isAdmin)">
@@ -81,7 +81,7 @@ function rowClass({ row }: { row: BusinessRule }) {
             <!-- Arquivada é imutável: edição só após republicar (guard no backend também) -->
             <template v-if="row.status !== 'ARCHIVED'">
               <el-tooltip content="Editar regra" placement="top">
-                <el-button text circle type="primary" :icon="Edit" title="Editar regra" aria-label="Editar regra"
+                <el-button text circle type="primary" class="table-action-neutral" :icon="Edit" title="Editar regra" aria-label="Editar regra"
                   @click="$emit('edit', row)" />
               </el-tooltip>
             </template>

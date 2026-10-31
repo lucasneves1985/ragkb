@@ -266,6 +266,10 @@ textarea {
   --el-button-hover-text-color: #0f7253;
 }
 
+.table-action-neutral {
+  color: rgb(96, 98, 102) !important;
+}
+
 .mobile-nav-backdrop {
   display: none;
 }

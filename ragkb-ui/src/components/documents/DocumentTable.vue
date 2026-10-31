@@ -51,7 +51,7 @@ function statusLabel(s: DocumentStatus) {
     </el-table-column>
     <el-table-column label="Ações" width="190" class-name="mobile-label-actions">
       <template #default="{ row }">
-        <el-button text :icon="Edit" @click="emit('edit-access', row)">Acessos</el-button>
+        <el-button text class="table-action-neutral" :icon="Edit" @click="emit('edit-access', row)">Acessos</el-button>
         <el-button v-if="row.status === 'ACTIVE'" text type="warning" @click="emit('archive', row.id)">
           Arquivar
         </el-button>

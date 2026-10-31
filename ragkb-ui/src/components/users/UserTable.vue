@@ -60,7 +60,7 @@ function onToggle(user: User) {
     </el-table-column>
     <el-table-column label="Ações" width="110" class-name="mobile-label-actions">
       <template #default="{ row }">
-        <el-button link type="primary" :icon="Edit" @click="emit('edit', row)">
+        <el-button link type="primary" class="table-action-neutral" :icon="Edit" @click="emit('edit', row)">
           Editar
         </el-button>
       </template>

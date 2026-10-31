@@ -60,7 +60,7 @@ function canManage(article: Article, currentUsername: string, isAdmin: boolean) 
              (autor/setor) é o do GET /articles/{id} -->
         <div class="row-actions">
           <el-tooltip content="Visualizar artigo" placement="top">
-            <el-button text circle :icon="View" title="Visualizar artigo" aria-label="Visualizar artigo"
+            <el-button text circle class="table-action-neutral" :icon="View" title="Visualizar artigo" aria-label="Visualizar artigo"
               @click="$emit('view', row)" />
           </el-tooltip>
           <template v-if="canManage(row, currentUsername, isAdmin)">
@@ -87,7 +87,7 @@ function canManage(article: Article, currentUsername: string, isAdmin: boolean) 
             </template>
             <!-- Editar em qualquer status gerenciável -->
             <el-tooltip content="Editar artigo" placement="top">
-              <el-button text circle type="primary" :icon="Edit" title="Editar artigo" aria-label="Editar artigo"
+              <el-button text circle type="primary" class="table-action-neutral" :icon="Edit" title="Editar artigo" aria-label="Editar artigo"
                 @click="$emit('edit', row)" />
             </el-tooltip>
           </template>

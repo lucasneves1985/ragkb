@@ -64,7 +64,7 @@ function actionLabel(i: Integration): string {
       <template #default="{ row }">
         <div class="row-actions">
           <el-tooltip content="Editar integração" placement="top">
-            <el-button text circle type="primary" :icon="Edit" title="Editar integração" aria-label="Editar integração"
+            <el-button text circle type="primary" class="table-action-neutral" :icon="Edit" title="Editar integração" aria-label="Editar integração"
               @click="$emit('edit', row)" />
           </el-tooltip>
           <el-tooltip content="Ver histórico de execuções" placement="top">

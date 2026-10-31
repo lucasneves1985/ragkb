@@ -33,7 +33,7 @@ function date(value: string | null) { return value ? new Date(value).toLocaleStr
               aria-label="Ver histórico de checagens" @click="$emit('history', row)" />
           </el-tooltip>
           <el-tooltip content="Editar monitor" placement="top">
-            <el-button text circle :icon="Edit" title="Editar monitor" aria-label="Editar monitor"
+            <el-button text circle class="table-action-neutral" :icon="Edit" title="Editar monitor" aria-label="Editar monitor"
               @click="$emit('edit', row)" />
           </el-tooltip>
           <el-tooltip content="Excluir monitor" placement="top">
