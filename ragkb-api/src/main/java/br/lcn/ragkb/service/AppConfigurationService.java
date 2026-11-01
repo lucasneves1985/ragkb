@@ -23,6 +23,21 @@ public class AppConfigurationService {
     public static final String KEY_WAHA_API_KEY = "waha.api_key";
     public static final String KEY_WAHA_SESSION = "waha.session";
 
+    /**
+     * Horário diário (HH:mm, fuso America/Sao_Paulo) em que o
+     * CardDueReminderJob envia os lembretes de prazo dos cards. Editável
+     * apenas por ADMIN via /api/app-configurations; consumida pelo
+     * CardReminderScheduler (reconciliação dinâmica, sem restart).
+     */
+    public static final String KEY_CARDS_REMINDER_TIME = "cards.reminder_time";
+
+    /**
+     * Janela de alerta dos lembretes de prazo, em dias: cards com prazo
+     * <= hoje + N recebem o aviso. Editável apenas por ADMIN; consumida pelo
+     * CardDueReminderJob a cada execução (não afeta o gatilho, só a query).
+     */
+    public static final String KEY_CARDS_REMINDER_WINDOW_DAYS = "cards.reminder_window_days";
+
     private final AppConfigurationRepository repository;
 
     @Transactional(readOnly = true)

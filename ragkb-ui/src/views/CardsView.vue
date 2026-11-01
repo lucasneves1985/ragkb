@@ -3,7 +3,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Postcard } from '@element-plus/icons-vue'
+import { Plus } from '@element-plus/icons-vue'
 import {
   useProjects,
   useBoard,
@@ -49,6 +49,28 @@ const cardsByStatus = computed<Record<CardStatus, Card[]>>(() => {
   }
   return map
 })
+
+// ── Prazo no card do board ────────────────────────────────
+// Estados do pill: normal (neutro), soon (âmbar, vence em <= 2 dias — mesmo
+// limiar do REMINDER_WINDOW_DAYS do CardDueReminderJob) e overdue (vermelho).
+// Cards encerrados SEMPRE ficam neutros: "vencido" num card concluído seria
+// informação falsa.
+type DueBadgeState = 'normal' | 'soon' | 'overdue'
+
+function dueDateState(card: Card): DueBadgeState {
+  if (!card.dueDate) return 'normal'
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const due = new Date(`${card.dueDate}T00:00:00`)
+  if (isClosedStatus(card.status)) return 'normal'
+  if (due.getTime() < today.getTime()) return 'overdue'
+  const daysLeft = Math.round((due.getTime() - today.getTime()) / 86_400_000)
+  return daysLeft <= 2 ? 'soon' : 'normal'
+}
+
+function formatDueDateShort(value: string): string {
+  return new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR')
+}
 
 // ── Drag-and-drop nativo ──────────────────────────────────
 const draggedCard = ref<Card | null>(null)
@@ -228,7 +250,6 @@ function refresh() {
   <ErrorBoundary @retry="refresh">
     <div>
       <PageHeading eyebrow="GESTÃO DE TAREFAS" title="Cards"
-        :icon="Postcard"
         description="Projetos e tarefas em formato Kanban, com assistente de consulta." :on-refresh="refresh" />
 
       <section class="surface board-toolbar">
@@ -236,7 +257,10 @@ function refresh() {
           <el-option v-for="project in projects ?? []" :key="project.id" :value="project.id" :label="project.name" />
         </el-select>
 
-        <el-button size="small" type="primary" class="primary-button" :icon="Plus" @click="openNewProject">
+        <el-button size="small" @click="openNewProject">
+          <el-icon>
+            <Plus />
+          </el-icon>
           Novo projeto
         </el-button>
 
@@ -280,7 +304,12 @@ function refresh() {
               @click="openDetail(card)">
               <p class="task-card-title">{{ card.title }}</p>
               <div class="task-card-meta">
-                <span>{{ new Date(card.createdAt).toLocaleDateString('pt-BR') }}</span>
+                <!-- Prazo discreto: pill colorido por estado; substitui a
+                     data de criação no meta quando existe (uma data só). -->
+                <span v-if="card.dueDate" class="due-badge" :class="`due-badge--${dueDateState(card)}`">
+                  {{ formatDueDateShort(card.dueDate) }}
+                </span>
+                <span v-else>{{ new Date(card.createdAt).toLocaleDateString('pt-BR') }}</span>
                 <el-button size="small" text type="danger" @click.stop="removeCard(card)">
                   Excluir
                 </el-button>
@@ -328,3 +357,29 @@ function refresh() {
 </template>
 
 <style lang="css" src="@/views/styles/cards.view.css"></style>
+
+<style scoped>
+/* Pill de prazo: discreto, alinhado ao meta do card. Fundos rgba para
+   compatibilidade com o dark theme sem ajuste adicional. */
+.due-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-secondary);
+}
+
+.due-badge--soon {
+  background: rgba(230, 162, 60, 0.15);
+  color: #e6a23c;
+}
+
+.due-badge--overdue {
+  background: rgba(245, 108, 108, 0.15);
+  color: #f56c6c;
+}
+</style>

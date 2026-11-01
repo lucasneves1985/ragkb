@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -23,6 +25,15 @@ public class Card {
      */
     @Column(name = "project_id", nullable = false, length = 36)
     private String projectId;
+
+    /**
+     * Autoria: id do AppUser que criou o card (FK fk_cards_creator). Nullable
+     * para cards anteriores à V18 — o lembrete de prazo os pula com warning.
+     * Usado apenas para roteamento do lembrete; NÃO filtra visibilidade do
+     * board (decisão pendente do usuário sobre escopo de cards).
+     */
+    @Column(name = "created_by")
+    private Long createdBy;
 
     @Column(nullable = false, length = 200)
     private String title;
@@ -47,15 +58,30 @@ public class Card {
     @Column(name = "closed_at")
     private Instant closedAt;
 
+    /**
+     * Prazo do card (apenas a data). Estado relacional: NÃO entra no índice
+     * vetorial (decisão 5.1 — o vetor não lê tempo) e NÃO dispara re-embed.
+     */
+    @Column(name = "due_date")
+    private LocalDate dueDate;
+
+    /**
+     * Marca que o lembrete deste prazo já foi enviado (idempotência do
+     * CardDueReminderJob). updateSchedule() zera o campo quando o prazo muda.
+     */
+    @Column(name = "due_reminder_sent_at")
+    private Instant dueReminderSentAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public Card(String projectId, String title, String description, int position) {
+    public Card(String projectId, Long createdBy, String title, String description, int position) {
         this.id = UUID.randomUUID().toString();
         this.projectId = projectId;
+        this.createdBy = createdBy;
         this.title = title;
         this.description = description;
         this.status = CardStatus.PENDENTE;
@@ -77,6 +103,23 @@ public class Card {
     public void updateCore(String title, String description) {
         this.title = title;
         this.description = description;
+    }
+
+    /**
+     * Define/remove o prazo (null = remove). Mudar o prazo rearma o lembrete
+     * (sent_at = null); salvar com o MESMO prazo não rearma — evita reenvio
+     * em edições sem mudança real.
+     */
+    public void updateSchedule(LocalDate dueDate) {
+        if (Objects.equals(this.dueDate, dueDate)) {
+            return;
+        }
+        this.dueDate = dueDate;
+        this.dueReminderSentAt = null;
+    }
+
+    public void markDueReminderSent(Instant at) {
+        this.dueReminderSentAt = at;
     }
 
     /**

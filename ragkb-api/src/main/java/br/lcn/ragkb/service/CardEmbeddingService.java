@@ -72,12 +72,13 @@ public class CardEmbeddingService {
 
     /**
      * Busca híbrida com scores — o corte de relevância (margem relativa ao
-     * melhor score) é responsabilidade do chamador (CardQueryService).
+     * melhor score) é responsabilidade do chamador (CardQueryService). O
+     * creatorId delimita o escopo de privacidade no SQL (join com cards).
      */
     public List<CardChunkScore> semanticSearchCandidates(String projectId, String query,
-            double similarityThreshold) {
+            double similarityThreshold, Long creatorId) {
         return chunkRepository.semanticSearchCandidates(
-                projectId, embedQueryToLiteral(query), query, similarityThreshold);
+                projectId, embedQueryToLiteral(query), query, similarityThreshold, creatorId);
     }
 
     private String toLiteral(float[] v) {

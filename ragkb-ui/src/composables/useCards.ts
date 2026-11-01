@@ -8,6 +8,7 @@ import type {
   CreateCommentRequest,
   CreateProjectRequest,
   MoveCardRequest,
+  SetDueDateRequest,
   UpdateCardRequest,
   UpdateCommentRequest,
 } from '@/types'
@@ -87,6 +88,15 @@ export function useUpdateCard() {
   return useMutation({
     mutationFn: ({ id, request }: { id: string; request: UpdateCardRequest }) =>
       cardsService.update(id, request),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.cards.all }),
+  })
+}
+
+export function useSetDueDate() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, request }: { id: string; request: SetDueDateRequest }) =>
+      cardsService.setDueDate(id, request),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.cards.all }),
   })
 }

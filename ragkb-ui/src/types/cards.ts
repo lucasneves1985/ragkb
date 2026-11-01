@@ -55,6 +55,8 @@ export interface Card {
   status: CardStatus
   position: number
   closedAt: string | null
+  /** Prazo do card, no formato ISO "yyyy-MM-dd" (LocalDate do backend); null = sem prazo. */
+  dueDate: string | null
   createdAt: string
   updatedAt: string
 }
@@ -112,6 +114,11 @@ export interface UpdateCardRequest {
 export interface MoveCardRequest {
   status: CardStatus
   position?: number | null
+}
+
+/** dueDate null = remove o prazo. Endpoint dedicado, fora do UpdateCardRequest. */
+export interface SetDueDateRequest {
+  dueDate: string | null
 }
 
 export interface CreateCommentRequest {

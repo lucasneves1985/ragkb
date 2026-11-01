@@ -13,6 +13,7 @@ import {
   Notebook,
   OfficeBuilding,
   Reading,
+  Setting,
   User,
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
@@ -96,6 +97,8 @@ const items = computed<NavItem[]>(() => [
   { label: 'Lembretes', to: '/reminders', icon: Bell, visible: true },
   { label: 'WhatsApp', to: '/whatsapp', icon: ChatDotRound, visible: auth.hasRole('ADMIN') },
   { label: 'Usuários', to: '/users', icon: User, visible: auth.hasRole('ADMIN') },
+  { label: 'Configurações', to: '/settings', icon: Setting, visible: auth.hasRole('ADMIN') },
+
 ])
 
 function logout() {
@@ -110,8 +113,8 @@ function logout() {
 
   <el-container v-else class="app-shell" direction="horizontal">
     <div v-if="mobileNavOpen" class="mobile-nav-backdrop" @click="mobileNavOpen = false"></div>
-    <AppSidebar :collapsed="collapsed" :mobile-open="mobileNavOpen" :items="items"
-      @toggle="collapsed = !collapsed" @navigate="mobileNavOpen = false" />
+    <AppSidebar :collapsed="collapsed" :mobile-open="mobileNavOpen" :items="items" @toggle="collapsed = !collapsed"
+      @navigate="mobileNavOpen = false" />
 
     <el-container direction="vertical">
       <AppTopbar :username="displayName" :initials="profileInitials" :roles="auth.roles" :avatar-url="avatarUrl"
@@ -184,7 +187,7 @@ textarea {
   overflow: hidden !important;
 }
 
-.content > * {
+.content>* {
   min-width: 0;
 }
 
@@ -314,6 +317,7 @@ textarea {
 }
 
 @media (max-width: 760px) {
+
   /* Em telas estreitas, cada linha vira um cartão vertical com o rótulo do campo. */
   .el-table,
   .el-table__inner-wrapper,
@@ -391,38 +395,134 @@ textarea {
     overflow-wrap: anywhere;
   }
 
-  .el-table__body td.mobile-label-article::before { content: 'Artigo'; }
-  .el-table__body td.mobile-label-rule::before { content: 'Regra'; }
-  .el-table__body td.mobile-label-file::before { content: 'Arquivo'; }
-  .el-table__body td.mobile-label-name::before { content: 'Nome'; }
-  .el-table__body td.mobile-label-sector::before { content: 'Setor'; }
-  .el-table__body td.mobile-label-access::before { content: 'Acesso'; }
-  .el-table__body td.mobile-label-status::before { content: 'Status'; }
-  .el-table__body td.mobile-label-actions::before { content: 'Ações'; }
-  .el-table__body td.mobile-label-type::before { content: 'Tipo'; }
-  .el-table__body td.mobile-label-schedule::before { content: 'Agendamento'; }
-  .el-table__body td.mobile-label-action::before { content: 'Ação'; }
-  .el-table__body td.mobile-label-id::before { content: 'ID'; }
-  .el-table__body td.mobile-label-user::before { content: 'Usuário'; }
-  .el-table__body td.mobile-label-email::before { content: 'E-mail'; }
-  .el-table__body td.mobile-label-roles::before { content: 'Papéis'; }
-  .el-table__body td.mobile-label-active::before { content: 'Ativo'; }
-  .el-table__body td.mobile-label-chunks::before { content: 'Chunks'; }
-  .el-table__body td.mobile-label-check-time::before { content: 'Verificação'; }
-  .el-table__body td.mobile-label-threshold::before { content: 'Alerta antes'; }
-  .el-table__body td.mobile-label-channel::before { content: 'Canal'; }
-  .el-table__body td.mobile-label-last-check::before { content: 'Última checagem'; }
-  .el-table__body td.mobile-label-reminder::before { content: 'Lembrete'; }
-  .el-table__body td.mobile-label-remind-at::before { content: 'Lembrar em'; }
-  .el-table__body td.mobile-label-retries::before { content: 'Nº tentativas'; }
-  .el-table__body td.mobile-label-started::before { content: 'Início'; }
-  .el-table__body td.mobile-label-attempt::before { content: 'Tentativa'; }
-  .el-table__body td.mobile-label-http::before { content: 'HTTP'; }
-  .el-table__body td.mobile-label-response::before { content: 'Resposta / erro'; }
-  .el-table__body td.mobile-label-checked-at::before { content: 'Data'; }
-  .el-table__body td.mobile-label-result::before { content: 'Resultado'; }
-  .el-table__body td.mobile-label-days-left::before { content: 'Dias restantes'; }
-  .el-table__body td.mobile-label-detail::before { content: 'Detalhe'; }
+  .el-table__body td.mobile-label-article::before {
+    content: 'Artigo';
+  }
+
+  .el-table__body td.mobile-label-rule::before {
+    content: 'Regra';
+  }
+
+  .el-table__body td.mobile-label-file::before {
+    content: 'Arquivo';
+  }
+
+  .el-table__body td.mobile-label-name::before {
+    content: 'Nome';
+  }
+
+  .el-table__body td.mobile-label-sector::before {
+    content: 'Setor';
+  }
+
+  .el-table__body td.mobile-label-access::before {
+    content: 'Acesso';
+  }
+
+  .el-table__body td.mobile-label-status::before {
+    content: 'Status';
+  }
+
+  .el-table__body td.mobile-label-actions::before {
+    content: 'Ações';
+  }
+
+  .el-table__body td.mobile-label-type::before {
+    content: 'Tipo';
+  }
+
+  .el-table__body td.mobile-label-schedule::before {
+    content: 'Agendamento';
+  }
+
+  .el-table__body td.mobile-label-action::before {
+    content: 'Ação';
+  }
+
+  .el-table__body td.mobile-label-id::before {
+    content: 'ID';
+  }
+
+  .el-table__body td.mobile-label-user::before {
+    content: 'Usuário';
+  }
+
+  .el-table__body td.mobile-label-email::before {
+    content: 'E-mail';
+  }
+
+  .el-table__body td.mobile-label-roles::before {
+    content: 'Papéis';
+  }
+
+  .el-table__body td.mobile-label-active::before {
+    content: 'Ativo';
+  }
+
+  .el-table__body td.mobile-label-chunks::before {
+    content: 'Chunks';
+  }
+
+  .el-table__body td.mobile-label-check-time::before {
+    content: 'Verificação';
+  }
+
+  .el-table__body td.mobile-label-threshold::before {
+    content: 'Alerta antes';
+  }
+
+  .el-table__body td.mobile-label-channel::before {
+    content: 'Canal';
+  }
+
+  .el-table__body td.mobile-label-last-check::before {
+    content: 'Última checagem';
+  }
+
+  .el-table__body td.mobile-label-reminder::before {
+    content: 'Lembrete';
+  }
+
+  .el-table__body td.mobile-label-remind-at::before {
+    content: 'Lembrar em';
+  }
+
+  .el-table__body td.mobile-label-retries::before {
+    content: 'Nº tentativas';
+  }
+
+  .el-table__body td.mobile-label-started::before {
+    content: 'Início';
+  }
+
+  .el-table__body td.mobile-label-attempt::before {
+    content: 'Tentativa';
+  }
+
+  .el-table__body td.mobile-label-http::before {
+    content: 'HTTP';
+  }
+
+  .el-table__body td.mobile-label-response::before {
+    content: 'Resposta / erro';
+  }
+
+  .el-table__body td.mobile-label-checked-at::before {
+    content: 'Data';
+  }
+
+  .el-table__body td.mobile-label-result::before {
+    content: 'Resultado';
+  }
+
+  .el-table__body td.mobile-label-days-left::before {
+    content: 'Dias restantes';
+  }
+
+  .el-table__body td.mobile-label-detail::before {
+    content: 'Detalhe';
+  }
+
   .el-table__body td.mobile-label-actions .row-actions {
     justify-content: flex-end;
     flex-wrap: wrap;
@@ -491,7 +591,7 @@ textarea {
     gap: 12px;
   }
 
-  .content .header > :first-child {
+  .content .header> :first-child {
     min-width: 0;
   }
 }
@@ -505,7 +605,7 @@ textarea {
     font-size: 23px;
   }
 
-  .el-button + .el-button {
+  .el-button+.el-button {
     margin-left: 4px;
   }
 }

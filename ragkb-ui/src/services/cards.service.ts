@@ -10,6 +10,7 @@ import type {
   CreateCardRequest,
   CreateCommentRequest,
   MoveCardRequest,
+  SetDueDateRequest,
   UpdateCardRequest,
   UpdateCommentRequest,
 } from '@/types'
@@ -28,6 +29,10 @@ export const cardsService = {
 
   update: (id: string, request: UpdateCardRequest) =>
     http.put<Card>(`/cards/${id}`, request).then((r) => r.data),
+
+  /** Define/remove o prazo. Recebe o SetDueDateRequest completo (dueDate null = remove). */
+  setDueDate: (id: string, request: SetDueDateRequest) =>
+    http.patch<Card>(`/cards/${id}/due-date`, request).then((r) => r.data),
 
   /** position null = fim da coluna; índice 0-based = posição específica. */
   move: (id: string, request: MoveCardRequest) =>
@@ -58,10 +63,9 @@ export const cardsService = {
    * Download via blob autenticado — link direto não carrega o Bearer token.
    */
   async downloadAttachment(cardId: string, attachmentId: string, fileName: string): Promise<void> {
-    const response = await http.get<Blob>(
-      `/cards/${cardId}/attachments/${attachmentId}/download`,
-      { responseType: 'blob' },
-    )
+    const response = await http.get<Blob>(`/cards/${cardId}/attachments/${attachmentId}/download`, {
+      responseType: 'blob',
+    })
     const url = URL.createObjectURL(response.data)
     const anchor = document.createElement('a')
     anchor.href = url

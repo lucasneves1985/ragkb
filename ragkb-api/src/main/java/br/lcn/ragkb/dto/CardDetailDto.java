@@ -1,6 +1,7 @@
 package br.lcn.ragkb.dto;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 import br.lcn.ragkb.entity.Card;
@@ -16,6 +17,7 @@ public record CardDetailDto(
         String status,
         Integer position,
         Instant closedAt,
+        LocalDate dueDate,
         Instant createdAt,
         Instant updatedAt,
         List<CardCommentDto> comments,
@@ -23,10 +25,9 @@ public record CardDetailDto(
         List<CardStatusEventDto> statusHistory) {
 
     public static CardDetailDto from(Card c, List<CardComment> comments,
-            List<CardAttachment> attachments,
-            List<CardStatusEvent> events) {
+            List<CardAttachment> attachments, List<CardStatusEvent> events) {
         return new CardDetailDto(c.getId(), c.getProjectId(), c.getTitle(), c.getDescription(),
-                c.getStatus().name(), c.getPosition(), c.getClosedAt(),
+                c.getStatus().name(), c.getPosition(), c.getClosedAt(), c.getDueDate(),
                 c.getCreatedAt(), c.getUpdatedAt(),
                 comments.stream().map(CardCommentDto::from).toList(),
                 attachments.stream().map(CardAttachmentDto::from).toList(),

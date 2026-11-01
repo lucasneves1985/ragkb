@@ -6,6 +6,7 @@ import { ChatDotRound, Delete, Download, Paperclip, Plus } from '@element-plus/i
 import {
   useCardDetail,
   useUpdateCard,
+  useSetDueDate,
   useMoveCard,
   useAddComment,
   useUpdateComment,
@@ -37,6 +38,7 @@ const cardIdRef = computed(() => props.cardId)
 const { data: detail, isLoading } = useCardDetail(cardIdRef)
 
 const { mutateAsync: updateCard } = useUpdateCard()
+const { mutateAsync: setDueDate } = useSetDueDate()
 const { mutateAsync: moveCard } = useMoveCard()
 const { mutateAsync: addComment } = useAddComment()
 const { mutateAsync: updateComment } = useUpdateComment()
@@ -95,6 +97,51 @@ async function changeStatus(status: CardStatus) {
   } finally {
     moving.value = false
   }
+}
+
+// ── Prazo ─────────────────────────────────────────────────
+// value-format YYYY-MM-DD = ISO LocalDate do backend (NÃO alterar — é o que
+// o Jackson desserializa). format DD/MM/YYYY controla apenas a EXIBIÇÃO no
+// campo. null = remove o prazo. Em erro, rollback do campo local para o
+// valor do servidor.
+const savingDueDate = ref(false)
+const dueDate = ref<string | null>(null)
+
+watch(detail, (value) => {
+  if (value) {
+    dueDate.value = value.dueDate ?? null
+  }
+}, { immediate: true })
+
+async function changeDueDate(value: string | null) {
+  if (!detail.value || value === (detail.value.dueDate ?? null)) return
+  savingDueDate.value = true
+  try {
+    await setDueDate({ id: detail.value.id, request: { dueDate: value } })
+    ElMessage.success(value ? 'Prazo definido! Você receberá um lembrete pelo WhatsApp antes do vencimento.' : 'Prazo removido.')
+  } catch (error) {
+    ElMessage.error(extractCardsErrorMessage(error))
+    dueDate.value = detail.value.dueDate ?? null
+  } finally {
+    savingDueDate.value = false
+  }
+}
+
+function isOverdue(value: string | null): boolean {
+  if (!value) return false
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return new Date(`${value}T00:00:00`).getTime() < today.getTime()
+}
+
+function formatDueDate(value: string): string {
+  return new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR')
+}
+
+function disabledDate(date: Date): boolean {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return date.getTime() < today.getTime()
 }
 
 // ── Comentários ───────────────────────────────────────────
@@ -217,9 +264,8 @@ function formatDate(value: string): string {
 <template>
   <el-dialog v-model="visible" title="Detalhe da tarefa" width="900px" top="5vh">
     <div v-if="isLoading || !detail" class="column-hint">Carregando…</div>
-
     <div v-else class="card-detail-grid">
-      <!-- Coluna principal: título, descrição, status, anexos -->
+      <!-- Coluna principal: título, descrição, status, prazo, anexos -->
       <div class="card-detail-main">
         <template v-if="!editing">
           <h3 class="detail-title">{{ detail.title }}</h3>
@@ -249,6 +295,17 @@ function formatDate(value: string): string {
           <el-option v-for="status in CARD_STATUSES" :key="status" :value="status"
             :label="CARD_STATUS_LABELS[status]" />
         </el-select>
+
+        <!-- Prazo: exibição DD/MM/YYYY (format), valor ISO (value-format) -->
+        <div class="section-heading">
+          <h4>Prazo</h4>
+        </div>
+        <el-date-picker v-model="dueDate" type="date" value-format="YYYY-MM-DD" format="DD/MM/YYYY" clearable
+          placeholder="Definir prazo" :disabled="savingDueDate" :disabled-date="disabledDate"
+          @update:model-value="changeDueDate" />
+        <p v-if="detail.dueDate" class="due-date-hint" :class="{ 'due-date-overdue': isOverdue(detail.dueDate) }">
+          Prazo atual: {{ formatDueDate(detail.dueDate) }}{{ isOverdue(detail.dueDate) ? ' — vencido' : '' }}
+        </p>
 
         <!-- Anexos: mesmo padrão da seção de status -->
         <div class="section-heading">
@@ -284,14 +341,12 @@ function formatDate(value: string): string {
         <h4><el-icon>
             <ChatDotRound />
           </el-icon> Comentários ({{ detail.comments.length }})</h4>
-
         <el-input v-model="newComment" type="textarea" :rows="2" placeholder="Escreva um comentário…"
           class="comment-input" />
         <el-button size="small" type="primary" class="primary-button" :loading="addingComment"
           :disabled="!newComment.trim()" @click="submitComment">
           Comentar
         </el-button>
-
         <div class="comments-scroll">
           <div v-for="comment in detail.comments" :key="comment.id" class="comment-item">
             <template v-if="editingCommentId === comment.id">
@@ -312,7 +367,6 @@ function formatDate(value: string): string {
               </div>
             </template>
           </div>
-
           <div v-if="!detail.comments.length" class="column-hint">
             Nenhum comentário ainda.
           </div>
@@ -345,3 +399,16 @@ function formatDate(value: string): string {
 </template>
 
 <style lang="css" src="@/views/styles/cards.view.css"></style>
+
+<style scoped>
+.due-date-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.due-date-overdue {
+  color: #f56c6c;
+  font-weight: 600;
+}
+</style>
