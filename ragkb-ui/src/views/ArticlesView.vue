@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { DocumentAdd } from '@element-plus/icons-vue'
+import { DocumentAdd, Notebook } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import {
   useArticles,
@@ -131,6 +131,7 @@ function reset() {
   <ErrorBoundary @retry="reset">
     <div>
       <PageHeading eyebrow="BASE DE CONHECIMENTO" title="Artigos"
+        :icon="Notebook"
         description="Conteúdo editorial indexado para consultas da IA — somente o texto é ingerido."
         :on-refresh="refetch" :refreshing="isLoading">
         <template #actions>

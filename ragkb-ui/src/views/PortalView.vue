@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search } from '@element-plus/icons-vue'
+import { Reading, Search } from '@element-plus/icons-vue'
 import { usePortalArticles, useSectors } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
@@ -57,6 +57,7 @@ function reset() {
   <ErrorBoundary @retry="reset">
     <div>
       <PageHeading eyebrow="PORTAL DE CONHECIMENTO" title="Artigos publicados"
+        :icon="Reading"
         description="Navegue pelos artigos da base — visíveis conforme os setores com acesso."
         :on-refresh="refetch" :refreshing="isLoading" />
 

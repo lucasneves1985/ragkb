@@ -131,7 +131,8 @@ onBeforeUnmount(() => {
 <template>
   <ErrorBoundary @retry="refetch">
     <div>
-      <PageHeading eyebrow="SUA CONTA" title="Preferências" description="Atualize seus dados pessoais e as opções de acesso." />
+      <PageHeading eyebrow="SUA CONTA" title="Preferências" :icon="User"
+        description="Atualize seus dados pessoais e as opções de acesso." />
 
       <section v-if="isLoading" class="surface loading-state">
         <el-skeleton :rows="5" animated />

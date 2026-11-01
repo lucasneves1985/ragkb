@@ -38,6 +38,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
     }
 
+    @ExceptionHandler(InvalidImageException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidImage(InvalidImageException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
+    }
+
     @ExceptionHandler(BusinessRuleNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleBusinessRuleNotFound(BusinessRuleNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));

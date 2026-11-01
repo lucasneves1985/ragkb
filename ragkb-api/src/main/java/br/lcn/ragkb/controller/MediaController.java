@@ -34,7 +34,7 @@ public class MediaController {
     private final Path basePath;
 
     public MediaController(@Value("${ragkb.media.path}") String basePath) {
-        this.basePath = Path.of(basePath);
+        this.basePath = Path.of(basePath).toAbsolutePath().normalize();
     }
 
     // Sem auth — <img> nativo não envia Authorization. A proteção do

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { Lock } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCertificateMonitors } from '@/composables'
 import type { CertificateMonitor, CertificateMonitorRequest } from '@/types'
+import PageHeading from '@/components/layout/PageHeading.vue'
 import CertificateMonitorTable from '@/components/certificate-monitors/CertificateMonitorTable.vue'
 import CertificateMonitorEditorDialog from '@/components/certificate-monitors/CertificateMonitorEditorDialog.vue'
 import CertificateMonitorHistoryDialog from '@/components/certificate-monitors/CertificateMonitorHistoryDialog.vue'
@@ -21,12 +23,14 @@ async function runCheck(monitor: CertificateMonitor) { try { await checkNow(moni
 
 <template>
   <div class="view">
-    <div class="header">
-      <div>
-        <h2>Certificados SSL/TLS</h2>
-        <p>Acompanhe vencimentos e receba alertas no horário configurado.</p>
-      </div><el-button type="primary" class="primary-button" @click="openCreate">Adicionar URL</el-button>
-    </div>
+    <PageHeading eyebrow="MONITORAMENTO DE SEGURANÇA" title="Certificados SSL/TLS"
+      :icon="Lock"
+      description="Acompanhe vencimentos e receba alertas no horário configurado."
+      :on-refresh="refetch" :refreshing="isLoading">
+      <template #actions>
+        <el-button class="primary-button" @click="openCreate">Adicionar URL</el-button>
+      </template>
+    </PageHeading>
     <section v-if="isLoading" class="surface loading">Carregando…</section>
     <section v-else-if="isError" class="surface error"><span>Não foi possível carregar os monitores.</span><el-button
         text @click="refetch()">Tentar novamente</el-button></section>
@@ -40,18 +44,6 @@ async function runCheck(monitor: CertificateMonitor) { try { await checkNow(moni
 </template>
 
 <style scoped>
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px
-}
-
-.header p {
-  color: #718096;
-  margin: 6px 0 0
-}
-
 .surface {
   background: white;
   border-radius: 12px;

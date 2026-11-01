@@ -3,7 +3,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Postcard } from '@element-plus/icons-vue'
 import {
   useProjects,
   useBoard,
@@ -228,6 +228,7 @@ function refresh() {
   <ErrorBoundary @retry="refresh">
     <div>
       <PageHeading eyebrow="GESTÃO DE TAREFAS" title="Cards"
+        :icon="Postcard"
         description="Projetos e tarefas em formato Kanban, com assistente de consulta." :on-refresh="refresh" />
 
       <section class="surface board-toolbar">

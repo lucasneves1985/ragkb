@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Refresh, RefreshRight } from '@element-plus/icons-vue'
+import { Document, Refresh, RefreshRight } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import {
   useConflicts,
@@ -54,6 +54,7 @@ function reset() {
       <PageHeading
         eyebrow="QUALIDADE DA BASE"
         title="Triagem de conflitos"
+        :icon="Document"
         description="Analise potenciais divergências encontradas entre documentos ativos."
         :on-refresh="refetch"
         :refreshing="isLoading"

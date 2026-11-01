@@ -32,7 +32,7 @@ const theme = useThemeStore()
 const queryClient = useQueryClient()
 const { profile } = useMyProfile()
 
-const collapsed = ref(false)
+const collapsed = ref(true)
 const mobileNavOpen = ref(false)
 const loggedIn = computed(() => auth.isAuthenticated)
 const displayName = computed(() => profile.value?.fullName || auth.username)
@@ -50,6 +50,7 @@ const profileInitials = computed(() => {
 const avatarUrl = computed(() => resolveAvatarUrl(profile.value?.avatarUrl))
 
 watch(loggedIn, (authed) => {
+  if (authed) collapsed.value = true
   if (authed && route.path === '/login') {
     router.replace('/chat')
   }
@@ -173,6 +174,14 @@ textarea {
   padding: 34px 38px;
   overflow: auto;
   height: calc(100vh - 76px);
+}
+
+.content:has(.chat-layout) {
+  padding: 0;
+}
+
+.article-editor-overlay .el-overlay-dialog {
+  overflow: hidden !important;
 }
 
 .content > * {

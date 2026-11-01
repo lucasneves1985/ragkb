@@ -1,9 +1,14 @@
 .chat-layout {
   display: flex;
-  height: calc(100vh - 144px);
-  max-height: calc(100vh - 144px);
-  gap: 26px;
+  height: 100%;
+  max-height: 100%;
+  gap: 0;
+  padding-inline: 15px;
   overflow: hidden;
+}
+.chat-layout.history-open {
+  gap: 15px;
+  padding-left: 0;
 }
 .chat-side {
   width: 226px;
@@ -14,6 +19,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border-radius: 0;
+  border-right: 1px solid #edf0f4;
 }
 .chat-side-head {
   display: flex;
@@ -131,8 +138,9 @@
   flex: none;
 }
 .chat-main {
-  width: min(790px, 100%);
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -140,6 +148,32 @@
   min-height: 0;
   overflow: hidden;
   flex: 1;
+}
+.chat-main.is-empty .chat-welcome {
+  margin-top: auto;
+  padding-bottom: 20px;
+}
+.chat-main.is-empty .messages {
+  flex: 0 0 0;
+  padding: 0;
+}
+.chat-main.is-empty .input-area {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto auto;
+  padding: 0 10px;
+}
+.chat-main.is-empty .composer {
+  padding: 12px 64px 12px 12px;
+  border-radius: 18px;
+  box-shadow: 0 8px 28px rgba(32, 46, 66, 0.1);
+}
+.chat-main.is-empty .composer textarea {
+  font-size: 15px;
+}
+.chat-main.is-empty .send {
+  right: 12px;
+  bottom: 12px;
 }
 .show-side {
   align-self: flex-start;
@@ -368,6 +402,10 @@
   font-size: 10px;
 }
 @media (max-width: 850px) {
+  .chat-layout.history-open {
+    gap: 0;
+    padding-left: 15px;
+  }
   .chat-side {
     display: none;
   }

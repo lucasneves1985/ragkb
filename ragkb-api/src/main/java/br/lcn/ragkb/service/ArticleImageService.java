@@ -29,7 +29,7 @@ public class ArticleImageService {
     private final Path basePath;
 
     public ArticleImageService(@Value("${ragkb.media.path}") String basePath) {
-        this.basePath = Path.of(basePath);
+        this.basePath = Path.of(basePath).toAbsolutePath().normalize();
     }
 
     public ArticleImageUploadResponse store(MultipartFile file) {

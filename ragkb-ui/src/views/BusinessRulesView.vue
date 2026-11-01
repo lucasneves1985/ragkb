@@ -1,7 +1,7 @@
 <!-- views/BusinessRulesView.vue -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { DocumentAdd, Search } from '@element-plus/icons-vue'
+import { DocumentAdd, List, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import {
   useBusinessRules,
@@ -162,8 +162,9 @@ async function handleArchive(id: string) {
 <template>
   <ErrorBoundary @retry="refetch">
     <div>
-      <PageHeading eyebrow="BASE DE CONHECIMENTO" title="Regras de negócio" :on-refresh="refreshRules"
-        :refreshing="refreshing">
+      <PageHeading eyebrow="BASE DE CONHECIMENTO" title="Regras de negócio" :icon="List"
+        description="Gerencie as regras que orientam as respostas da IA e os fluxos de atendimento."
+        :on-refresh="refreshRules" :refreshing="refreshing">
         <template #actions>
           <div class="search-group">
             <el-input v-model="searchQuery" placeholder="Descreva o que procura… (busca inteligente, publicadas)"

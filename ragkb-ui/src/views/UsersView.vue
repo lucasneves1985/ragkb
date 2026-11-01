@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, User } from '@element-plus/icons-vue'
 import { useSectors, useUsers } from '@/composables'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
 import PageHeading from '@/components/layout/PageHeading.vue'
@@ -81,6 +81,7 @@ async function toggleEnabled(user: User) {
   <ErrorBoundary @retry="reset">
     <div>
       <PageHeading eyebrow="CONTROLE DE ACESSO" title="Usuários"
+        :icon="User"
         description="Defina quem pode consultar e administrar a base de conhecimento."
         :on-refresh="reset">
         <template #actions>

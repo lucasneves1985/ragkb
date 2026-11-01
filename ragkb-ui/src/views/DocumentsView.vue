@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { DocumentAdd } from '@element-plus/icons-vue'
+import { DocumentAdd, FolderOpened } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import {
   useDocuments,
@@ -105,6 +105,7 @@ function reset() {
       <PageHeading
         eyebrow="BASE DE CONHECIMENTO"
         title="Documentos"
+        :icon="FolderOpened"
         description="Base de conhecimento indexada"
         :on-refresh="refetch"
         :refreshing="isLoading"

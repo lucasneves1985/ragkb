@@ -82,6 +82,7 @@ services:
       SMTP_USERNAME: ${SMTP_USERNAME:-teste@email}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-123}
       RAGKB_ARTICLES_BASE_URL: ${RAGKB_ARTICLES_BASE_URL:-http://localhost:5173}
+      RAGKB_MEDIA_PATH: /var/ragkb/media/articles
       WAHA_URL: ${WAHA_URL:-http://waha:3000}
       WAHA_API_KEY: ${WAHA_API_KEY:-}
       WAHA_SESSION: ${WAHA_SESSION:-default}

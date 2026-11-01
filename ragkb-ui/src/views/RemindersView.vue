@@ -1,10 +1,11 @@
 <!-- views/RemindersView.vue -->
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Bell, Refresh } from '@element-plus/icons-vue'
+import { Bell } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCancelReminder, useCreateReminder, useReminders } from '@/composables'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
+import PageHeading from '@/components/layout/PageHeading.vue'
 import type { ReminderStatus } from '@/types'
 
 const { reminders, isLoading, isError, refetch } = useReminders()
@@ -52,18 +53,14 @@ function statusType(s: ReminderStatus) {
 <template>
   <ErrorBoundary>
     <div class="view">
-      <div class="header">
-        <h2><el-icon class="title-icon">
-            <Bell />
-          </el-icon> Lembretes</h2>
-      </div>
+      <PageHeading eyebrow="ACOMPANHAMENTO" title="Lembretes" :icon="Bell"
+        description="Agende e acompanhe os lembretes das suas atividades." :on-refresh="refreshList"
+        :refreshing="refreshing" />
 
       <section class="create-box">
         <el-input v-model="request" placeholder='Ex.: "Reunião de alinhamento amanhã às 15:00"'
           @keyup.enter="handleCreate" />
         <el-button type="primary" class="primary-button" :loading="creating" @click="handleCreate">Agendar</el-button>
-        <el-button text circle :icon="Refresh" :loading="refreshing" title="Atualizar lista"
-          aria-label="Atualizar lista" @click="refreshList" />
       </section>
 
       <section v-if="isLoading || cancelling" class="surface loading">Carregando…</section>
@@ -97,15 +94,6 @@ function statusType(s: ReminderStatus) {
 </template>
 
 <style scoped>
-.header {
-  margin-bottom: 12px;
-}
-
-.title-icon {
-  margin-right: 6px;
-  vertical-align: -2px;
-}
-
 .create-box {
   display: flex;
   gap: 8px;
