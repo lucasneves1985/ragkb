@@ -1,7 +1,7 @@
 <!-- views/BusinessRulesView.vue -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { DocumentAdd, Search } from '@element-plus/icons-vue'
+import { DocumentAdd, List, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import {
   useBusinessRules,
@@ -162,12 +162,13 @@ async function handleArchive(id: string) {
 <template>
   <ErrorBoundary @retry="refetch">
     <div>
-      <PageHeading eyebrow="BASE DE CONHECIMENTO" title="Regras de negócio" :on-refresh="refreshRules"
-        :refreshing="refreshing">
+      <PageHeading eyebrow="BASE DE CONHECIMENTO" title="Regras de negócio" :icon="List"
+        description="Gerencie as regras que orientam as respostas da IA e os fluxos de atendimento."
+        :on-refresh="refreshRules" :refreshing="refreshing">
         <template #actions>
           <div class="search-group">
             <el-input v-model="searchQuery" placeholder="Descreva o que procura… (busca inteligente, publicadas)"
-              clearable style="width: 300px" @keyup.enter="runSearch" @clear="clearSearch" />
+              clearable class="business-rule-search" @keyup.enter="runSearch" @clear="clearSearch" />
             <el-button type="primary" plain :icon="Search" :loading="searching" @click="runSearch">
               Buscar
             </el-button>
@@ -206,6 +207,10 @@ async function handleArchive(id: string) {
   gap: 8px;
 }
 
+.business-rule-search {
+  width: 300px;
+}
+
 .smart-badge {
   margin-bottom: 12px;
 }
@@ -215,5 +220,16 @@ async function handleArchive(id: string) {
   text-align: center;
   color: #718096;
   font-size: 13px;
+}
+
+@media (max-width: 760px) {
+  .search-group {
+    width: 100%;
+  }
+
+  .business-rule-search {
+    flex: 1;
+    width: auto;
+  }
 }
 </style>

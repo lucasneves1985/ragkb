@@ -8,7 +8,7 @@ import ChatInput from '@/components/chat/ChatInput.vue'
 import { ref } from 'vue'
 import { resolveAvatarUrl } from '@/services/users.service'
 
-const showHistory = ref(true)
+const showHistory = ref(false)
 const { profile } = useMyProfile()
 const avatarUrl = computed(() => resolveAvatarUrl(profile.value?.avatarUrl))
 
@@ -51,7 +51,7 @@ function reset() {
 
 <template>
   <ErrorBoundary @retry="reset">
-    <div class="chat-layout">
+    <div class="chat-layout" :class="{ 'history-open': showHistory }">
       <ChatSidebar
         :conversations="conversations"
         :current-conversation-id="currentConversationId"
@@ -62,7 +62,7 @@ function reset() {
         @new="startNewConversation"
       />
 
-      <section class="chat-main">
+      <section class="chat-main" :class="{ 'is-empty': messages.length === 0 }">
         <button v-if="!showHistory" class="show-side" @click="showHistory = true">
           &#9776; Historico
         </button>

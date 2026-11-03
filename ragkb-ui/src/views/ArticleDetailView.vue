@@ -2,11 +2,12 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft } from '@element-plus/icons-vue'
+import { ArrowLeft, Notebook } from '@element-plus/icons-vue'
 import DOMPurify from 'dompurify'
 import { articlesService } from '@/services'
 import { useAuthStore } from '@/stores/auth'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
+import PageHeading from '@/components/layout/PageHeading.vue'
 import type { ArticleDetail } from '@/types'
 
 const route = useRoute()
@@ -76,11 +77,12 @@ onMounted(load)
 <template>
   <ErrorBoundary @retry="load">
     <div class="article-detail">
-      <!-- Eyebrow à esquerda, Voltar alinhado à direita na mesma linha -->
-      <div class="detail-topbar">
-        <p class="eyebrow">BASE DE CONHECIMENTO</p>
-        <el-button text :icon="ArrowLeft" @click="goBack">Voltar</el-button>
-      </div>
+      <PageHeading eyebrow="BASE DE CONHECIMENTO" :title="article?.title ?? 'Artigo'" :icon="Notebook"
+        description="Visualização do artigo na base de conhecimento.">
+        <template #actions>
+          <el-button text :icon="ArrowLeft" @click="goBack">Voltar</el-button>
+        </template>
+      </PageHeading>
 
       <section v-if="isLoading" class="surface detail-body">
         <el-skeleton :rows="8" animated />
@@ -92,7 +94,6 @@ onMounted(load)
 
       <template v-else-if="article">
         <div class="detail-heading">
-          <h1>{{ article.title }}</h1>
           <div class="detail-meta">
             <el-tag :type="article.status === 'PUBLISHED' ? 'success' : 'warning'" size="small" effect="light">
               {{ article.status === 'PUBLISHED' ? 'Publicado' : article.status === 'ARCHIVED' ? 'Arquivado' : 'Rascunho'
@@ -126,28 +127,11 @@ onMounted(load)
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 860px;
+  width: 90%;
+  max-width: none;
   margin: 0 auto;
   /* Aproxima o conteúdo do cabeçalho da aplicação */
   padding: 8px 32px 24px;
-}
-
-/* Eyebrow à esquerda, Voltar à direita — mesma linha */
-.detail-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.detail-topbar .eyebrow {
-  margin: 0;
-}
-
-.detail-heading h1 {
-  margin: 6px 0 10px;
-  color: #172033;
-  font-size: 30px;
-  letter-spacing: -1px;
 }
 
 .detail-meta {

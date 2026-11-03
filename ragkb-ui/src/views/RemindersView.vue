@@ -1,10 +1,11 @@
 <!-- views/RemindersView.vue -->
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Bell, Refresh } from '@element-plus/icons-vue'
+import { Bell } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCancelReminder, useCreateReminder, useReminders } from '@/composables'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
+import PageHeading from '@/components/layout/PageHeading.vue'
 import type { ReminderStatus } from '@/types'
 
 const { reminders, isLoading, isError, refetch } = useReminders()
@@ -52,39 +53,35 @@ function statusType(s: ReminderStatus) {
 <template>
   <ErrorBoundary>
     <div class="view">
-      <div class="header">
-        <h2><el-icon class="title-icon">
-            <Bell />
-          </el-icon> Lembretes</h2>
-      </div>
+      <PageHeading eyebrow="ACOMPANHAMENTO" title="Lembretes" :icon="Bell"
+        description="Agende e acompanhe os lembretes das suas atividades." :on-refresh="refreshList"
+        :refreshing="refreshing" />
 
-      <section class="surface create-box">
+      <section class="create-box">
         <el-input v-model="request" placeholder='Ex.: "Reunião de alinhamento amanhã às 15:00"'
           @keyup.enter="handleCreate" />
-        <el-button type="primary" :loading="creating" @click="handleCreate">Agendar</el-button>
-        <el-button text circle :icon="Refresh" :loading="refreshing" title="Atualizar lista"
-          aria-label="Atualizar lista" @click="refreshList" />
+        <el-button type="primary" class="primary-button" :loading="creating" @click="handleCreate">Agendar</el-button>
       </section>
 
       <section v-if="isLoading || cancelling" class="surface loading">Carregando…</section>
       <section v-else-if="isError" class="surface">Erro ao carregar.</section>
       <section v-else class="surface">
         <el-table :data="reminders ?? []" style="width: 100%">
-          <el-table-column label="Lembrete" min-width="260">
+          <el-table-column label="Lembrete" min-width="260" class-name="mobile-label-reminder">
             <template #default="{ row }">
               <b>{{ row.summary ?? row.originalRequest }}</b>
             </template>
           </el-table-column>
-          <el-table-column label="Lembrar em" width="180">
+          <el-table-column label="Lembrar em" width="180" class-name="mobile-label-remind-at">
             <template #default="{ row }">{{ new Date(row.remindAt).toLocaleString('pt-BR') }}</template>
           </el-table-column>
-          <el-table-column label="Status" width="120">
+          <el-table-column label="Status" width="120" class-name="mobile-label-status">
             <template #default="{ row }">
               <el-tag size="small" :type="statusType(row.status)">{{ row.status }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="Nº Tent." width="100" prop="retryCount" />
-          <el-table-column label="Ações" width="120">
+          <el-table-column label="Nº Tent." width="100" prop="retryCount" class-name="mobile-label-retries" />
+          <el-table-column label="Ações" width="120" class-name="mobile-label-actions">
             <template #default="{ row }">
               <el-button v-if="row.status === 'PENDING'" text type="danger"
                 @click="handleCancel(row.id)">Cancelar</el-button>
@@ -97,15 +94,6 @@ function statusType(s: ReminderStatus) {
 </template>
 
 <style scoped>
-.header {
-  margin-bottom: 12px;
-}
-
-.title-icon {
-  margin-right: 6px;
-  vertical-align: -2px;
-}
-
 .create-box {
   display: flex;
   gap: 8px;
@@ -117,5 +105,19 @@ function statusType(s: ReminderStatus) {
   text-align: center;
   color: #718096;
   font-size: 13px;
+}
+
+@media (max-width: 600px) {
+  .create-box {
+    flex-wrap: wrap;
+  }
+
+  .create-box .el-input {
+    flex: 1 1 100%;
+  }
+
+  .create-box .el-button:not(.is-circle) {
+    flex: 1;
+  }
 }
 </style>

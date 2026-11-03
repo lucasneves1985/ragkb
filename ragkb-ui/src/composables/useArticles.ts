@@ -136,6 +136,46 @@ export function useArchiveArticle() {
   }
 }
 
+// ── MUTATION: reativar (ARCHIVED → DRAFT) ─────────────────
+export function useUnarchiveArticle() {
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: (id: string) => articlesService.changeStatus(id, { action: 'UNARCHIVE' }),
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.articles.lists() })
+      const previous = queryClient.getQueryData<Article[]>(
+        queryKeys.articles.lists(),
+      )
+
+      if (previous) {
+        queryClient.setQueryData<Article[]>(
+          queryKeys.articles.lists(),
+          previous.map((a) =>
+            a.id === id
+              ? { ...a, status: 'DRAFT' as const, publishedAt: null }
+              : a,
+          ),
+        )
+      }
+      return { previous }
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKeys.articles.lists(), context.previous)
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.articles.lists() })
+    },
+  })
+
+  return {
+    unarchiveArticle: mutation.mutateAsync,
+    updating: mutation.isPending,
+  }
+}
+
 // ── MUTATION: upload de imagem ────────────────────────────
 export function useUploadArticleImage() {
   const mutation = useMutation({

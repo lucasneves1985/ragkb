@@ -1,7 +1,7 @@
 <!-- views/IntegrationsView.vue -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Connection, DocumentAdd, Refresh } from '@element-plus/icons-vue'
+import { Connection, DocumentAdd } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   useCreateIntegration,
@@ -11,6 +11,7 @@ import {
   useUpdateIntegration,
 } from '@/composables'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
+import PageHeading from '@/components/layout/PageHeading.vue'
 import IntegrationTable from '@/components/integrations/IntegrationTable.vue'
 import IntegrationEditorDialog from '@/components/integrations/IntegrationEditorDialog.vue'
 import IntegrationExecutionsDialog from '@/components/integrations/IntegrationExecutionsDialog.vue'
@@ -90,18 +91,15 @@ async function handleDelete(integration: Integration) {
 <template>
   <ErrorBoundary>
     <div class="view">
-      <div class="header">
-        <h2><el-icon class="title-icon">
-            <Connection />
-          </el-icon> Integrações</h2>
-        <div class="header-actions">
-          <el-button text circle :icon="Refresh" :loading="refreshing" title="Atualizar lista"
-            aria-label="Atualizar lista" @click="refreshList" />
+      <PageHeading eyebrow="SISTEMAS CONECTADOS" title="Integrações" :icon="Connection"
+        description="Conecte e acompanhe os serviços externos integrados à base de conhecimento."
+        :on-refresh="refreshList" :refreshing="refreshing">
+        <template #actions>
           <el-button class="primary-button" type="primary" :icon="DocumentAdd" @click="openCreate">
             Nova integração
           </el-button>
-        </div>
-      </div>
+        </template>
+      </PageHeading>
 
       <section v-if="isLoading || saving" class="surface loading">Carregando…</section>
       <section v-else-if="isError" class="surface">Erro ao carregar.</section>
@@ -117,24 +115,6 @@ async function handleDelete(integration: Integration) {
 </template>
 
 <style scoped>
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.title-icon {
-  margin-right: 6px;
-  vertical-align: -2px;
-}
-
 .loading {
   padding: 28px;
   text-align: center;

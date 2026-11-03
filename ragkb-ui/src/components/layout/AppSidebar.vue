@@ -6,29 +6,34 @@ import type { NavItem } from '@/types'
 
 const props = defineProps<{
   collapsed: boolean
+  mobileOpen?: boolean
   items: NavItem[]
 }>()
 
 const emit = defineEmits<{
   (e: 'toggle'): void
+  (e: 'navigate'): void
 }>()
 
 const route = useRoute()
 const visibleItems = computed(() => props.items.filter((entry) => entry.visible))
+const isCollapsed = computed(() => props.collapsed && !props.mobileOpen)
 </script>
 
 <template>
-  <el-aside :width="collapsed ? '76px' : '250px'" :class="['sidebar', { 'is-collapsed': collapsed }]">
+  <el-aside :width="isCollapsed ? '76px' : '250px'"
+    :class="['sidebar', { 'is-collapsed': isCollapsed, 'mobile-open': mobileOpen }]">
     <div class="brand">
       <div class="brand-mark">R</div>
       <span v-show="!collapsed">rag<span>kb</span></span>
     </div>
 
-    <div v-show="!collapsed" class="workspace-label">BASE DE CONHECIMENTO</div>
+    <div v-show="!isCollapsed" class="workspace-label">BASE DE CONHECIMENTO</div>
 
     <!-- Área rolável: com o menu crescendo, itens nunca mais são cortados -->
     <div :class="['nav-scroll', { 'is-collapsed': collapsed }]">
-      <el-menu :default-active="route.path" :collapse="collapsed" :collapse-transition="false" router class="nav-menu">
+      <el-menu :default-active="route.path" :collapse="isCollapsed" :collapse-transition="false" router class="nav-menu"
+        @select="emit('navigate')">
         <el-menu-item v-for="item in visibleItems" :key="item.to" :index="item.to">
           <el-icon>
             <component :is="item.icon" />
@@ -43,7 +48,7 @@ const visibleItems = computed(() => props.items.filter((entry) => entry.visible)
         <el-icon>
           <Menu />
         </el-icon>
-        <span v-show="!collapsed">Recolher menu</span>
+        <span v-show="!isCollapsed">Recolher menu</span>
       </el-button>
     </div>
   </el-aside>
@@ -172,6 +177,21 @@ const visibleItems = computed(() => props.items.filter((entry) => entry.visible)
 @media (max-width: 760px) {
   .sidebar {
     display: none;
+  }
+
+  .sidebar.mobile-open {
+    position: fixed;
+    z-index: 2000;
+    inset: 0 auto 0 0;
+    display: flex;
+    width: min(280px, calc(100vw - 48px)) !important;
+    height: 100dvh;
+    padding: 20px 12px;
+    box-shadow: 10px 0 32px rgba(15, 23, 42, 0.2);
+  }
+
+  .sidebar.mobile-open.is-collapsed {
+    padding-inline: 12px;
   }
 }
 </style>

@@ -2,6 +2,17 @@
 <html lang="">
   <head>
     <meta charset="UTF-8">
+    <script>
+      try {
+        const session = JSON.parse(localStorage.getItem('ragkb-session') || 'null')
+        const savedTheme = session?.username ? localStorage.getItem(`ragkb-theme:${session.username}`) : null
+        const theme = savedTheme === 'dark' ? 'dark' : 'light'
+        document.documentElement.dataset.theme = theme
+        document.documentElement.style.colorScheme = theme
+      } catch {
+        document.documentElement.dataset.theme = 'light'
+      }
+    </script>
     <link rel="icon" href="/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vite App</title>

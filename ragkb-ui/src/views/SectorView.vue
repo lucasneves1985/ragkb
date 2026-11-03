@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { OfficeBuilding } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useSectors } from '@/composables'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
@@ -59,6 +60,7 @@ function reset() {
       <PageHeading
         eyebrow="GOVERNANÇA DA BASE"
         title="Setores"
+        :icon="OfficeBuilding"
         description="Defina os departamentos que controlam o acesso a usuários e documentos."
         :on-refresh="refetch"
       />

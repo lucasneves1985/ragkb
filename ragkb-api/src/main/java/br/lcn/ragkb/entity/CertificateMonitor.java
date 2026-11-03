@@ -18,7 +18,7 @@ public class CertificateMonitor {
     @Column(nullable=false, length=2048) private String url;
     @Column(name="check_time", nullable=false, length=5) private String checkTime;
     @Column(name="alert_threshold_days", nullable=false) private int alertThresholdDays;
-    @Column(name="alert_weekdays", nullable=false, length=40) private String alertWeekdays;
+    @Column(name="alert_weekdays", nullable=false, length=64) private String alertWeekdays;
     @Enumerated(EnumType.STRING) @Column(name="notification_channel", nullable=false, length=20) private Channel notificationChannel;
     @Column(name="notification_target", nullable=false, length=255) private String notificationTarget;
     @Column(nullable=false) private boolean active=true;

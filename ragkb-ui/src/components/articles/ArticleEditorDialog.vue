@@ -165,8 +165,9 @@ async function handleImageChange(event: Event) {
   try {
     const { url } = await uploadArticleImage(file)
     editor.value?.chain().focus().setImage({ src: url }).run()
-  } catch {
-    ElMessage.error('Não foi possível enviar a imagem. Verifique formato (JPG, PNG, WebP) e tamanho (máx. 5 MB).')
+  } catch (error: unknown) {
+    const responseMessage = (error as { response?: { data?: { message?: string } } }).response?.data?.message
+    ElMessage.error(responseMessage || 'Não foi possível enviar a imagem. Verifique formato (JPG, PNG, WebP) e tamanho (máx. 5 MB).')
   }
 }
 
@@ -188,10 +189,11 @@ function submit() {
 </script>
 
 <template>
-  <el-dialog :model-value="modelValue" :title="article ? 'Editar artigo' : 'Novo artigo'" width="760px" top="4vh"
+  <el-dialog :model-value="modelValue" :title="article ? 'Editar artigo' : 'Novo artigo'" width="80vw" top="0"
+    class="article-editor-dialog" modal-class="article-editor-overlay"
     :close-on-click-modal="!saving" :close-on-press-escape="!saving" :show-close="!saving"
     @update:model-value="emit('update:modelValue', $event)">
-    <el-form label-position="top">
+    <el-form label-position="top" class="article-editor-form">
       <el-form-item label="Título">
         <el-input v-model="form.title" placeholder="Título do artigo" maxlength="200" />
       </el-form-item>
@@ -213,7 +215,7 @@ function submit() {
         </el-col>
       </el-row>
 
-      <el-form-item label="Conteúdo">
+      <el-form-item label="Conteúdo" class="content-form-item">
         <div v-if="editor" class="editor-toolbar">
           <el-select :model-value="isActive('heading', { level: 1 }) ? '1' : isActive('heading', { level: 2 }) ? '2' : isActive('heading', { level: 3 }) ? '3' : 'paragraph'"
             size="small" class="block-select" aria-label="Estilo do parágrafo" @change="setBlockStyle">
@@ -290,8 +292,51 @@ function submit() {
 </template>
 
 <style scoped>
+:global(.article-editor-dialog) {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 90vh;
+  max-width: calc(100vw - 32px);
+  max-height: 90vh;
+  margin: 5vh auto 0 !important;
+  overflow: hidden;
+}
+
+:global(.article-editor-dialog .el-dialog__header),
+:global(.article-editor-dialog .el-dialog__footer) {
+  min-height: 0;
+}
+
+:global(.article-editor-dialog .el-dialog__body) {
+  min-height: 0;
+  overflow: hidden;
+}
+
+:global(.article-editor-form) {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+}
+
+:global(.content-form-item) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  margin-bottom: 0;
+}
+
+:global(.content-form-item .el-form-item__content) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .editor-toolbar {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
@@ -331,32 +376,37 @@ function submit() {
 }
 
 .editor-body {
+  position: relative;
   width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
   border: 1px solid #e8ebf0;
   border-radius: 8px;
-  padding: 12px;
-  min-height: 260px;
 }
 
-.editor-body :deep(.tiptap) {
+:global(.article-editor-dialog .editor-body .tiptap) {
+  position: absolute;
+  inset: 12px;
   outline: none;
-  min-height: 240px;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
   font-size: 14px;
   line-height: 1.7;
 }
 
-.editor-body :deep(.tiptap h1) { font-size: 2em; }
-.editor-body :deep(.tiptap h2) { font-size: 1.6em; }
-.editor-body :deep(.tiptap h3) { font-size: 1.3em; }
-.editor-body :deep(.tiptap a) { color: #168463; text-decoration: underline; }
-.editor-body :deep(.tiptap blockquote) {
+:global(.article-editor-dialog .editor-body .tiptap h1) { font-size: 2em; }
+:global(.article-editor-dialog .editor-body .tiptap h2) { font-size: 1.6em; }
+:global(.article-editor-dialog .editor-body .tiptap h3) { font-size: 1.3em; }
+:global(.article-editor-dialog .editor-body .tiptap a) { color: #168463; text-decoration: underline; }
+:global(.article-editor-dialog .editor-body .tiptap blockquote) {
   border-left: 3px solid #72e2bf;
   margin: 12px 0;
   padding-left: 14px;
   color: #667085;
 }
 
-.editor-body :deep(img) {
+:global(.article-editor-dialog .editor-body img) {
   max-width: 100%;
   border-radius: 6px;
 }

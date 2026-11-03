@@ -33,10 +33,10 @@ public class Article {
     private String title;
 
     /**
-     * Sanitized HTML content. Images are referenced by URL pointing to
-     * the media endpoint — never base64, never inline data URIs.
-     * Only the plain-text extraction of this content is ingested into
-     * the vector store; <img> tags are discarded during ingestion.
+     * Sanitized HTML content. Images are referenced by URL pointing to the
+     * media endpoint — never base64, never inline data URIs. Only the
+     * plain-text extraction of this content is ingested into the vector store;
+     * <img> tags are discarded during ingestion.
      */
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
@@ -72,7 +72,7 @@ public class Article {
     private List<String> allowedSectors = new ArrayList<>();
 
     public Article(String title, String content, String sector,
-                   String authorUsername, List<String> allowedSectors) {
+            String authorUsername, List<String> allowedSectors) {
         this.id = UUID.randomUUID().toString();
         this.title = title;
         this.content = content;
@@ -130,5 +130,10 @@ public class Article {
 
     public boolean isArchived() {
         return status == ArticleStatus.ARCHIVED;
+    }
+
+    public void restore() {
+        this.status = ArticleStatus.DRAFT;
+        this.publishedAt = null;
     }
 }

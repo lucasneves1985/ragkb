@@ -13,8 +13,8 @@ defineEmits<{
 
 <template>
   <el-table :data="sectors" style="width: 100%" empty-text="Nenhum setor cadastrado ainda.">
-    <el-table-column prop="name" label="Nome do setor" min-width="200" />
-    <el-table-column label="Ações" width="120" align="right">
+    <el-table-column prop="name" label="Nome do setor" min-width="200" class-name="mobile-label-name" />
+    <el-table-column label="Ações" width="120" align="right" class-name="mobile-label-actions">
       <template #default="{ row }">
         <el-button text type="danger" :icon="Delete" @click="$emit('remove', row)">Remover</el-button>
       </template>

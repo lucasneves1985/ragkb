@@ -10,6 +10,7 @@ import {
   useWhatsAppStatus,
 } from '@/composables'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
+import PageHeading from '@/components/layout/PageHeading.vue'
 
 const { status, isLoadingStatus, isErrorStatus, refetchStatus } = useWhatsAppStatus()
 const { startSession, starting, errorMessage: startError } = useStartWhatsAppSession()
@@ -55,11 +56,9 @@ async function handleTestSend() {
 <template>
   <ErrorBoundary>
     <div class="view">
-      <div class="header">
-        <h2><el-icon class="title-icon">
-            <ChatDotRound />
-          </el-icon> WhatsApp</h2>
-      </div>
+      <PageHeading eyebrow="CANAL DE ATENDIMENTO" title="WhatsApp" :icon="ChatDotRound"
+        description="Gerencie a conexão e teste o envio de mensagens pelo WhatsApp."
+        :on-refresh="refetchStatus" :refreshing="isLoadingStatus" />
 
       <section class="surface card">
         <h3 class="card-title">Status da sessão</h3>
@@ -102,15 +101,6 @@ async function handleTestSend() {
 </template>
 
 <style scoped>
-.header {
-  margin-bottom: 12px;
-}
-
-.title-icon {
-  margin-right: 6px;
-  vertical-align: -2px;
-}
-
 .card {
   padding: 20px 24px;
   margin-bottom: 12px;

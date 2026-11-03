@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { Plus } from '@element-plus/icons-vue'
+import { Menu, Plus } from '@element-plus/icons-vue'
 import UserProfileDropdown from './UserProfileDropdown.vue'
 
 defineProps<{
@@ -11,6 +11,7 @@ defineProps<{
 
 const emit = defineEmits<{
   (e: 'new-query'): void
+  (e: 'toggle-nav'): void
   (e: 'logout'): void
   (e: 'preferences'): void
 }>()
@@ -18,6 +19,8 @@ const emit = defineEmits<{
 
 <template>
   <el-header class="topbar">
+    <el-button text circle class="mobile-menu" :icon="Menu" aria-label="Abrir menu de navegação"
+      @click="emit('toggle-nav')" />
     <div class="environment">
       <span class="live-dot"></span> Ambiente corporativo
     </div>
@@ -49,6 +52,7 @@ const emit = defineEmits<{
   background: rgba(255, 255, 255, 0.88);
   border-bottom: 1px solid #e8ebf1;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .environment {
@@ -78,15 +82,30 @@ const emit = defineEmits<{
   font-weight: 700 !important;
 }
 
+.mobile-menu {
+  display: none;
+}
+
 @media (max-width: 760px) {
   .topbar {
-    padding: 0 16px;
-    justify-content: flex-end;
+    padding: 0 14px;
+    justify-content: space-between;
   }
 
-  .environment,
-  .new-query {
+  .environment {
     display: none;
+  }
+
+  .mobile-menu {
+    display: inline-flex;
+  }
+
+  .top-actions {
+    gap: 8px;
+  }
+
+  .new-query {
+    padding-inline: 10px;
   }
 }
 </style>
