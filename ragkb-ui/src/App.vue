@@ -231,19 +231,25 @@ textarea {
   box-shadow: 0 4px 16px rgba(22, 31, 48, 0.03);
 }
 
-.status-active {
+.el-tag.status-active {
   --el-tag-bg-color: #eaf9f2;
   --el-tag-border-color: #c0edda;
   --el-tag-text-color: #168463;
 }
 
-.status-archived {
+.el-tag.status-archived {
   --el-tag-bg-color: #f2f4f7;
   --el-tag-border-color: #e2e7ed;
   --el-tag-text-color: #67758a;
 }
 
-.status-superseded {
+.el-tag.status-draft {
+  --el-tag-bg-color: #f2f4f7;
+  --el-tag-border-color: #e2e7ed;
+  --el-tag-text-color: #7a8699;
+}
+
+.el-tag.status-superseded {
   --el-tag-bg-color: #fff5e9;
   --el-tag-border-color: #f8deb4;
   --el-tag-text-color: #ba7012;

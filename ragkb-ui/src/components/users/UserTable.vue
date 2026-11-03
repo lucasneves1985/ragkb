@@ -38,7 +38,8 @@ function onToggle(user: User) {
         </div>
       </template>
     </el-table-column>
-    <el-table-column prop="email" label="E-mail" min-width="220" show-overflow-tooltip class-name="mobile-label-email" />
+    <el-table-column prop="email" label="E-mail" min-width="220" show-overflow-tooltip
+      class-name="mobile-label-email" />
     <el-table-column label="Papéis atribuídos" min-width="200" class-name="mobile-label-roles">
       <template #default="{ row }">
         <el-tag v-for="role in row.roles" :key="role" class="role" size="small" effect="plain">
@@ -48,7 +49,7 @@ function onToggle(user: User) {
     </el-table-column>
     <el-table-column label="Setor" min-width="160" class-name="mobile-label-sector">
       <template #default="{ row }">
-        <el-tag class="role" size="small" type="info" effect="plain">
+        <el-tag class="role" size="small" type="warning" effect="plain">
           {{ row.sectorName }}
         </el-tag>
       </template>
