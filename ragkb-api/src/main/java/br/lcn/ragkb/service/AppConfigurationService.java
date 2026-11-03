@@ -38,6 +38,19 @@ public class AppConfigurationService {
      */
     public static final String KEY_CARDS_REMINDER_WINDOW_DAYS = "cards.reminder_window_days";
 
+    /**
+     * Digest de tarefas por WhatsApp (CardDigestJob). Chaves editáveis apenas
+     * por ADMIN; consumidas pelo CardDigestScheduler (reconciliação dinâmica).
+     * enabled default FALSE — o digest é push proativo e nasce desligado.
+     * frequency: DAILY | WEEKLY. time: HH:mm (default 07:30, 30 min antes do
+     * lembrete para não empilhar duas mensagens no mesmo minuto). weekday:
+     * MON..SUN (usado apenas no modo WEEKLY).
+     */
+    public static final String KEY_CARDS_DIGEST_ENABLED = "cards.digest_enabled";
+    public static final String KEY_CARDS_DIGEST_FREQUENCY = "cards.digest_frequency";
+    public static final String KEY_CARDS_DIGEST_TIME = "cards.digest_time";
+    public static final String KEY_CARDS_DIGEST_WEEKDAY = "cards.digest_weekday";
+
     private final AppConfigurationRepository repository;
 
     @Transactional(readOnly = true)
