@@ -33,17 +33,26 @@ public class Project {
     @Column(length = 7)
     private String color;
 
+    /**
+     * Owner do projeto (V20). NULL = projeto legado (anterior ao
+     * compartilhamento): permanece visível a todos os usuários, com a
+     * privacidade de cards por criador preservada — sem backfill.
+     */
+    @Column(name = "created_by")
+    private Long createdBy;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public Project(String name, String description, String color) {
+    public Project(String name, String description, String color, Long createdBy) {
         this.id = UUID.randomUUID().toString();
         this.name = name;
         this.description = description;
         this.color = color;
+        this.createdBy = createdBy;
     }
 
     @PrePersist

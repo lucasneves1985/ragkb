@@ -12,6 +12,13 @@ export interface User {
   enabled: boolean
 }
 
+/** Entrada leve do diretório (V20) — alimenta o picker de compartilhamento. */
+export interface UserDirectoryEntry {
+  id: number
+  username: string
+  fullName: string
+}
+
 export interface CreateUserRequest {
   username: string
   password: string
@@ -36,7 +43,6 @@ export interface UpdateOwnProfileRequest {
   fullName: string
   email: string
 }
-
 export interface ChangeOwnPasswordRequest {
   currentPassword: string
   newPassword: string

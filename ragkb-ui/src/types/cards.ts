@@ -15,7 +15,6 @@ export const CARD_STATUSES: CardStatus[] = [
   'CONCLUIDO',
   'CANCELADO',
 ]
-
 export const CARD_STATUS_LABELS: Record<CardStatus, string> = {
   PENDENTE: 'Pendente',
   EM_ANDAMENTO: 'Em Andamento',
@@ -43,6 +42,10 @@ export interface Project {
   name: string
   description: string | null
   color: string | null
+  /** Owner do projeto (V20); null = projeto legado, visível a todos. */
+  ownerUsername: string | null
+  /** Participantes compartilhados (o owner NÃO está na lista). */
+  participantUsernames: string[]
   createdAt: string
   updatedAt: string
 }
@@ -57,6 +60,8 @@ export interface Card {
   closedAt: string | null
   /** Prazo do card, no formato ISO "yyyy-MM-dd" (LocalDate do backend); null = sem prazo. */
   dueDate: string | null
+  /** Username do criador (V20); null = card pré-V18. O board garante o campo; o CardDetailDto ainda não o devolve. */
+  createdByUsername: string | null
   createdAt: string
   updatedAt: string
 }
@@ -99,6 +104,11 @@ export interface UpdateProjectRequest {
   color?: string
 }
 
+/** Compartilhamento de projeto (V20) — owner-only no backend. */
+export interface ShareProjectRequest {
+  username: string
+}
+
 export interface CreateCardRequest {
   title: string
   description?: string
@@ -115,7 +125,6 @@ export interface MoveCardRequest {
   status: CardStatus
   position?: number | null
 }
-
 /** dueDate null = remove o prazo. Endpoint dedicado, fora do UpdateCardRequest. */
 export interface SetDueDateRequest {
   dueDate: string | null
@@ -128,7 +137,6 @@ export interface CreateCommentRequest {
 export interface UpdateCommentRequest {
   content: string
 }
-
 // ── Assistente de tarefas ─────────────────────────────────
 
 export interface CardAskRequest {

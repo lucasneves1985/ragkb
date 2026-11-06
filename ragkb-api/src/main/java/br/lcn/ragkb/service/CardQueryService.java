@@ -32,20 +32,21 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Assistente de tarefas — fluxo da doc (seção 5.3): 1. Descoberta semântica nos
- * chunks (card_chunks, com fallback ILIKE), ESCOPADA AO USUÁRIO AUTENTICADO —
- * o join com cards no SQL garante que apenas chunks dos cards do criador
- * entram nos candidatos (privacidade; cards sem created_by ficam fora).
- * 2. Corte RELATIVO de relevância: mantém apenas chunks a SCORE_MARGIN do
- * melhor score (lexical = 1.0; vetorial = similaridade de cosseno). Resolve o
- * falso positivo de queries curtas ("Teste" casando vetorialmente com cards
- * sem relação) sem matar o recall de perguntas em linguagem natural, cuja
- * similaridade absoluta é menor. 3. Estado atual lido SEMPRE do relacional
- * (status, prazo, comentários, eventos) — o índice vetorial não lê tempo
- * (decisão 5.1). 4. LLM compõe o resumo com citações; a UI recebe referências
- * clicáveis construídas APENAS dos candidatos que sobreviveram ao corte. Cards
- * encerrados ENTRAM na busca (decisão 3.3 — filtro é apresentação). Sem
- * 
- * @Transactional: a chamada ao LLM não pode segurar conexão de banco.
+ * chunks (card_chunks, com fallback ILIKE), ESCOPADA AO USUÁRIO AUTENTICADO — o
+ * join com cards no SQL garante que apenas chunks de cards PRÓPRIOS ou de
+ * projetos COMPARTILHADOS onde o usuário participa entram nos candidatos (V20;
+ * projetos legados preservam a privacidade por criador; cards sem created_by
+ * ficam fora). 2. Corte RELATIVO de relevância: mantém apenas chunks a
+ * SCORE_MARGIN do melhor score (lexical = 1.0; vetorial = similaridade de
+ * cosseno). Resolve o falso positivo de queries curtas ("Teste" casando
+ * vetorialmente com cards sem relação) sem matar o recall de perguntas em
+ * linguagem natural, cuja similaridade absoluta é menor. 3. Estado atual lido
+ * SEMPRE do relacional (status, prazo, comentários, eventos) — o índice
+ * vetorial não lê tempo (decisão 5.1). 4. LLM compõe o resumo com citações; a
+ * UI recebe referências clicáveis construídas APENAS dos candidatos que
+ * sobreviveram ao corte. Cards encerrados ENTRAM na busca (decisão 3.3 — filtro
+ * é apresentação). Sem @Transactional: a chamada ao LLM não pode segurar
+ * conexão de banco.
  */
 @Service
 @RequiredArgsConstructor
@@ -72,7 +73,7 @@ public class CardQueryService {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private static final String SYSTEM_PROMPT = """
-            Você é o assistente de tarefas pessoal do usuário.
+            Você é o assistente de tarefas do usuário.
             REGRAS OBRIGATÓRIAS:
             1. Responda EXCLUSIVAMENTE com base no estado das tarefas fornecido.
             2. Informe o status atual de cada tarefa mencionada. Se estiver encerrada (Concluído ou Cancelado), diga desde quando.
@@ -95,22 +96,22 @@ public class CardQueryService {
 
     public CardAnswerResponse ask(CardAskRequest request, String username) {
         String question = request.question().trim();
-        Long creatorId = currentUserId(username);
+        Long userId = currentUserId(username);
 
         // 1. Descoberta semântica (vetorial + ILIKE), com filtro opcional de
-        // projeto e ESCOPO DO CRIADOR — cards de outros usuários nunca
-        // entram nos candidatos (o join com cards no SQL é o enforcement).
+        // projeto e ESCOPO DO USUÁRIO — cards próprios + cards de projetos
+        // compartilhados onde participa (o join com cards no SQL é o
+        // enforcement; projetos legados permanecem creator-only).
         List<CardChunkScore> scored;
         try {
             scored = embeddingService.semanticSearchCandidates(
-                    request.projectId(), question, SIMILARITY_THRESHOLD, creatorId);
+                    request.projectId(), question, SIMILARITY_THRESHOLD, userId);
         } catch (Exception e) {
             // Falha de embedding não pode derrubar a consulta — degrada para NO_MATCH
             // explícito em vez de erro 500 (mesmo contrato do embed de chunks).
             log.error("Falha na busca semântica de cards: {}", e.getMessage());
             return CardAnswerResponse.noMatch();
         }
-
         if (scored.isEmpty()) {
             return CardAnswerResponse.noMatch();
         }
@@ -138,12 +139,13 @@ public class CardQueryService {
         }
 
         // Defesa em profundidade: mesmo com o join no SQL, os candidatos são
-        // re-verificados contra o criador antes de entrar no contexto do LLM.
+        // re-verificados contra o escopo do usuário antes de entrar no
+        // contexto do LLM (criador OU participante de projeto compartilhado).
         List<Card> candidates = cardRank.keySet().stream()
                 .limit(MAX_CANDIDATE_CARDS)
                 .map(cardRepository::findById)
                 .flatMap(Optional::stream)
-                .filter(c -> c.getCreatedBy() != null && c.getCreatedBy().equals(creatorId))
+                .filter(c -> isAccessible(c, userId))
                 .toList();
 
         if (candidates.isEmpty()) {
@@ -190,6 +192,24 @@ public class CardQueryService {
     }
 
     /**
+     * Escopo de acesso do candidato (V20): criador do card, OU participante
+     * (owner ou share) de projeto compartilhado. Projetos legados NÃO ampliam o
+     * escopo; cards sem created_by permanecem invisíveis.
+     */
+    private boolean isAccessible(Card card, Long userId) {
+        if (card.getCreatedBy() != null && card.getCreatedBy().equals(userId)) {
+            return true;
+        }
+        if (card.getCreatedBy() == null) {
+            return false;
+        }
+        return projectRepository.findById(card.getProjectId())
+                .map(p -> p.getCreatedBy() != null
+                        && projectRepository.isParticipant(p.getId(), userId))
+                .orElse(false);
+    }
+
+    /**
      * Score composto do chunk: match lexical (ILIKE) vale 1.0 — é evidência
      * direta, não aproximada; match vetorial vale a similaridade de cosseno.
      */
@@ -215,7 +235,6 @@ public class CardQueryService {
             }
             sb.append('\n');
         }
-
         List<CardComment> comments = commentRepository.findByCardIdOrderByCreatedAtAsc(card.getId());
         if (!comments.isEmpty()) {
             sb.append("Comentários (mais recentes por último):\n");
@@ -224,7 +243,6 @@ public class CardQueryService {
                     .forEach(c -> sb.append("- [").append(FORMATTER.format(c.getCreatedAt()))
                             .append("] ").append(c.getContent()).append('\n'));
         }
-
         List<CardStatusEvent> events = statusEventRepository.findByCardIdOrderByChangedAtAsc(card.getId());
         if (!events.isEmpty()) {
             sb.append("Histórico de status:\n");

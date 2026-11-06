@@ -46,12 +46,10 @@ public class QueryService {
     private static final int TOP_K = 6;
 
     // ── Busca híbrida (fusão semântica + lexical) ─────────────
-    // Profundidade da lista lexical alimentada à fusão; RRF_K é a constante
-    // clássica do Reciprocal Rank Fusion (score = Σ 1/(RRF_K + rank)).
-    // RRF evita misturar escalas incomensuráveis (ts_rank_cd vs cosseno):
-    // funde POR POSIÇÃO, não por valor de score.
+    // Profundidade da lista lexical alimentada à fusão. NÃO é o limite de
+    // saída: a fusão aplica TOP_K em todos os caminhos (incluindo o lexical
+    // puro, que antes vazava até LEXICAL_TOP_K documentos ao LLM).
     private static final int LEXICAL_TOP_K = 10;
-    private static final int RRF_K = 60;
 
     // Parsing do metadata JSON (coluna 'metadata' da vector_store) dos hits
     // lexicais — mapper estático porque o JSON é genérico, sem tipos custom.
@@ -110,6 +108,7 @@ public class QueryService {
     private final IntegrationParamService paramService;
     private final RedisIntegrationParamStateService paramStateService;
     private final KbLexicalSearchRepository kbLexicalSearchRepository;
+    private final ReciprocalRankFusion reciprocalRankFusion;
 
     public AnswerResponse ask(String question, String conversationId, Authentication auth) {
         // Contexto do usuário resolvido AQUI, não no controller
@@ -141,6 +140,7 @@ public class QueryService {
                 // Integração sumiu/desativou — estado órfão, segue fluxo normal
                 paramStateService.clear(effectiveConversationId);
             }
+
             // 2. Gate vetorial + verificação de intenção
             var outcome = routingService.decide(question);
             if (outcome.isPresent()) {
@@ -217,6 +217,7 @@ public class QueryService {
         String userPromptText = """
                 %sBase de conhecimento (ÚNICA fonte permitida):
                 %s
+
                 Pergunta: %s
                 """.formatted(historyBlock, context, question);
 
@@ -239,6 +240,7 @@ public class QueryService {
 
         AnswerResponse response = AnswerResponse.fromKnowledgeBase(
                 answer, sourceIds, List.copyOf(sourceMap.values()), effectiveConversationId);
+
         conversationService.recordInteraction(effectiveConversationId, question, response);
         redisChatHistoryService.addMessage(effectiveConversationId, "USER", question);
         redisChatHistoryService.addMessage(effectiveConversationId, "ASSISTANT", answer);
@@ -246,12 +248,18 @@ public class QueryService {
     }
 
     // ── Busca híbrida (semântica + lexical, fusão RRF) ────────
+
     /**
-     * Executa os DOIS caminhos de busca e funde por Reciprocal Rank Fusion:
-     * score = Σ 1/(RRF_K + posição). Documento presente nas duas listas é
-     * promovido (consenso semântico+lexical vence match em lista única) e as
-     * escalas incomensuráveis nunca são somadas diretamente. Lista vazia nos
-     * dois caminhos → vazio (fallback follow-up/ticket segue no fluxo do ask).
+     * Executa os DOIS caminhos de busca e delega a fusão ao
+     * {@link ReciprocalRankFusion}. O filtro de permissões é aplicado nos dois
+     * caminhos — o lexical replica a semântica do filterExpr, garantindo
+     * paridade de visibilidade.
+     *
+     * <p>O conversor {@code this::toDocument} é passado à fusão para que o
+     * parsing do JSON de metadata (documentId, filename, articleId,
+     * articleTitle, articleUrl) permaneça aqui, onde o METADATA_MAPPER vive.
+     * Sem ele, Documents vindos do caminho lexical chegariam sem articleId e
+     * resolveLabel() cairia em "Fonte sem nome".</p>
      */
     private List<Document> hybridSearch(String question, String filterExpr,
             boolean isAdmin, List<String> roles, String userSector) {
@@ -277,46 +285,7 @@ public class QueryService {
 
         log.info("Busca híbrida KB: {} hit(s) semântico(s), {} hit(s) lexical(is) — fundindo",
                 semanticHits.size(), lexicalHits.size());
-        return fuseByReciprocalRank(semanticHits, lexicalHits);
-    }
-
-    /**
-     * Fusão por posição: rank começa em 1. Empates de score mantêm a ordem de
-     * inserção (sort estável) — semântica antes, lexical depois. Quando só uma
-     * lista tem conteúdo, ela é preservada na ordem original (RRF degenera para
-     * a própria lista).
-     */
-    private List<Document> fuseByReciprocalRank(List<Document> semanticHits,
-            List<KbLexicalSearchRepository.LexicalHit> lexicalHits) {
-        if (semanticHits.isEmpty() && lexicalHits.isEmpty()) {
-            return List.of();
-        }
-        if (lexicalHits.isEmpty()) {
-            return semanticHits;
-        }
-        if (semanticHits.isEmpty()) {
-            return lexicalHits.stream().map(this::toDocument).toList();
-        }
-
-        Map<String, Double> rrfScores = new HashMap<>();
-        Map<String, Document> docsById = new LinkedHashMap<>();
-        for (int i = 0; i < semanticHits.size(); i++) {
-            String id = semanticHits.get(i).getId();
-            rrfScores.merge(id, 1.0 / (RRF_K + i + 1), Double::sum);
-            docsById.put(id, semanticHits.get(i));
-        }
-        for (int i = 0; i < lexicalHits.size(); i++) {
-            KbLexicalSearchRepository.LexicalHit hit = lexicalHits.get(i);
-            rrfScores.merge(hit.id(), 1.0 / (RRF_K + i + 1), Double::sum);
-            if (!docsById.containsKey(hit.id())) {
-                docsById.put(hit.id(), toDocument(hit));
-            }
-        }
-        return rrfScores.entrySet().stream()
-                .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
-                .limit(TOP_K)
-                .map(entry -> docsById.get(entry.getKey()))
-                .toList();
+        return reciprocalRankFusion.fuse(semanticHits, lexicalHits, TOP_K, this::toDocument);
     }
 
     /**
@@ -324,14 +293,37 @@ public class QueryService {
      * caminho semântico hidrata (valores como documentId/filename/articleId são
      * comparados como string no fluxo de fontes — listas como allowedRoles
      * voltam como List, igual ao hydration do Spring AI).
+     *
+     * <p>Quatro casos degenerados são tratados explicitamente:</p>
+     * <ul>
+     *   <li>JSON literal "null" → readValue devolve null, não lança; sem o
+     *       guard, Document.builder().metadata(null) lançaria NPE.</li>
+     *   <li>metadata nula → readValue(null) lança IllegalArgumentException,
+     *       que NÃO é JsonProcessingException.</li>
+     *   <li>JSON malformado ou array → JsonProcessingException.</li>
+     *   <li>content nulo → Document.builder().text(null) lança
+     *       IllegalArgumentException ("exactly one of text or media must be
+     *       specified"). Um chunk sem conteúdo não tem valor para o LLM:
+     *       retornar null aqui e deixar a fusão descartar é o comportamento
+     *       correto — sem isso, um único chunk corrompido derruba a consulta
+     *       inteira com erro 500.</li>
+     * </ul>
+     *
+     * @return Document hidratado, ou {@code null} quando o chunk não tem
+     *         conteúdo utilizável (a fusão descarta nulos)
      */
     private Document toDocument(KbLexicalSearchRepository.LexicalHit hit) {
+        if (hit.content() == null || hit.content().isBlank()) {
+            log.warn("Chunk {} sem conteúdo na vector_store — descartado da fusão", hit.id());
+            return null;
+        }
         Map<String, Object> metadata;
         try {
-            metadata = METADATA_MAPPER.readValue(hit.metadata(),
+            Map<String, Object> parsed = METADATA_MAPPER.readValue(hit.metadata(),
                     new TypeReference<Map<String, Object>>() {
-            });
-        } catch (JsonProcessingException e) {
+                    });
+            metadata = parsed != null ? parsed : Map.of();
+        } catch (JsonProcessingException | IllegalArgumentException e) {
             log.warn("Metadata JSON inválido no chunk {} — usando metadata vazio", hit.id());
             metadata = Map.of();
         }

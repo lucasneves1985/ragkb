@@ -35,17 +35,14 @@ public class CardEmbeddingService {
     @Transactional
     public void reembedCard(Card card) {
         chunkRepository.deleteByCardId(card.getId());
-
         chunkRepository.save(new CardChunk(card.getId(), card.getProjectId(),
                 CardChunkType.CARD, null, 0,
                 card.getTitle() + "\n\n" + (card.getDescription() == null ? "" : card.getDescription())));
-
         int index = 0;
         for (CardComment comment : commentRepository.findByCardIdOrderByCreatedAtAsc(card.getId())) {
             chunkRepository.save(new CardChunk(card.getId(), card.getProjectId(),
                     CardChunkType.COMMENT, comment.getId(), index++, comment.getContent()));
         }
-
         for (CardChunk chunk : chunkRepository.findByCardId(card.getId())) {
             embed(chunk);
         }
@@ -72,13 +69,16 @@ public class CardEmbeddingService {
 
     /**
      * Busca híbrida com scores — o corte de relevância (margem relativa ao
-     * melhor score) é responsabilidade do chamador (CardQueryService). O
-     * creatorId delimita o escopo de privacidade no SQL (join com cards).
+     * melhor score) é responsabilidade do chamador (CardQueryService). O userId
+     * delimita o escopo de acesso no SQL (join com cards): cards PRÓPRIOS +
+     * cards de projetos COMPARTILHADOS onde o usuário participa (V20); projetos
+     * legados permanecem creator-only. Passthrough puro — nenhuma lógica de
+     * escopo vive aqui.
      */
     public List<CardChunkScore> semanticSearchCandidates(String projectId, String query,
-            double similarityThreshold, Long creatorId) {
+            double similarityThreshold, Long userId) {
         return chunkRepository.semanticSearchCandidates(
-                projectId, embedQueryToLiteral(query), query, similarityThreshold, creatorId);
+                projectId, embedQueryToLiteral(query), query, similarityThreshold, userId);
     }
 
     private String toLiteral(float[] v) {

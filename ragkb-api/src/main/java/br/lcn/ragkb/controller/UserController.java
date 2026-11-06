@@ -4,6 +4,7 @@ import br.lcn.ragkb.dto.CreateUserRequest;
 import br.lcn.ragkb.dto.ChangeOwnPasswordRequest;
 import br.lcn.ragkb.dto.UpdateOwnProfileRequest;
 import br.lcn.ragkb.dto.UpdateUserRequest;
+import br.lcn.ragkb.dto.UserDirectoryResponse;
 import br.lcn.ragkb.dto.UserResponse;
 import br.lcn.ragkb.service.UserService;
 import jakarta.validation.Valid;
@@ -45,6 +46,16 @@ public class UserController {
     @DeleteMapping("/me/avatar")
     public UserResponse removeOwnAvatar(Authentication auth) {
         return userService.removeOwnAvatar(auth.getName());
+    }
+
+    /**
+     * Diretório leve de usuários (V20): alimenta o picker de compartilhamento
+     * de projetos. Autenticado, sem @PreAuthorize — o supervisor não-admin
+     * precisa listar candidatos; o GET /users completo permanece ADMIN-only.
+     */
+    @GetMapping("/directory")
+    public List<UserDirectoryResponse> directory() {
+        return userService.listDirectory();
     }
 
     @GetMapping

@@ -93,7 +93,7 @@ const items = computed<NavItem[]>(() => [
   { label: 'Conflitos', to: '/conflicts', icon: Document, visible: auth.hasRole('ADMIN') },
   { label: 'Setores', to: '/sectors', icon: OfficeBuilding, visible: auth.hasRole('ADMIN') },
   { label: 'Integrações', to: '/integrations', icon: Connection, visible: auth.hasAnyRole(['ADMIN', 'EDITOR']) },
-  { label: 'Certificados SSL', to: '/certificates', icon: Lock, visible: true },
+  { label: 'Certificados SSL', to: '/certificates', icon: Lock, visible: auth.hasRole('ADMIN') },
   { label: 'Lembretes', to: '/reminders', icon: Bell, visible: true },
   { label: 'WhatsApp', to: '/whatsapp', icon: ChatDotRound, visible: auth.hasRole('ADMIN') },
   { label: 'Usuários', to: '/users', icon: User, visible: auth.hasRole('ADMIN') },

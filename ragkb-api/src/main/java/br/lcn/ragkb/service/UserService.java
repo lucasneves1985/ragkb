@@ -2,8 +2,9 @@ package br.lcn.ragkb.service;
 
 import br.lcn.ragkb.dto.CreateUserRequest;
 import br.lcn.ragkb.dto.ChangeOwnPasswordRequest;
-import br.lcn.ragkb.dto.UpdateUserRequest;
 import br.lcn.ragkb.dto.UpdateOwnProfileRequest;
+import br.lcn.ragkb.dto.UpdateUserRequest;
+import br.lcn.ragkb.dto.UserDirectoryResponse;
 import br.lcn.ragkb.dto.UserResponse;
 import br.lcn.ragkb.entity.AppRole;
 import br.lcn.ragkb.entity.AppUser;
@@ -64,7 +65,9 @@ public class UserService {
         String previous = user.getAvatarUrl();
         String avatarUrl = avatarImageService.store(file);
         user.updateAvatarUrl(avatarUrl);
-        if (previous != null) avatarImageService.delete(previous);
+        if (previous != null) {
+            avatarImageService.delete(previous);
+        }
         return toResponse(user);
     }
 
@@ -73,13 +76,29 @@ public class UserService {
         AppUser user = findByUsernameOrThrow(username);
         String previous = user.getAvatarUrl();
         user.updateAvatarUrl(null);
-        if (previous != null) avatarImageService.delete(previous);
+        if (previous != null) {
+            avatarImageService.delete(previous);
+        }
         return toResponse(user);
     }
 
     @Transactional(readOnly = true)
     public List<UserResponse> listAll() {
         return userRepository.findAll().stream().map(UserService::toResponse).toList();
+    }
+
+    /**
+     * Diretório leve para o picker de compartilhamento (V20): todos os usuários
+     * do cadastro — a UI filtra ativos e já-participantes. Inclui desativados
+     * de propósito: o owner precisa do id deles para remover participante que
+     * foi desativado depois de compartilhado. Sem dados sensíveis — id,
+     * username e nome apenas.
+     */
+    @Transactional(readOnly = true)
+    public List<UserDirectoryResponse> listDirectory() {
+        return userRepository.findAll().stream()
+                .map(u -> new UserDirectoryResponse(u.getId(), u.getUsername(), u.getFullName()))
+                .toList();
     }
 
     @Transactional
@@ -95,7 +114,6 @@ public class UserService {
 
         List<String> roles = normalizeRoles(request.roles());
         Sector sector = loadSector(request.sectorId());
-
         AppUser saved = userRepository.save(new AppUser(
                 request.username(),
                 passwordEncoder.encode(request.password()),
@@ -104,7 +122,6 @@ public class UserService {
                 request.fullName().trim(),
                 email,
                 normalizePhone(request.phone())));
-
         return toResponse(saved);
     }
 
