@@ -22,9 +22,16 @@ const emit = defineEmits<{
 const container = ref<HTMLElement | null>(null)
 
 const md = new MarkdownIt({ breaks: true, html: false })
+function removeInlineSources(content: string) {
+  return content
+    .replace(/^[\t ]*(?:\*\*)?fontes?(?:\s+consultadas?)?(?:\*\*)?\s*:[^\r\n]*(?:\r?\n|$)/gim, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 function renderMarkdown(content?: string) {
   if (!content) return ''
-  return DOMPurify.sanitize(md.render(content))
+  return DOMPurify.sanitize(md.render(removeInlineSources(content)))
 }
 
 function isArticleSource(source: string | SourceReference): source is SourceReference {
