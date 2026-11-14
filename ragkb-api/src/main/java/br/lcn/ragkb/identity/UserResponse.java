@@ -1,0 +1,18 @@
+package br.lcn.ragkb.identity;
+
+
+
+import java.util.List;
+
+public record UserResponse(
+        Long id,
+        String username,
+        String fullName,
+        String email,
+        String avatarUrl,
+        String phone,
+        List<String> roles,
+        Long sectorId,
+        String sectorName,
+        boolean enabled
+) {}

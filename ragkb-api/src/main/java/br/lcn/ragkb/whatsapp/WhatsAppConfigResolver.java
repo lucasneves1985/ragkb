@@ -1,9 +1,16 @@
 package br.lcn.ragkb.whatsapp;
 
+
+
+
+
+
+
 import org.springframework.stereotype.Service;
 
-import br.lcn.ragkb.config.WAHAProperties;
-import br.lcn.ragkb.service.AppConfigurationService;
+import br.lcn.ragkb.shared.AppConfigurationService;
+import br.lcn.ragkb.shared.config.WAHAProperties;
+
 import lombok.RequiredArgsConstructor;
 
 /**
