@@ -13,12 +13,15 @@ public record IntegrationExecutionDto(
         Integer attempt,
         Integer httpStatus,
         String responseBody,
-        String errorMessage) {
+        String errorMessage,
+        String actionStatus,
+        String actionError) {
 
     public static IntegrationExecutionDto from(IntegrationExecution e) {
         return new IntegrationExecutionDto(
                 e.getId(), e.getIntegrationId(), e.getStatus().name(),
                 e.getStartedAt(), e.getFinishedAt(), e.getAttempt(),
-                e.getHttpStatus(), e.getResponseBody(), e.getErrorMessage());
+                e.getHttpStatus(), e.getResponseBody(), e.getErrorMessage(),
+                e.getActionStatus(), e.getActionError());
     }
 }

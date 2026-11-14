@@ -1,2 +1,2 @@
-@org.springframework.modulith.ApplicationModule(allowedDependencies = {"whatsapp::api"})
+@org.springframework.modulith.ApplicationModule(allowedDependencies = {"shared::mail", "whatsapp::api"})
 package br.lcn.ragkb.certificate;

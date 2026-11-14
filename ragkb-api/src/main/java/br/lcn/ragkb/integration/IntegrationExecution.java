@@ -56,6 +56,14 @@ public class IntegrationExecution {
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
+    @Setter
+    @Column(name = "action_status", length = 20)
+    private String actionStatus;
+
+    @Setter
+    @Column(name = "action_error", columnDefinition = "TEXT")
+    private String actionError;
+
     public IntegrationExecution(String integrationId) {
         this.id = UUID.randomUUID().toString();
         this.integrationId = integrationId;
@@ -76,6 +84,23 @@ public class IntegrationExecution {
         this.responseBody = truncate(responseBody);
         this.errorMessage = truncate(errorMessage);
         this.finishedAt = Instant.now();
+    }
+
+    public void actionSuccess() {
+        this.actionStatus = "SUCCESS";
+        this.actionError = null;
+    }
+
+    public void actionFailure(String error) {
+        this.actionStatus = "FAILED";
+        this.actionError = truncateAction(error);
+    }
+
+    private String truncateAction(String value) {
+        if (value == null || value.length() <= 2000) {
+            return value;
+        }
+        return value.substring(0, 2000);
     }
 
     private String truncate(String value) {

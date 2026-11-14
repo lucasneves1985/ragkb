@@ -14,17 +14,12 @@ import java.util.*;
 
 import javax.net.ssl.*;
 
-import jakarta.mail.*;
-import jakarta.mail.internet.*;
-
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import br.lcn.ragkb.shared.mail.EmailService;
 import br.lcn.ragkb.whatsapp.api.WhatsAppMessagingApi;
 
 import lombok.RequiredArgsConstructor;
@@ -37,8 +32,7 @@ public class CertificateMonitorService {
     private final CertificateMonitorRepository monitors;
     private final CertificateCheckRepository history;
     private final WhatsAppMessagingApi whatsApp;
-    private final JavaMailSender mailSender;
-    @Value("${app.ticket.from-email:}") private String fromEmail;
+    private final EmailService emailService;
 
     @Transactional(readOnly=true) public List<CertificateMonitorDto> list(String user){return monitors.findByCreatedByOrderByCreatedAtDesc(user).stream().map(CertificateMonitorDto::from).toList();}
     @Transactional public CertificateMonitorDto create(CertificateMonitorRequest r,String user){var m=monitors.save(new CertificateMonitor(normalize(r.url()),LocalTime.parse(r.checkTime()),r.alertThresholdDays(),weekdays(r.alertWeekdays()),r.notificationChannel(),target(r),user));return CertificateMonitorDto.from(m);}
@@ -82,7 +76,7 @@ public class CertificateMonitorService {
         catch(Exception e){throw new CertificateExceptionLike("Cadeia do certificado inválida ou autoassinada: "+safeMessage(e));}
         return cert;}}
     private void notify(CertificateMonitor m,CertificateCheck.Status status,Integer days,Instant expires,String error,String url)throws Exception{String detail=status==CertificateCheck.Status.CONNECTION_ERROR||status==CertificateCheck.Status.INVALID_CERTIFICATE?error:"certificado vence em "+days+" dia(s)"+(expires==null?"":" ("+EXPIRY_DATE_FORMAT.format(expires)+")");String text="Alerta SSL/TLS: %s — %s. %s".formatted(m.getUrl(),status,detail);
-      if(m.getNotificationChannel()==CertificateMonitor.Channel.WHATSAPP){String phone=m.getNotificationTarget().replaceAll("\\D","");if(phone.length()<=11&&!phone.startsWith("55"))phone="55"+phone;whatsApp.sendText(phone+"@c.us",text);}else{if(fromEmail==null||fromEmail.isBlank())throw new IllegalStateException("E-mail remetente não configurado.");MimeMessage msg=mailSender.createMimeMessage();MimeMessageHelper helper=new MimeMessageHelper(msg,"UTF-8");helper.setFrom(fromEmail);helper.setTo(m.getNotificationTarget());helper.setSubject("Alerta de certificado SSL/TLS — "+m.getUrl());helper.setText(text);mailSender.send(msg);}}
+      if(m.getNotificationChannel()==CertificateMonitor.Channel.WHATSAPP){String phone=m.getNotificationTarget().replaceAll("\\D","");if(phone.length()<=11&&!phone.startsWith("55"))phone="55"+phone;whatsApp.sendText(phone+"@c.us",text);}else{emailService.send(m.getNotificationTarget(),"Alerta de certificado SSL/TLS — "+m.getUrl(),text);}}
     private String safeMessage(Exception e){String s=e.getMessage();if(e instanceof UnknownHostException)return "Domínio inexistente ou sem resolução DNS.";if(e instanceof java.net.ConnectException)return "Conexão recusada pelo host.";if(e instanceof java.net.SocketTimeoutException)return "Tempo limite de conexão excedido (10 segundos).";return s==null?"Falha ao verificar certificado.":s.substring(0,Math.min(500,s.length()));}
     private static class CertificateExceptionLike extends Exception{CertificateExceptionLike(String m){super(m);}}
 }

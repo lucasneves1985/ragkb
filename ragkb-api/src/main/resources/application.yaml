@@ -89,7 +89,7 @@ app:
     output: src/main/resources/eval/dataset-generated.json
   ticket:
     recipient-email: ${TICKET_RECIPIENT_EMAIL:chamados@unimed303.com.br}
-    from-email: ${SMTP_USERNAME:Lucas}
+    from-email: ${SMTP_FROM:}
 
   waha:
     base-url: ${WAHA_URL:http://localhost:3000}

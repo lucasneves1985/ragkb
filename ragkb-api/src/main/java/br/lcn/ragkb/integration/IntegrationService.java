@@ -13,6 +13,9 @@ import java.net.UnknownHostException;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
+
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -202,9 +205,16 @@ public class IntegrationService {
             return;
         }
         if (actionType == IntegrationActionType.EMAIL) {
-            if (actionTarget == null || !actionTarget.contains("@")) {
+            if (actionTarget == null || actionTarget.isBlank()) {
                 throw new InvalidIntegrationException(
                         "Ação EMAIL exige actionTarget com e-mail de destino válido.");
+            }
+            try {
+                InternetAddress address = new InternetAddress(actionTarget.trim(), true);
+                address.validate();
+            } catch (AddressException e) {
+                throw new InvalidIntegrationException(
+                        "Ação EMAIL exige actionTarget com e-mail de destino válido: " + actionTarget);
             }
         }
         if (actionType == IntegrationActionType.WHATSAPP) {

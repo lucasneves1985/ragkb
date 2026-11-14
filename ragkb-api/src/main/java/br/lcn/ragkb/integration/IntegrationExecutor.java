@@ -1,55 +1,28 @@
 package br.lcn.ragkb.integration;
 
-
-
-
-
-
-
-import jakarta.mail.Message;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import br.lcn.ragkb.integration.http.IntegrationHttpClient;
+import br.lcn.ragkb.shared.mail.EmailDeliveryException;
+import br.lcn.ragkb.shared.mail.EmailService;
 import br.lcn.ragkb.shared.metrics.RoutingMetrics;
 import br.lcn.ragkb.whatsapp.api.WhatsAppMessagingApi;
 import br.lcn.ragkb.whatsapp.api.WhatsAppSendException;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Executa uma integração SCHEDULED: chama a URL, grava o histórico e dispara a
  * ação configurada (e-mail / WhatsApp). Retry simples: 1 tentativa extra em
  * falha de transporte.
  *
- * P4 — consolidação: a chamada HTTP (método GET/POST, auth, placeholders na URL
- * e no body, parsing leniente) e a renderização da mensagem (action_template,
- * listas {{response.items.*}}, teto, lista vazia) são DELEGADAS ao
- * IntegrationHttpClient — eram cópias divergentes deste arquivo. O executor
- * retém apenas o que é exclusivo do fluxo agendado: retry, persistência do
- * histórico (IntegrationExecution) e despacho das ações.
- *
- * Comportamentos preservados deliberadamente: - truncamento da MENSAGEM da ação
- * em 3000 caracteres (MESSAGE_MAX_LENGTH, mais conservador que o truncamento de
- * renderização do cliente); - a ação falhando NÃO marca a execução como FAILED
- * retroativamente; - RestClientResponseException entra no retry (comportamento
- * antigo de retrieve() — 4xx/5xx são "falha de transporte" para o retry).
- *
- * Mudanças de comportamento que a delegação traz (melhorias conscientes): -
- * integrações SCHEDULED agora aceitam GET (httpMethod é respeitado); -
- * {{today}}/{{now}} passam a funcionar também na URL; - parsing leniente
- * (vírgula final/aspas simples) também aqui; - telemetria (RoutingMetrics)
- * cobre execuções agendadas.
+ * A chamada HTTP e a renderização da mensagem são delegadas ao
+ * IntegrationHttpClient. Quando o HTTP funciona, o status principal da
+ * execução permanece SUCCESS; eventuais falhas da ação são registradas em
+ * action_status/action_error, sem sobrescrever o resultado HTTP.
  */
 @Slf4j
 @Service
@@ -63,12 +36,9 @@ public class IntegrationExecutor {
     private final IntegrationExecutionRepository executionRepository;
     private final IntegrationHttpClient httpClient;
     private final WhatsAppMessagingApi whatsAppService;
-    private final JavaMailSender mailSender;
+    private final EmailService emailService;
     private final ObjectMapper objectMapper;
     private final RoutingMetrics metrics;
-
-    @Value("${app.ticket.from-email:}")
-    private String fromEmail;
 
     public void execute(Integration integration) {
         IntegrationExecution execution = new IntegrationExecution(integration.getId());
@@ -108,8 +78,15 @@ public class IntegrationExecutor {
         metrics.executionDuration(integration.getName(),
                 integration.getHttpMethod().name(), 0);
         execution.success(response.getStatusCode().value(), body);
+
+        String actionError = dispatchAction(integration, body);
+        if (actionError != null) {
+            execution.actionFailure(actionError);
+        } else if (integration.getActionType() != null
+                && integration.getActionType() != IntegrationActionType.NONE) {
+            execution.actionSuccess();
+        }
         executionRepository.save(execution);
-        dispatchAction(integration, body);
     }
 
     /**
@@ -123,28 +100,36 @@ public class IntegrationExecutor {
         return httpClient.call(integration, null, java.util.Map.of());
     }
 
-    private void dispatchAction(Integration integration, String responseBody) {
+    private String dispatchAction(Integration integration, String responseBody) {
         if (integration.getActionType() == null
                 || integration.getActionType() == IntegrationActionType.NONE) {
-            return;
+            return null;
         }
         String message = truncateMessage(
                 httpClient.renderResponseMessage(integration, responseBody));
         try {
             switch (integration.getActionType()) {
-                case EMAIL ->
-                    sendEmail(integration, message);
-                case WHATSAPP ->
-                    whatsAppService.sendText(integration.getActionTarget(), message);
-                case NONE -> {
-                    /* nada a fazer */ }
+                case EMAIL -> sendEmail(integration, message);
+                case WHATSAPP -> whatsAppService.sendText(integration.getActionTarget(), message);
+                case NONE -> { /* nada a fazer */ }
             }
-        } catch (WhatsAppSendException | IllegalStateException e) {
-            // A ação falhou mas a integração em si foi executada — log registra o
-            // contexto; não marca execução como FAILED retroativamente.
+            return null;
+        } catch (EmailDeliveryException e) {
+            log.error("Ação EMAIL da integração '{}' falhou: {}", integration.getName(), e.getMessage());
+            return e.getMessage();
+        } catch (WhatsAppSendException e) {
+            log.error("Ação WHATSAPP da integração '{}' falhou: {}", integration.getName(), e.getMessage());
+            return e.getMessage();
+        } catch (RuntimeException e) {
             log.error("Ação '{}' da integração '{}' falhou: {}",
-                    integration.getActionType(), integration.getName(), e.getMessage());
+                    integration.getActionType(), integration.getName(), e.getMessage(), e);
+            return e.getMessage();
         }
+    }
+
+    private void sendEmail(Integration integration, String body) {
+        emailService.send(integration.getActionTarget(),
+                "[ragkb] Integração: " + integration.getName(), body);
     }
 
     /**
@@ -156,24 +141,6 @@ public class IntegrationExecutor {
             return value;
         }
         return value.substring(0, MESSAGE_MAX_LENGTH) + "…";
-    }
-
-    private void sendEmail(Integration integration, String body) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            if (fromEmail != null && !fromEmail.isBlank()) {
-                message.setFrom(fromEmail);
-            }
-            message.setRecipients(Message.RecipientType.TO, integration.getActionTarget());
-            message.setSubject("[ragkb] Integração: " + integration.getName());
-            message.setText(body, "UTF-8");
-            mailSender.send(message);
-            log.info("Ação EMAIL da integração '{}' enviada para {}", integration.getName(),
-                    integration.getActionTarget());
-        } catch (MessagingException e) {
-            throw new IllegalStateException("Falha ao enviar e-mail da integração "
-                    + integration.getName(), e);
-        }
     }
 
     private void sleep() {
