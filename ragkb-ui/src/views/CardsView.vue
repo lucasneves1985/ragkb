@@ -11,6 +11,7 @@ import {
   useMoveCard,
   useDeleteCard,
   useDeleteProject,
+  useMyProfile,
   extractCardsErrorMessage,
 } from '@/composables'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
@@ -22,6 +23,7 @@ import { CARD_STATUSES, CARD_STATUS_COLORS, CARD_STATUS_LABELS, isClosedStatus }
 import type { Card, CardStatus, Project } from '@/types'
 
 const { data: projects, refetch: refetchProjects } = useProjects()
+const { profile } = useMyProfile()
 const selectedProjectId = ref<string>()
 const includeClosed = ref(false)
 
@@ -37,6 +39,29 @@ watch(projects, (list) => {
 
 const selectedProject = computed(() =>
   projects.value?.find((p) => p.id === selectedProjectId.value) ?? null,
+)
+
+// ── Papel do usuário no projeto selecionado (V20) ─────────
+// ownerUsername null = projeto legado (visível a todos, gestão aberta —
+// comportamento anterior preservado). Owner = criador do projeto.
+// Participante = qualquer outro usuário que o vê na lista (a lista só
+// mostra owner + compartilhados — o backend garante).
+const isOwnerOfSelected = computed(() =>
+  !!selectedProject.value &&
+  selectedProject.value.ownerUsername != null &&
+  selectedProject.value.ownerUsername === profile.value?.username,
+)
+const isSharedSelected = computed(() =>
+  !!selectedProject.value &&
+  selectedProject.value.ownerUsername != null &&
+  selectedProject.value.ownerUsername !== profile.value?.username,
+)
+// Gestão do projeto (editar/excluir): owner em projetos owned; legados
+// mantêm o comportamento anterior — espelha o manageableProject do
+// ProjectService (404 para os demais; a UI não oferece o botão).
+const canManageSelectedProject = computed(() =>
+  !!selectedProject.value &&
+  (selectedProject.value.ownerUsername === null || isOwnerOfSelected.value),
 )
 
 const cardsByStatus = computed<Record<CardStatus, Card[]>>(() => {
@@ -56,7 +81,6 @@ const cardsByStatus = computed<Record<CardStatus, Card[]>>(() => {
 // Cards encerrados SEMPRE ficam neutros: "vencido" num card concluído seria
 // informação falsa.
 type DueBadgeState = 'normal' | 'soon' | 'overdue'
-
 function dueDateState(card: Card): DueBadgeState {
   if (!card.dueDate) return 'normal'
   const today = new Date()
@@ -67,7 +91,6 @@ function dueDateState(card: Card): DueBadgeState {
   const daysLeft = Math.round((due.getTime() - today.getTime()) / 86_400_000)
   return daysLeft <= 2 ? 'soon' : 'normal'
 }
-
 function formatDueDateShort(value: string): string {
   return new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR')
 }
@@ -79,17 +102,14 @@ const dragOverStatus = ref<CardStatus | null>(null)
 function onDragStart(card: Card) {
   draggedCard.value = card
 }
-
 function onDragEnd() {
   draggedCard.value = null
   dragOverStatus.value = null
 }
-
 function onDropToColumn(status: CardStatus) {
   if (!draggedCard.value) return
   move(draggedCard.value, status, null)
 }
-
 function onDropToCard(status: CardStatus, target: Card) {
   if (!draggedCard.value) return
   const column = cardsByStatus.value[status] ?? []
@@ -99,7 +119,6 @@ function onDropToCard(status: CardStatus, target: Card) {
 }
 
 const { mutateAsync: moveCard } = useMoveCard()
-
 async function move(card: Card, status: CardStatus, position: number | null) {
   if (card.status === status && position === null) return
   try {
@@ -113,20 +132,27 @@ async function move(card: Card, status: CardStatus, position: number | null) {
 
 // ── CRUD de projetos ──────────────────────────────────────
 const projectDialogOpen = ref(false)
-const projectBeingEdited = ref<Project | null>(null)
+// V20 fix: guarda apenas o ID e deriva o projeto da lista VIVA do cache.
+// Um snapshot congelado não reflete o refetch disparado pela invalidação de
+// projects.lists() após share/unshare — as tags de participantes só
+// apareciam ao fechar e reabrir o dialog. Fonte única de verdade: o cache.
+const projectBeingEditedId = ref<string | null>(null)
+const projectBeingEdited = computed<Project | null>(() =>
+  projectBeingEditedId.value == null
+    ? null
+    : (projects.value?.find((p) => p.id === projectBeingEditedId.value) ?? null),
+)
 const { mutateAsync: deleteProject } = useDeleteProject()
 
 function openNewProject() {
-  projectBeingEdited.value = null
+  projectBeingEditedId.value = null
   projectDialogOpen.value = true
 }
-
 function openEditProject() {
   if (!selectedProject.value) return
-  projectBeingEdited.value = selectedProject.value
+  projectBeingEditedId.value = selectedProject.value.id
   projectDialogOpen.value = true
 }
-
 async function removeProject() {
   if (!selectedProject.value) return
   try {
@@ -161,12 +187,10 @@ function openComposer(status: CardStatus) {
   composerTitle.value = ''
   nextTick(() => composerInput.value?.focus())
 }
-
 function closeComposer() {
   composerStatus.value = null
   composerTitle.value = ''
 }
-
 async function submitComposer() {
   if (!selectedProjectId.value || !composerStatus.value) return
   const title = composerTitle.value.trim()
@@ -195,16 +219,31 @@ function onDocumentClick(event: MouseEvent) {
     closeComposer()
   }
 }
-
 onMounted(() => document.addEventListener('click', onDocumentClick))
 onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick))
 
 // ── Exclusão de card ──────────────────────────────────────
-const { mutateAsync: deleteCard } = useDeleteCard()
+// V20: delete é do criador do card OU do owner do projeto (compartilhado);
+// em legados, só o criador. O backend garante (404) — a UI apenas não
+// oferece o botão onde sempre falharia, e o owner recebe confirmação
+// explícita de que está excluindo card de outro usuário.
+function canDeleteCard(card: Card): boolean {
+  if (!selectedProject.value) return false
+  const isCreator = card.createdByUsername != null
+    && card.createdByUsername === profile.value?.username
+  if (selectedProject.value.ownerUsername === null) return isCreator
+  return isCreator || isOwnerOfSelected.value
+}
 
+const { mutateAsync: deleteCard } = useDeleteCard()
 async function removeCard(card: Card) {
+  const foreignCreator = card.createdByUsername != null
+    && card.createdByUsername !== profile.value?.username
+  const message = foreignCreator
+    ? `Excluir a tarefa "${card.title}", criada por ${card.createdByUsername}?`
+    : `Excluir a tarefa "${card.title}"?`
   try {
-    await ElMessageBox.confirm(`Excluir a tarefa "${card.title}"?`, 'Excluir tarefa', {
+    await ElMessageBox.confirm(message, 'Excluir tarefa', {
       type: 'warning',
       confirmButtonText: 'Excluir',
       cancelButtonText: 'Cancelar',
@@ -221,14 +260,12 @@ async function removeCard(card: Card) {
 
 // ── Detalhe ───────────────────────────────────────────────
 const detailCardId = ref<string | null>(null)
-
 function openDetail(card: Card) {
   detailCardId.value = card.id
 }
 
 // ── Deep-link: /cards?project=X&card=Y (URLs manuais) ─────
 const route = useRoute()
-
 onMounted(() => {
   const project = typeof route.query.project === 'string' ? route.query.project : undefined
   const card = typeof route.query.card === 'string' ? route.query.card : undefined
@@ -256,31 +293,28 @@ function refresh() {
         <el-select v-model="selectedProjectId" placeholder="Selecione um projeto" style="width: 260px">
           <el-option v-for="project in projects ?? []" :key="project.id" :value="project.id" :label="project.name" />
         </el-select>
-
+        <!-- Papel no projeto (V20): owner / participante; legados não têm badge. -->
+        <el-tag v-if="isOwnerOfSelected" type="primary" size="small">Meu projeto</el-tag>
+        <el-tag v-else-if="isSharedSelected" type="warning" size="small">Compartilhado</el-tag>
         <el-button size="small" @click="openNewProject">
           <el-icon>
             <Plus />
           </el-icon>
           Novo projeto
         </el-button>
-
-        <el-button v-if="selectedProject" size="small" text type="primary" @click="openEditProject">
+        <el-button v-if="canManageSelectedProject" size="small" text type="primary" @click="openEditProject">
           Editar projeto
         </el-button>
-
-        <el-button v-if="selectedProject" size="small" text type="danger" @click="removeProject">
+        <el-button v-if="canManageSelectedProject" size="small" text type="danger" @click="removeProject">
           Excluir projeto
         </el-button>
-
         <div class="spacer" />
-
         <el-switch v-model="includeClosed" active-text="Mostrar encerradas" />
       </section>
 
       <div v-if="!projects?.length" class="column-hint">
         Nenhum projeto ainda. Crie o primeiro com "Novo projeto".
       </div>
-
       <div v-else-if="!selectedProjectId" class="column-hint">Selecione um projeto para ver o board.</div>
 
       <div v-else class="board" v-loading="isLoading">
@@ -296,7 +330,6 @@ function refresh() {
             </span>
             <span class="column-count">{{ cardsByStatus[status].length }}</span>
           </header>
-
           <div class="column-body">
             <article v-for="card in cardsByStatus[status]" :key="card.id" class="task-card"
               :class="{ 'is-dragging': draggedCard?.id === card.id }" draggable="true" @dragstart="onDragStart(card)"
@@ -310,12 +343,11 @@ function refresh() {
                   {{ formatDueDateShort(card.dueDate) }}
                 </span>
                 <span v-else>{{ new Date(card.createdAt).toLocaleDateString('pt-BR') }}</span>
-                <el-button size="small" text type="danger" @click.stop="removeCard(card)">
+                <el-button v-if="canDeleteCard(card)" size="small" text type="danger" @click.stop="removeCard(card)">
                   Excluir
                 </el-button>
               </div>
             </article>
-
             <!-- Composer inline: aberto nesta coluna -->
             <div v-if="composerStatus === status" ref="composerEl" class="composer" @click.stop>
               <textarea ref="composerInput" v-model="composerTitle" class="composer-input" rows="2" maxlength="200"
@@ -328,7 +360,6 @@ function refresh() {
                 <el-button size="small" text @click="closeComposer">Cancelar</el-button>
               </div>
             </div>
-
             <template v-else>
               <div v-if="!cardsByStatus[status].length && isClosedStatus(status) && !includeClosed" class="column-hint">
                 Ative "Mostrar encerradas" para ver estas tarefas.
@@ -336,7 +367,6 @@ function refresh() {
               <div v-else-if="!cardsByStatus[status].length" class="column-empty">—</div>
             </template>
           </div>
-
           <div class="column-add">
             <button v-if="composerStatus !== status" type="button" class="column-add-trigger"
               @click.stop="openComposer(status)">
@@ -347,9 +377,7 @@ function refresh() {
       </div>
 
       <ProjectDialog :open="projectDialogOpen" :project="projectBeingEdited" @close="projectDialogOpen = false" />
-
       <CardDetailDialog :card-id="detailCardId" @close="detailCardId = null" />
-
       <!-- Widget flutuante de consulta -->
       <CardsAssistantWidget @open-card="detailCardId = $event" />
     </div>
@@ -357,7 +385,6 @@ function refresh() {
 </template>
 
 <style lang="css" src="@/views/styles/cards.view.css"></style>
-
 <style scoped>
 /* Pill de prazo: discreto, alinhado ao meta do card. Fundos rgba para
    compatibilidade com o dark theme sem ajuste adicional. */
@@ -372,12 +399,10 @@ function refresh() {
   background: var(--el-fill-color-light);
   color: var(--el-text-color-secondary);
 }
-
 .due-badge--soon {
   background: rgba(230, 162, 60, 0.15);
   color: #e6a23c;
 }
-
 .due-badge--overdue {
   background: rgba(245, 108, 108, 0.15);
   color: #f56c6c;

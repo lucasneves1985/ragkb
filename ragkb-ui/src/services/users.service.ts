@@ -2,6 +2,7 @@
 import { http } from './http'
 import type {
   User,
+  UserDirectoryEntry,
   CreateUserRequest,
   UpdateUserRequest,
   UpdateOwnProfileRequest,
@@ -20,6 +21,8 @@ export const usersService = {
     return http.post<User>('/users/me/avatar', formData).then((r) => r.data)
   },
   removeMyAvatar: () => http.delete<User>('/users/me/avatar').then((r) => r.data),
+  /** Diretório leve (V20) — autenticado; o GET /users completo é ADMIN-only. */
+  directory: () => http.get<UserDirectoryEntry[]>('/users/directory').then((r) => r.data),
   list: () => http.get<User[]>('/users').then((r) => r.data),
   create: (payload: CreateUserRequest) =>
     http.post<User>('/users', payload).then((r) => r.data),

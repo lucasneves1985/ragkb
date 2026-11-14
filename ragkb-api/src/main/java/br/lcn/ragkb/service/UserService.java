@@ -2,8 +2,9 @@ package br.lcn.ragkb.service;
 
 import br.lcn.ragkb.dto.CreateUserRequest;
 import br.lcn.ragkb.dto.ChangeOwnPasswordRequest;
-import br.lcn.ragkb.dto.UpdateUserRequest;
 import br.lcn.ragkb.dto.UpdateOwnProfileRequest;
+import br.lcn.ragkb.dto.UpdateUserRequest;
+import br.lcn.ragkb.dto.UserDirectoryResponse;
 import br.lcn.ragkb.dto.UserResponse;
 import br.lcn.ragkb.entity.AppRole;
 import br.lcn.ragkb.entity.AppUser;
@@ -24,7 +25,6 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-
     private final AppUserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final SectorRepository sectorRepository;
@@ -82,6 +82,20 @@ public class UserService {
         return userRepository.findAll().stream().map(UserService::toResponse).toList();
     }
 
+    /**
+     * Diretório leve para o picker de compartilhamento (V20): todos os
+     * usuários do cadastro — a UI filtra ativos e já-participantes. Inclui
+     * desativados de propósito: o owner precisa do id deles para remover
+     * participante que foi desativado depois de compartilhado. Sem dados
+     * sensíveis — id, username e nome apenas.
+     */
+    @Transactional(readOnly = true)
+    public List<UserDirectoryResponse> listDirectory() {
+        return userRepository.findAll().stream()
+                .map(u -> new UserDirectoryResponse(u.getId(), u.getUsername(), u.getFullName()))
+                .toList();
+    }
+
     @Transactional
     public UserResponse create(CreateUserRequest request) {
         String email = request.email().trim().toLowerCase();
@@ -95,7 +109,6 @@ public class UserService {
 
         List<String> roles = normalizeRoles(request.roles());
         Sector sector = loadSector(request.sectorId());
-
         AppUser saved = userRepository.save(new AppUser(
                 request.username(),
                 passwordEncoder.encode(request.password()),
@@ -104,7 +117,6 @@ public class UserService {
                 request.fullName().trim(),
                 email,
                 normalizePhone(request.phone())));
-
         return toResponse(saved);
     }
 

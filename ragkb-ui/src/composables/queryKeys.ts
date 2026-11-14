@@ -19,6 +19,7 @@ export const queryKeys = {
   users: {
     all: ['users'] as const,
     lists: () => [...queryKeys.users.all, 'list'] as const,
+    directory: () => [...queryKeys.users.all, 'directory'] as const,
   },
   tickets: {
     all: ['tickets'] as const,
@@ -31,6 +32,7 @@ export const queryKeys = {
   projects: {
     all: ['projects'] as const,
     lists: () => [...queryKeys.projects.all, 'list'] as const,
+    shares: (projectId: string) => [...queryKeys.projects.all, 'shares', projectId] as const,
   },
   cards: {
     all: ['cards'] as const,
