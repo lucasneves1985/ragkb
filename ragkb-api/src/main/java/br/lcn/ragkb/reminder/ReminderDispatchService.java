@@ -11,8 +11,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -39,7 +37,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class ReminderDispatchService {
 
-    private static final Logger log = LoggerFactory.getLogger(ReminderDispatchService.class);
     private static final ZoneId ZONE = ZoneId.of("America/Sao_Paulo");
     private static final DateTimeFormatter BRAZIL_FORMAT
             = DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm").withZone(ZONE);
