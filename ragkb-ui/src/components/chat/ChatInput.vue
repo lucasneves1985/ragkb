@@ -26,7 +26,7 @@ const emit = defineEmits<{
         @update:model-value="emit('update:modelValue', $event)"
         @keydown.enter.exact.prevent="emit('send')"
       />
-      <el-button circle class="send" :disabled="!canSend" :icon="Promotion" @click="emit('send')" />
+      <el-button type="primary" circle class="send" :disabled="!canSend" :icon="Promotion" @click="emit('send')" />
     </div>
     <p>Enter para enviar · As respostas sao geradas exclusivamente com documentos autorizados.</p>
   </div>

@@ -144,7 +144,7 @@ function openCard(reference: CardReference) {
           <el-input ref="inputEl" v-model="question" type="textarea" :autosize="{ minRows: 2, maxRows: 5 }"
             resize="none" placeholder="Pergunte sobre suas tarefas..." :disabled="loading"
             @keydown.enter.exact.prevent="ask" />
-          <el-button circle class="widget-send" :disabled="!canSend" :icon="Promotion" @click="ask" />
+          <el-button type="primary" circle class="widget-send" :disabled="!canSend" :icon="Promotion" @click="ask" />
         </div>
 
         <p class="widget-hint">

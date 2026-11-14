@@ -135,7 +135,7 @@ function reset() {
         description="Conteúdo editorial indexado para consultas da IA — somente o texto é ingerido."
         :on-refresh="refetch" :refreshing="isLoading">
         <template #actions>
-          <el-button class="primary-button" :icon="DocumentAdd" :loading="loadingDetail" @click="openCreate">
+          <el-button type="primary" class="primary-button" :icon="DocumentAdd" :loading="loadingDetail" @click="openCreate">
             Novo artigo
           </el-button>
         </template>

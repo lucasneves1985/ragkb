@@ -58,8 +58,8 @@ const emit = defineEmits<{
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: #dcefe9;
-  color: #168463;
+  background: var(--app-tag-bg);
+  color: var(--app-primary);
   font: 500 12px 'DM Mono';
 }
 
@@ -73,12 +73,12 @@ const emit = defineEmits<{
 }
 
 .profile b {
-  color: #29354a;
+  color: var(--app-text);
   font-size: 12px;
 }
 
 .profile small {
-  color: #8490a1;
+  color: var(--app-muted);
   font-size: 10px;
   margin-top: 2px;
 }

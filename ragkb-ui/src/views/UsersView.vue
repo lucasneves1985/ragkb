@@ -85,7 +85,7 @@ async function toggleEnabled(user: User) {
         description="Defina quem pode consultar e administrar a base de conhecimento."
         :on-refresh="reset">
         <template #actions>
-          <el-button class="primary-button" :icon="Plus" @click="createDrawer = true">
+          <el-button type="primary" class="primary-button" :icon="Plus" @click="createDrawer = true">
             Novo usuário
           </el-button>
         </template>

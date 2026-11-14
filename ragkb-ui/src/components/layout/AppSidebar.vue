@@ -56,11 +56,21 @@ const isCollapsed = computed(() => props.collapsed && !props.mobileOpen)
 
 <style scoped>
 .sidebar {
+  --sidebar-bg: #111827;
+  --sidebar-text: #fff;
+  --sidebar-brand-accent: #72e2bf;
+  --sidebar-muted: #8490a7;
+  --sidebar-item: #aeb8c8;
+  --sidebar-hover: #202b3d;
+  --sidebar-hover-text: #fff;
+  --sidebar-active: #273b4b;
+  --sidebar-active-text: #81e4c3;
+  --sidebar-scroll: #273b4b;
   position: relative;
   display: flex;
   flex-direction: column;
   padding: 24px 12px;
-  background: #111827;
+  background: var(--sidebar-bg);
   transition: width 0.2s;
   overflow: hidden;
   height: 100vh;
@@ -76,7 +86,7 @@ const isCollapsed = computed(() => props.collapsed && !props.mobileOpen)
   align-items: center;
   gap: 11px;
   padding: 0 10px;
-  color: #fff;
+  color: var(--sidebar-text);
   font-size: 25px;
   font-weight: 800;
   letter-spacing: -1.5px;
@@ -84,7 +94,7 @@ const isCollapsed = computed(() => props.collapsed && !props.mobileOpen)
 }
 
 .brand span span {
-  color: #72e2bf;
+  color: var(--sidebar-brand-accent);
 }
 
 .brand-mark {
@@ -93,14 +103,14 @@ const isCollapsed = computed(() => props.collapsed && !props.mobileOpen)
   width: 30px;
   height: 30px;
   border-radius: 9px;
-  color: #102219;
-  background: #72e2bf;
+  color: var(--app-on-primary, #102219);
+  background: var(--sidebar-brand-accent);
   font: 700 17px 'DM Mono';
 }
 
 .workspace-label {
   padding: 30px 12px 11px;
-  color: #8490a7;
+  color: var(--sidebar-muted);
   font: 10px 'DM Mono';
   letter-spacing: 1.2px;
   white-space: nowrap;
@@ -114,7 +124,7 @@ const isCollapsed = computed(() => props.collapsed && !props.mobileOpen)
   overflow-x: hidden;
   /* esconde a barra quando não precisa, mas mantém rolagem disponível */
   scrollbar-width: thin;
-  scrollbar-color: #273b4b transparent;
+  scrollbar-color: var(--sidebar-scroll) transparent;
 }
 
 .nav-scroll.is-collapsed {
@@ -126,7 +136,7 @@ const isCollapsed = computed(() => props.collapsed && !props.mobileOpen)
 }
 
 .nav-scroll::-webkit-scrollbar-thumb {
-  background: #273b4b;
+  background: var(--sidebar-scroll);
   border-radius: 3px;
 }
 
@@ -138,18 +148,18 @@ const isCollapsed = computed(() => props.collapsed && !props.mobileOpen)
 .nav-menu :deep(.el-menu-item) {
   margin: 4px 0;
   border-radius: 9px;
-  color: #aeb8c8;
+  color: var(--sidebar-item);
   font-weight: 600;
 }
 
 .nav-menu :deep(.el-menu-item:hover) {
-  background: #202b3d !important;
-  color: #fff !important;
+  background: var(--sidebar-hover);
+  color: var(--sidebar-hover-text);
 }
 
 .nav-menu :deep(.el-menu-item.is-active) {
-  background: #273b4b !important;
-  color: #81e4c3 !important;
+  background: var(--sidebar-active);
+  color: var(--sidebar-active-text);
 }
 
 .nav-menu :deep(.el-menu-item.is-active::before) {
@@ -159,7 +169,7 @@ const isCollapsed = computed(() => props.collapsed && !props.mobileOpen)
   width: 3px;
   height: 24px;
   border-radius: 3px;
-  background: #72e2bf;
+  background: var(--sidebar-brand-accent);
 }
 
 .sidebar-footer {
@@ -170,7 +180,7 @@ const isCollapsed = computed(() => props.collapsed && !props.mobileOpen)
   width: 100%;
   justify-content: flex-start;
   gap: 11px;
-  color: #aeb8c8 !important;
+  color: var(--sidebar-item);
   font-weight: 600;
 }
 

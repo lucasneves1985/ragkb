@@ -323,8 +323,8 @@
   height: 52px;
   border-radius: 50%;
   border: none;
-  background: #168463;
-  color: #fff;
+  background: var(--app-primary);
+  color: var(--app-on-primary);
   font-size: 22px;
   display: grid;
   place-items: center;
@@ -333,7 +333,7 @@
 }
 
 .assistant-fab:hover {
-  background: #0f7253;
+  background: var(--app-primary-hover);
 }
 
 .assistant-widget {
@@ -345,8 +345,8 @@
   max-width: calc(100vw - 32px);
   height: 540px;
   max-height: calc(100vh - 140px);
-  background: #fff;
-  border: 1px solid #e4e8ef;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
   border-radius: 16px;
   box-shadow: 0 12px 40px rgba(22, 31, 48, 0.18);
   display: flex;
@@ -359,8 +359,8 @@
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  background: #111827;
-  color: #fff;
+  background: var(--app-surface-raised);
+  color: var(--app-text);
 }
 
 .assistant-widget-header .title {
@@ -370,7 +370,7 @@
 }
 
 .widget-close {
-  color: #aeb8c8 !important;
+  color: var(--app-text-secondary) !important;
 }
 
 .assistant-widget-body {
@@ -381,7 +381,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: #f6f7fb;
+  background: var(--app-bg);
 }
 
 .widget-msg {
@@ -406,20 +406,20 @@
 }
 
 .widget-msg.user .widget-bubble {
-  background: #168463;
-  color: #fff;
+  background: var(--app-primary);
+  color: var(--app-on-primary);
   border-bottom-right-radius: 4px;
 }
 
 .widget-msg.assistant .widget-bubble {
-  background: #fff;
-  border: 1px solid #e4e8ef;
-  color: #344054;
+  background: var(--app-surface-raised);
+  border: 1px solid var(--app-border);
+  color: var(--app-text-secondary);
   border-bottom-left-radius: 4px;
 }
 
 .widget-typing {
-  color: #8490a1;
+  color: var(--app-muted);
   font-style: italic;
 }
 
@@ -436,8 +436,8 @@
   gap: 8px;
   width: 100%;
   text-align: left;
-  background: #fff;
-  border: 1px solid #e4e8ef;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
   border-radius: 10px;
   padding: 7px 10px;
   cursor: pointer;
@@ -445,13 +445,13 @@
 }
 
 .widget-reference:hover {
-  border-color: #9fd4bd;
+  border-color: var(--app-accent);
 }
 
 .widget-reference .ref-title {
   flex: 1;
   font-weight: 600;
-  color: #1f2b3e;
+  color: var(--app-text);
   word-break: break-word;
 }
 
@@ -463,8 +463,8 @@
 
 .assistant-widget-footer {
   padding: 12px 14px 10px;
-  border-top: 1px solid #edf0f4;
-  background: #fff;
+  border-top: 1px solid var(--app-border);
+  background: var(--app-surface);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -476,9 +476,9 @@
 .widget-composer {
   position: relative;
   padding: 8px 55px 7px 6px;
-  border: 1px solid #dfe5eb;
+  border: 1px solid var(--app-field-border);
   border-radius: 13px;
-  background: #fff;
+  background: var(--app-surface);
   box-shadow: 0 5px 16px rgba(32, 46, 66, 0.06);
 }
 
@@ -491,25 +491,34 @@
   position: absolute;
   right: 10px;
   bottom: 13px;
-  background: #168463;
-  color: #fff;
+  background: var(--app-primary);
+  color: var(--app-on-primary);
   border: 0;
 }
 
 .widget-send.is-disabled {
-  background: #e2e7ec;
-  color: #9da8b5;
+  --el-button-disabled-bg-color: var(--app-surface-raised);
+  --el-button-disabled-border-color: var(--app-border);
+  --el-button-disabled-text-color: var(--app-text-secondary);
+  opacity: 1;
+  background: var(--app-surface-raised);
+  color: var(--app-text-secondary);
+  border: 1px solid var(--app-border);
+}
+
+.widget-send.is-disabled .el-icon {
+  color: var(--app-text-secondary);
 }
 
 .widget-hint {
   margin: 0;
   text-align: center;
-  color: #98a2b3;
+  color: var(--app-muted);
   font-size: 10px;
 }
 
 .widget-empty {
-  color: #8490a1;
+  color: var(--app-muted);
   font-size: 12px;
   text-align: center;
   padding: 20px 10px;

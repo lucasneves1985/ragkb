@@ -21,7 +21,7 @@ defineEmits<{
       @update:model-value="$emit('update:modelValue', $event)"
       @keyup.enter="$emit('submit')"
     />
-    <el-button class="primary-button" :icon="Plus" :loading="saving" @click="$emit('submit')">
+    <el-button type="primary" class="primary-button" :icon="Plus" :loading="saving" @click="$emit('submit')">
       Incluir
     </el-button>
   </div>

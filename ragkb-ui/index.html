@@ -6,11 +6,13 @@
       try {
         const session = JSON.parse(localStorage.getItem('ragkb-session') || 'null')
         const savedTheme = session?.username ? localStorage.getItem(`ragkb-theme:${session.username}`) : null
-        const theme = savedTheme === 'dark' ? 'dark' : 'light'
+        const themeIds = ['light', 'dark', 'graphite', 'indigo']
+        const theme = themeIds.includes(savedTheme) ? savedTheme : 'light'
         document.documentElement.dataset.theme = theme
-        document.documentElement.style.colorScheme = theme
+        document.documentElement.style.colorScheme = theme === 'dark' ? 'dark' : 'light'
       } catch {
         document.documentElement.dataset.theme = 'light'
+        document.documentElement.style.colorScheme = 'light'
       }
     </script>
     <link rel="icon" href="/favicon.ico">

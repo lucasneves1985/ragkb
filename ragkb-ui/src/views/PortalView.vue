@@ -64,7 +64,7 @@ function reset() {
       <div class="portal-filters">
         <el-input v-model="searchInput" placeholder="Buscar por título…" :prefix-icon="Search" clearable
           class="portal-search" @keyup.enter="applySearch" @clear="clearSearch" />
-        <el-button class="primary-button" @click="applySearch">Buscar</el-button>
+        <el-button type="primary" class="primary-button" @click="applySearch">Buscar</el-button>
         <el-select v-if="isAdmin" v-model="sector" placeholder="Todos os setores" clearable class="portal-sector">
           <el-option v-for="s in sectors ?? []" :key="s.id" :label="s.name" :value="s.name" />
         </el-select>

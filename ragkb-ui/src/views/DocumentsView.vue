@@ -111,7 +111,7 @@ function reset() {
         :refreshing="isLoading"
       >
         <template #actions>
-          <el-button class="primary-button" :icon="DocumentAdd" @click="dialog = true">
+          <el-button type="primary" class="primary-button" :icon="DocumentAdd" @click="dialog = true">
             Adicionar documento
           </el-button>
         </template>

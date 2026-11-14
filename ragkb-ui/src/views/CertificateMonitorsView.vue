@@ -28,7 +28,7 @@ async function runCheck(monitor: CertificateMonitor) { try { await checkNow(moni
       description="Acompanhe vencimentos e receba alertas no horário configurado."
       :on-refresh="refetch" :refreshing="isLoading">
       <template #actions>
-        <el-button class="primary-button" @click="openCreate">Adicionar URL</el-button>
+        <el-button type="primary" class="primary-button" @click="openCreate">Adicionar URL</el-button>
       </template>
     </PageHeading>
     <section v-if="isLoading" class="surface loading">Carregando…</section>

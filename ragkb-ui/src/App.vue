@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
@@ -133,16 +133,16 @@ function logout() {
 
 :root {
   font-family: Manrope, Arial, sans-serif;
-  color: #172033;
-  background: #f6f7fb;
-  --el-color-primary: #168463;
+  color: var(--app-text);
+  background: var(--app-bg);
+  --el-color-primary: var(--app-primary);
   --el-color-primary-light-3: #4ca384;
   --el-color-primary-light-5: #82bda4;
   --el-color-primary-light-7: #b5d7c8;
   --el-color-primary-light-8: #d0e6dc;
   --el-color-primary-light-9: #edf7f2;
-  --el-color-primary-dark-2: #0f7253;
-  --el-color-success: #168463;
+  --el-color-primary-dark-2: var(--app-primary-hover);
+  --el-color-success: var(--app-primary);
 }
 
 * {
@@ -169,7 +169,7 @@ textarea {
   height: 100vh;
   max-height: 100vh;
   overflow: hidden;
-  background: #f6f7fb;
+  background: var(--app-bg);
 }
 
 .content {
@@ -215,18 +215,18 @@ textarea {
   margin: 0;
   font-size: 27px;
   letter-spacing: -1px;
-  color: #172033;
+  color: var(--app-text);
 }
 
 .page-heading p {
   margin: 7px 0 0;
-  color: #718096;
+  color: var(--app-muted);
   font-size: 13px;
 }
 
 .surface {
-  background: #fff;
-  border: 1px solid #e8ebf1;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
   border-radius: 15px;
   box-shadow: 0 4px 16px rgba(22, 31, 48, 0.03);
 }
@@ -234,7 +234,7 @@ textarea {
 .el-tag.status-active {
   --el-tag-bg-color: #eaf9f2;
   --el-tag-border-color: #c0edda;
-  --el-tag-text-color: #168463;
+  --el-tag-text-color: var(--app-accent);
 }
 
 .el-tag.status-archived {
@@ -261,25 +261,25 @@ textarea {
 }
 
 .primary-button {
-  --el-button-bg-color: #168463;
-  --el-button-border-color: #168463;
-  --el-button-text-color: #fff;
-  --el-button-hover-text-color: #fff;
-  --el-button-active-text-color: #fff;
-  --el-button-hover-bg-color: #0f7253;
-  --el-button-hover-border-color: #0f7253;
-  color: #fff !important;
+  --el-button-bg-color: var(--app-accent);
+  --el-button-border-color: var(--app-accent);
+  --el-button-text-color: var(--app-on-primary);
+  --el-button-hover-text-color: var(--app-on-primary);
+  --el-button-active-text-color: var(--app-on-primary);
+  --el-button-hover-bg-color: var(--app-primary-hover);
+  --el-button-hover-border-color: var(--app-primary-hover);
+  color: var(--app-on-primary) !important;
   font-weight: 700;
 }
 
 .el-button--primary {
-  --el-button-bg-color: #168463;
-  --el-button-border-color: #168463;
-  --el-button-text-color: #fff;
-  --el-button-hover-bg-color: #0f7253;
-  --el-button-hover-border-color: #0f7253;
-  --el-button-active-bg-color: #0d644a;
-  --el-button-active-border-color: #0d644a;
+  --el-button-bg-color: var(--app-accent);
+  --el-button-border-color: var(--app-accent);
+  --el-button-text-color: var(--app-on-primary);
+  --el-button-hover-bg-color: var(--app-primary-hover);
+  --el-button-hover-border-color: var(--app-primary-hover);
+  --el-button-active-bg-color: var(--app-primary-hover);
+  --el-button-active-border-color: var(--app-primary-hover);
 }
 
 .el-button--primary.is-plain {
@@ -301,13 +301,13 @@ textarea {
 
 .primary-button span,
 .primary-button .el-icon {
-  color: #fff !important;
+  color: var(--app-on-primary) !important;
 }
 
 .el-table {
-  --el-table-header-bg-color: #f9fafc;
-  --el-table-border-color: #edf0f4;
-  --el-table-row-hover-bg-color: #f7fbf9;
+  --el-table-header-bg-color: var(--app-surface-raised);
+  --el-table-border-color: var(--app-border);
+  --el-table-row-hover-bg-color: var(--app-hover);
 }
 
 .el-table th.el-table__cell {
@@ -318,7 +318,7 @@ textarea {
 }
 
 .el-table .cell {
-  color: #344054;
+  color: var(--app-text-secondary);
   font-size: 13px;
 }
 
@@ -359,9 +359,9 @@ textarea {
     display: block !important;
     width: 100%;
     overflow: hidden;
-    border: 1px solid #e8ebf1;
+    border: 1px solid var(--app-border);
     border-radius: 12px;
-    background: #fff;
+    background: var(--app-surface);
     box-shadow: 0 2px 8px rgba(22, 31, 48, 0.04);
   }
 
@@ -393,7 +393,7 @@ textarea {
     min-width: 0;
     padding: 0 !important;
     overflow: visible;
-    color: #344054;
+    color: var(--app-text-secondary);
     font-size: 12px;
     line-height: 1.45;
     text-align: right;

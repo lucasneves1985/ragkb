@@ -1,21 +1,16 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Camera, Lock, Moon, Sunny, User } from '@element-plus/icons-vue'
+import { Camera, Lock, Moon, User } from '@element-plus/icons-vue'
 import { useMyProfile } from '@/composables'
 import { resolveAvatarUrl } from '@/services/users.service'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
 import PageHeading from '@/components/layout/PageHeading.vue'
-import { useThemeStore } from '@/stores/theme'
+import { THEME_OPTIONS, useThemeStore } from '@/stores/theme'
 
 const { profile, isLoading, isError, refetch, updateProfile, changePassword, uploadAvatar, removeAvatar } =
   useMyProfile()
 const theme = useThemeStore()
-const darkMode = computed({
-  get: () => theme.isDark,
-  set: (enabled: boolean) => theme.setMode(enabled ? 'dark' : 'light'),
-})
-
 const profileForm = reactive({ fullName: '', email: '' })
 const passwordForm = reactive({ currentPassword: '', newPassword: '', confirmPassword: '' })
 const selectedFile = ref<File | null>(null)
@@ -143,7 +138,7 @@ onBeforeUnmount(() => {
       </section>
       <div v-else class="preferences-grid">
         <section class="surface preference-card">
-          <div class="section-heading">
+          <div class="preference-section-heading">
             <el-icon><User /></el-icon>
             <div>
               <h2>Dados pessoais</h2>
@@ -181,7 +176,7 @@ onBeforeUnmount(() => {
         </section>
 
         <section class="surface preference-card">
-          <div class="section-heading">
+          <div class="preference-section-heading">
             <el-icon><Lock /></el-icon>
             <div>
               <h2>Alterar senha</h2>
@@ -207,25 +202,22 @@ onBeforeUnmount(() => {
         </section>
 
         <section class="surface preference-card appearance-card">
-          <div class="section-heading">
+          <div class="preference-section-heading">
             <el-icon><Moon /></el-icon>
             <div>
               <h2>Aparência</h2>
               <p>Escolha o tema usado neste dispositivo. Sua preferência será mantida quando você voltar.</p>
             </div>
           </div>
-          <div class="appearance-controls">
-            <div class="appearance-choice">
-              <el-icon><Sunny /></el-icon>
-              <span>Claro</span>
-            </div>
-            <el-switch v-model="darkMode" aria-label="Alternar entre tema claro e escuro"
-              style="--el-switch-on-color: #168463" />
-            <div class="appearance-choice">
-              <el-icon><Moon /></el-icon>
-              <span>Escuro</span>
-            </div>
-          </div>
+          <fieldset class="appearance-controls" aria-label="Tema visual">
+            <legend class="visually-hidden">Escolha um tema</legend>
+            <label v-for="option in THEME_OPTIONS" :key="option.id" class="appearance-choice"
+              :class="{ selected: theme.mode === option.id }">
+              <input type="radio" name="appearance" :value="option.id" :checked="theme.mode === option.id"
+                @change="theme.setMode(option.id)" />
+              <span>{{ option.label }}</span>
+            </label>
+          </fieldset>
         </section>
       </div>
     </div>
@@ -249,24 +241,51 @@ onBeforeUnmount(() => {
 
 .appearance-controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 14px;
-  width: fit-content;
-  padding: 12px 14px;
-  border: 1px solid #e8ebf1;
-  border-radius: 10px;
-  background: #f9fafc;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
 }
 
 .appearance-choice {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  color: #526077;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  color: var(--app-text-secondary);
+  background: var(--app-surface);
   font-size: 13px;
+  cursor: pointer;
 }
 
-.section-heading {
+.appearance-choice.selected {
+  border-color: var(--app-focus);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--app-focus), transparent 72%);
+}
+
+.appearance-choice input {
+  accent-color: var(--app-primary);
+}
+
+.appearance-choice input:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 3px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.preference-section-heading {
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -274,18 +293,18 @@ onBeforeUnmount(() => {
   color: #168463;
 }
 
-.section-heading > .el-icon {
+.preference-section-heading > .el-icon {
   margin-top: 3px;
   font-size: 20px;
 }
 
-.section-heading h2 {
+.preference-section-heading h2 {
   margin: 0;
   color: #172033;
   font-size: 17px;
 }
 
-.section-heading p {
+.preference-section-heading p {
   margin: 5px 0 0;
   color: #718096;
   font-size: 12px;
@@ -306,8 +325,8 @@ onBeforeUnmount(() => {
   height: 76px;
   overflow: hidden;
   border-radius: 50%;
-  background: #dcefe9;
-  color: #168463;
+  background: var(--app-tag-bg);
+  color: var(--app-primary);
   font: 600 20px 'DM Mono';
 }
 
@@ -351,10 +370,7 @@ onBeforeUnmount(() => {
     padding: 18px;
   }
 
-  .appearance-controls {
-    width: 100%;
-    justify-content: center;
-  }
+  .appearance-controls { width: 100%; }
 
   .avatar-editor {
     align-items: flex-start;

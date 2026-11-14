@@ -1,44 +1,296 @@
-/* Paleta escura do ragkb. A escolha é aplicada em html[data-theme]. */
+/* Tokens semânticos: o fallback do primeiro paint corresponde ao tema Claro atual. */
+:root,
+html[data-theme='light'] {
+  color-scheme: light;
+  --app-bg: #f6f7fb;
+  --app-bg-image: none;
+  --app-surface: #ffffff;
+  --app-surface-raised: #f9fafc;
+  --app-border: #e8ebf1;
+  --app-text: #172033;
+  --app-text-secondary: #526077;
+  --app-muted: #68778b;
+  --app-hover: #f0faf6;
+  --app-accent: #168463;
+  --app-primary: #168463;
+  --app-primary-hover: #0f7253;
+  --app-on-primary: #ffffff;
+  --app-tag-bg: #eaf9f2;
+  --app-tag-text: #0f7253;
+  --app-focus: #168463;
+  --app-field-border: #8a929f;
+  --el-color-primary: var(--app-primary);
+  --el-color-primary-light-3: #4ca384;
+  --el-color-primary-light-5: #82bda4;
+  --el-color-primary-light-7: #b5d7c8;
+  --el-color-primary-light-8: #d0e6dc;
+  --el-color-primary-light-9: #edf7f2;
+  --el-color-primary-dark-2: var(--app-primary-hover);
+  --el-bg-color: var(--app-surface);
+  --el-bg-color-page: var(--app-bg);
+  --el-text-color-primary: var(--app-text);
+  --el-text-color-regular: #344054;
+  --el-text-color-secondary: var(--app-muted);
+  --el-border-color: var(--app-border);
+  --el-fill-color-light: var(--app-surface-raised);
+}
+
+html[data-theme='graphite'] {
+  color-scheme: light;
+  --app-bg: #eef1f4;
+  --app-bg-image: none;
+  --app-surface: #ffffff;
+  --app-surface-raised: #f7f9fb;
+  --app-border: #d5dce4;
+  --app-text: #1b2430;
+  --app-text-secondary: #4a5666;
+  --app-muted: #5f6b7a;
+  --app-hover: #e3ebf2;
+  --app-accent: #2f5b78;
+  --app-primary: #3d6a8a;
+  --app-primary-hover: #2f5670;
+  --app-on-primary: #ffffff;
+  --app-tag-bg: #e3ebf2;
+  --app-tag-text: #2f4f66;
+  --app-focus: #2f5b78;
+  --app-field-border: #8794a2;
+  --el-color-primary: var(--app-primary);
+  --el-color-primary-light-3: #7193aa;
+  --el-color-primary-light-5: #9eb5c5;
+  --el-color-primary-light-7: #c5d3dc;
+  --el-color-primary-light-8: #d8e1e7;
+  --el-color-primary-light-9: #edf2f5;
+  --el-color-primary-dark-2: var(--app-primary-hover);
+  --el-bg-color: var(--app-surface);
+  --el-bg-color-page: var(--app-bg);
+  --el-text-color-primary: var(--app-text);
+  --el-text-color-regular: var(--app-text-secondary);
+  --el-text-color-secondary: var(--app-muted);
+  --el-border-color: var(--app-border);
+  --el-fill-color-light: var(--app-surface-raised);
+}
+
+html[data-theme='indigo'] {
+  color-scheme: light;
+  --app-bg: #eef0ff;
+  --app-bg-image: linear-gradient(160deg, #eef0ff 0%, #fdf4ff 100%);
+  --app-surface: #ffffff;
+  --app-surface-raised: #f5f6ff;
+  --app-border: #e0e3f5;
+  --app-text: #161833;
+  --app-text-secondary: #4b5076;
+  --app-muted: #6b7096;
+  --app-hover: #eef0ff;
+  --app-accent: #4f46e5;
+  --app-primary: #4f46e5;
+  --app-primary-hover: #4338ca;
+  --app-on-primary: #ffffff;
+  --app-tag-bg: #ffe4e1;
+  --app-tag-text: #9f1239;
+  --app-focus: #4f46e5;
+  --app-field-border: #8b91b0;
+  --el-color-primary: var(--app-primary);
+  --el-color-primary-light-3: #817bea;
+  --el-color-primary-light-5: #a7a3f0;
+  --el-color-primary-light-7: #cbc9f6;
+  --el-color-primary-light-8: #dcdbfa;
+  --el-color-primary-light-9: #f0efff;
+  --el-color-primary-dark-2: var(--app-primary-hover);
+  --el-bg-color: var(--app-surface);
+  --el-bg-color-page: var(--app-bg);
+  --el-text-color-primary: var(--app-text);
+  --el-text-color-regular: var(--app-text-secondary);
+  --el-text-color-secondary: var(--app-muted);
+  --el-border-color: var(--app-border);
+  --el-fill-color-light: var(--app-surface-raised);
+}
+
+/* Base Atom One Dark, com superfícies em níveis próximos. */
 html[data-theme='dark'] {
   color-scheme: dark;
-  --app-bg: #10151d;
-  --app-surface: #171f2b;
-  --app-surface-raised: #202a37;
-  --app-border: #303c4b;
-  --app-text: #e7edf4;
-  --app-muted: #a2adbb;
-  --app-hover: #263241;
-  --app-accent: #55c79c;
-  --el-color-primary: #55c79c;
-  --el-color-primary-light-3: #3da980;
-  --el-color-primary-light-5: #318968;
-  --el-color-primary-light-7: #286e55;
-  --el-color-primary-light-8: #225b48;
-  --el-color-primary-light-9: #1c493b;
-  --el-color-primary-dark-2: #78d6b2;
-  --el-color-success: #55c79c;
-  --el-color-white: #171f2b;
-  --el-bg-color: #171f2b;
-  --el-bg-color-page: #10151d;
-  --el-bg-color-overlay: #202a37;
-  --el-text-color-primary: #e7edf4;
-  --el-text-color-regular: #c5ced9;
-  --el-text-color-secondary: #a2adbb;
-  --el-text-color-placeholder: #7d8998;
-  --el-text-color-disabled: #697585;
-  --el-border-color: #303c4b;
-  --el-border-color-light: #2a3543;
-  --el-border-color-lighter: #25303d;
-  --el-border-color-extra-light: #202a37;
-  --el-fill-color: #202a37;
-  --el-fill-color-light: #1c2632;
-  --el-fill-color-lighter: #202a37;
-  --el-fill-color-extra-light: #202a37;
-  --el-fill-color-blank: #171f2b;
+  --app-bg: #282c34;
+  --app-bg-image: none;
+  --app-surface: #21252b;
+  --app-surface-raised: #2c313a;
+  --app-border: #3e4451;
+  --app-text: #abb2bf;
+  --app-muted: #8b929e;
+  --app-text-secondary: #abb2bf;
+  --app-hover: #343a45;
+  --app-accent: #61afef;
+  --app-primary: #61afef;
+  --app-primary-hover: #529bd6;
+  --app-on-primary: #1e2127;
+  --app-tag-bg: #2c313a;
+  --app-tag-text: #abb2bf;
+  --app-focus: #61afef;
+  --app-field-border: #68717c;
+  --app-success: #98c379;
+  --app-warning: #e5c07b;
+  --app-danger: #e06c75;
+  --app-orange: #d19a66;
+  --app-purple: #c678dd;
+  --el-color-primary: var(--app-primary);
+  --el-color-primary-light-3: #4b789c;
+  --el-color-primary-light-5: #3d637f;
+  --el-color-primary-light-7: #344f65;
+  --el-color-primary-light-8: #2e4253;
+  --el-color-primary-light-9: #293744;
+  --el-color-primary-dark-2: #8fc8f5;
+  --el-bg-color: var(--app-surface);
+  --el-bg-color-page: var(--app-bg);
+  --el-bg-color-overlay: var(--app-surface-raised);
+  --el-text-color-primary: var(--app-text);
+  --el-text-color-regular: var(--app-text-secondary);
+  --el-text-color-secondary: var(--app-muted);
+  --el-text-color-placeholder: var(--app-muted);
+  --el-text-color-disabled: #6f7783;
+  --el-border-color: var(--app-border);
+  --el-border-color-light: #343a43;
+  --el-border-color-lighter: #3a404b;
+  --el-border-color-extra-light: #424955;
+  --el-fill-color: var(--app-surface-raised);
+  --el-fill-color-light: var(--app-surface-raised);
+  --el-fill-color-lighter: #292e36;
+  --el-fill-color-extra-light: #2c313a;
+  --el-fill-color-blank: var(--app-surface);
+  --el-color-success: var(--app-success);
+  --el-color-white: var(--app-surface);
   --el-mask-color: rgba(0, 0, 0, 0.68);
   --el-mask-color-extra-light: rgba(0, 0, 0, 0.24);
   background: var(--app-bg);
   color: var(--app-text);
+}
+
+/* Aplicação dos tokens nas superfícies compartilhadas dos temas claros. */
+html[data-theme='light'] body,
+html[data-theme='graphite'] body,
+html[data-theme='indigo'] body {
+  background-color: var(--app-bg);
+  background-image: var(--app-bg-image);
+  color: var(--app-text);
+}
+
+html[data-theme='graphite'] #app,
+html[data-theme='graphite'] .app-shell,
+html[data-theme='graphite'] .content,
+html[data-theme='indigo'] #app,
+html[data-theme='indigo'] .app-shell,
+html[data-theme='indigo'] .content {
+  background-color: var(--app-bg);
+  background-image: var(--app-bg-image);
+  color: var(--app-text);
+}
+
+html[data-theme='graphite'] .surface,
+html[data-theme='graphite'] .preference-card,
+html[data-theme='graphite'] .el-card,
+html[data-theme='indigo'] .surface,
+html[data-theme='indigo'] .preference-card,
+html[data-theme='indigo'] .el-card {
+  background-color: var(--app-surface);
+  border-color: var(--app-border);
+  color: var(--app-text);
+}
+
+html[data-theme='graphite'] h1,
+html[data-theme='graphite'] h2,
+html[data-theme='graphite'] h3,
+html[data-theme='graphite'] .page-heading p,
+html[data-theme='graphite'] .section-heading p,
+html[data-theme='graphite'] .preference-section-heading p,
+html[data-theme='graphite'] .content p,
+html[data-theme='graphite'] .muted,
+html[data-theme='indigo'] h1,
+html[data-theme='indigo'] h2,
+html[data-theme='indigo'] h3,
+html[data-theme='indigo'] .page-heading p,
+html[data-theme='indigo'] .section-heading p,
+html[data-theme='indigo'] .preference-section-heading p,
+html[data-theme='indigo'] .content p,
+html[data-theme='indigo'] .muted {
+  color: var(--app-text-secondary);
+}
+
+html[data-theme='graphite'] .primary-button,
+html[data-theme='graphite'] .el-button--primary,
+html[data-theme='indigo'] .primary-button,
+html[data-theme='indigo'] .el-button--primary {
+  --el-button-bg-color: var(--app-primary);
+  --el-button-border-color: var(--app-primary);
+  --el-button-text-color: var(--app-on-primary);
+  --el-button-hover-bg-color: var(--app-primary-hover);
+  --el-button-hover-border-color: var(--app-primary-hover);
+  color: var(--app-on-primary);
+}
+
+html[data-theme='graphite'] .el-input__wrapper,
+html[data-theme='graphite'] .el-textarea__inner,
+html[data-theme='indigo'] .el-input__wrapper,
+html[data-theme='indigo'] .el-textarea__inner {
+  background-color: var(--app-surface);
+  box-shadow: 0 0 0 1px var(--app-field-border) inset;
+}
+
+html[data-theme='graphite'] :focus-visible,
+html[data-theme='indigo'] :focus-visible {
+  outline-color: var(--app-focus);
+}
+
+/* O menu lateral acompanha as paletas novas sem alterar o visual legado. */
+html[data-theme='graphite'] #app .sidebar,
+html[data-theme='indigo'] #app .sidebar {
+  --sidebar-bg: var(--app-surface);
+  --sidebar-text: var(--app-text);
+  --sidebar-brand-accent: var(--app-primary);
+  --sidebar-muted: var(--app-muted);
+  --sidebar-item: var(--app-text-secondary);
+  --sidebar-hover: var(--app-hover);
+  --sidebar-hover-text: var(--app-text);
+  --sidebar-active: var(--app-hover);
+  --sidebar-active-text: var(--app-accent);
+  --sidebar-scroll: var(--app-border);
+  border-right: 1px solid var(--app-border);
+}
+
+html[data-theme='graphite'] #app .sidebar .brand-mark,
+html[data-theme='indigo'] #app .sidebar .brand-mark {
+  color: var(--app-on-primary);
+}
+
+html[data-theme='graphite'] #app .sidebar .nav-menu .el-menu-item:hover,
+html[data-theme='graphite'] #app .sidebar .nav-menu .el-menu-item.is-active,
+html[data-theme='indigo'] #app .sidebar .nav-menu .el-menu-item:hover,
+html[data-theme='indigo'] #app .sidebar .nav-menu .el-menu-item.is-active {
+  background: var(--app-hover);
+}
+
+html[data-theme='graphite'] #app .sidebar .nav-menu .el-menu-item.is-active,
+html[data-theme='indigo'] #app .sidebar .nav-menu .el-menu-item.is-active {
+  color: var(--app-accent);
+}
+
+html[data-theme='graphite'] #app .sidebar .nav-menu .el-menu-item.is-active::before,
+html[data-theme='indigo'] #app .sidebar .nav-menu .el-menu-item.is-active::before {
+  background: var(--app-accent);
+}
+
+html[data-theme='graphite'] #app .chat-layout,
+html[data-theme='indigo'] #app .chat-layout {
+  --chat-history-border: var(--app-border);
+  --chat-history-heading: var(--app-muted);
+  --chat-history-new-border: var(--app-accent);
+  --chat-history-new-bg: var(--app-surface-raised);
+  --chat-history-new-text: var(--app-accent);
+  --chat-history-new-hover: var(--app-hover);
+  --chat-history-text: var(--app-text-secondary);
+  --chat-history-date: var(--app-muted);
+  --chat-history-delete: var(--app-muted);
+  --chat-history-active-bg: var(--app-hover);
+  --chat-history-active-text: var(--app-accent);
+  --chat-history-empty: var(--app-muted);
+  --chat-history-note: var(--app-muted);
+  --chat-history-open: var(--app-accent);
 }
 
 html[data-theme='dark'] body,
@@ -54,7 +306,7 @@ html[data-theme='dark'] .input-area {
 }
 
 html[data-theme='dark'] .topbar {
-  background: rgba(23, 31, 43, 0.96) !important;
+  background: rgba(33, 37, 43, 0.96) !important;
   border-color: var(--app-border) !important;
 }
 
@@ -92,6 +344,7 @@ html[data-theme='dark'] h4,
 html[data-theme='dark'] .page-heading h1,
 html[data-theme='dark'] .page-heading h2,
 html[data-theme='dark'] .section-heading h2,
+html[data-theme='dark'] .preference-section-heading h2,
 html[data-theme='dark'] .section-heading h3,
 html[data-theme='dark'] .card-title,
 html[data-theme='dark'] .detail-title,
@@ -176,8 +429,8 @@ html[data-theme='dark'] .el-date-editor .el-input__wrapper,
 html[data-theme='dark'] .el-input-number,
 html[data-theme='dark'] .el-input-number__decrease,
 html[data-theme='dark'] .el-input-number__increase {
-  background: #111923 !important;
-  box-shadow: 0 0 0 1px var(--app-border) inset !important;
+  background: #21252b !important;
+  box-shadow: 0 0 0 1px var(--app-field-border) inset !important;
   color: var(--app-text) !important;
 }
 
@@ -196,7 +449,7 @@ html[data-theme='dark'] input::placeholder,
 html[data-theme='dark'] textarea::placeholder,
 html[data-theme='dark'] .el-input__inner::placeholder,
 html[data-theme='dark'] .el-textarea__inner::placeholder {
-  color: #8793a2 !important;
+  color: var(--app-muted) !important;
 }
 
 html[data-theme='dark'] .el-form-item__label,
@@ -204,7 +457,7 @@ html[data-theme='dark'] .login-card label,
 html[data-theme='dark'] .el-checkbox__label,
 html[data-theme='dark'] .el-radio__label,
 html[data-theme='dark'] .el-switch__label {
-  color: #c5ced9 !important;
+  color: var(--app-text-secondary) !important;
 }
 
 html[data-theme='dark'] .el-table,
@@ -217,11 +470,11 @@ html[data-theme='dark'] .el-table__fixed,
 html[data-theme='dark'] .el-table__fixed-right {
   --el-table-bg-color: var(--app-surface);
   --el-table-tr-bg-color: var(--app-surface);
-  --el-table-header-bg-color: #1d2734;
-  --el-table-row-hover-bg-color: #202d3b;
+  --el-table-header-bg-color: var(--app-surface-raised);
+  --el-table-row-hover-bg-color: var(--app-hover);
   --el-table-border-color: var(--app-border);
   --el-table-text-color: var(--app-text);
-  --el-table-header-text-color: #b9c4d1;
+  --el-table-header-text-color: var(--app-text-secondary);
   background: var(--app-surface) !important;
   color: var(--app-text) !important;
   border-color: var(--app-border) !important;
@@ -229,7 +482,7 @@ html[data-theme='dark'] .el-table__fixed-right {
 
 html[data-theme='dark'] .el-table .cell,
 html[data-theme='dark'] .el-table th.el-table__cell {
-  color: #cbd4de !important;
+  color: var(--app-text-secondary) !important;
 }
 
 html[data-theme='dark'] .el-table__body tr:hover > td.el-table__cell,
@@ -246,54 +499,73 @@ html[data-theme='dark'] .el-table__body td.el-table__cell {
   border-bottom-color: var(--app-border) !important;
 }
 
-html[data-theme='dark'] .el-button:not(.el-button--primary):not(.is-text):not(.is-link),
-html[data-theme='dark'] .new-query {
-  --el-button-bg-color: #202a37;
-  --el-button-border-color: #394657;
-  --el-button-text-color: #d7dfe8;
-  --el-button-hover-bg-color: #2a3746;
-  --el-button-hover-border-color: #4c5b6d;
-  --el-button-hover-text-color: #f3f6f9;
-  color: #d7dfe8 !important;
+html[data-theme='dark'] #app .el-button:not(.el-button--primary):not(.is-text):not(.is-link) {
+  --el-button-bg-color: #34475a;
+  --el-button-border-color: #45627d;
+  --el-button-text-color: #dce5f0;
+  --el-button-hover-bg-color: #3b536b;
+  --el-button-hover-border-color: var(--app-accent);
+  --el-button-hover-text-color: #ffffff;
+  color: #dce5f0 !important;
 }
 
-html[data-theme='dark'] .el-button.is-text,
-html[data-theme='dark'] .el-button.is-link {
-  color: #aeb9c7;
+html[data-theme='dark'] #app .new-query {
+  --el-button-bg-color: #34475a;
+  --el-button-border-color: #45627d;
+  --el-button-text-color: #dce5f0;
+  --el-button-hover-bg-color: #3b536b;
+  --el-button-hover-border-color: var(--app-accent);
+  --el-button-hover-text-color: #ffffff;
+  color: #dce5f0 !important;
 }
 
-html[data-theme='dark'] .el-button.is-text:hover,
-html[data-theme='dark'] .el-button.is-link:hover,
+html[data-theme='dark'] #app .el-button.is-text,
+html[data-theme='dark'] #app .el-button.is-link {
+  color: var(--app-accent) !important;
+}
+
+html[data-theme='dark'] #app .el-button.is-text:hover,
+html[data-theme='dark'] #app .el-button.is-link:hover,
 html[data-theme='dark'] .table-action-neutral {
-  color: rgb(160, 166, 174) !important;
+  color: #8fc8f5 !important;
 }
 
 html[data-theme='dark'] .el-button--primary.is-plain {
-  --el-button-bg-color: #1b4438;
-  --el-button-border-color: #28664f;
-  --el-button-text-color: #8be0bd;
-  --el-button-hover-bg-color: #245945;
-  --el-button-hover-border-color: #398568;
-  --el-button-hover-text-color: #b0f0d4;
+  --el-button-bg-color: #34475a;
+  --el-button-border-color: #45627d;
+  --el-button-text-color: #8fc8f5;
+  --el-button-hover-bg-color: #3b536b;
+  --el-button-hover-border-color: #45627d;
+  --el-button-hover-text-color: #a9d5f8;
+}
+
+html[data-theme='dark'] .el-button--primary:not(.is-plain) {
+  --el-button-bg-color: var(--app-primary);
+  --el-button-border-color: var(--app-primary);
+  --el-button-text-color: var(--app-on-primary);
+  --el-button-hover-bg-color: var(--app-primary-hover);
+  --el-button-hover-border-color: var(--app-primary-hover);
+  --el-button-active-bg-color: var(--app-primary-hover);
+  --el-button-active-border-color: var(--app-primary-hover);
 }
 
 html[data-theme='dark'] .status-active {
-  --el-tag-bg-color: #183c32;
-  --el-tag-border-color: #28664f;
-  --el-tag-text-color: #8be0bd;
+  --el-tag-bg-color: #323f33;
+  --el-tag-border-color: #526847;
+  --el-tag-text-color: var(--app-success);
 }
 
 html[data-theme='dark'] .status-archived {
-  --el-tag-bg-color: #29313d;
-  --el-tag-border-color: #414d5c;
-  --el-tag-text-color: #c0c9d4;
+  --el-tag-bg-color: #2c313a;
+  --el-tag-border-color: #3e4451;
+  --el-tag-text-color: var(--app-text);
 }
 
 html[data-theme='dark'] .status-superseded,
 html[data-theme='dark'] .status-draft {
-  --el-tag-bg-color: #3a3021;
-  --el-tag-border-color: #6a512b;
-  --el-tag-text-color: #f0c77e;
+  --el-tag-bg-color: #3d372b;
+  --el-tag-border-color: #655337;
+  --el-tag-text-color: var(--app-warning);
 }
 
 html[data-theme='dark'] .portal-grid .el-card,
@@ -303,7 +575,7 @@ html[data-theme='dark'] .portal-card {
 }
 
 html[data-theme='dark'] .portal-card:hover {
-  border-color: #398568 !important;
+  border-color: #45627d !important;
 }
 
 html[data-theme='dark'] .portal-card .card-author,
@@ -317,7 +589,7 @@ html[data-theme='dark'] .el-alert__description,
 html[data-theme='dark'] .el-empty__description,
 html[data-theme='dark'] .el-message-box__message,
 html[data-theme='dark'] .el-notification__content {
-  color: #c5ced9 !important;
+  color: var(--app-text-secondary) !important;
 }
 
 html[data-theme='dark'] .diff article,
@@ -336,11 +608,11 @@ html[data-theme='dark'] .widget-references .widget-reference {
 html[data-theme='dark'] .diff header,
 html[data-theme='dark'] .widget-reference,
 html[data-theme='dark'] .attachment-item {
-  color: #c5ced9 !important;
+  color: var(--app-text-secondary) !important;
 }
 
 html[data-theme='dark'] .login-intro {
-  background: radial-gradient(circle at 18% 25%, #245b58, transparent 35%), linear-gradient(140deg, #101a2a, #162d35) !important;
+  background: linear-gradient(140deg, #282c34, #21252b) !important;
 }
 
 html[data-theme='dark'] .login {
@@ -349,14 +621,14 @@ html[data-theme='dark'] .login {
 
 html[data-theme='dark'] .user .bubble,
 html[data-theme='dark'] .widget-msg.user .widget-bubble {
-  background: #234a43 !important;
-  color: #effbf6 !important;
+  background: var(--app-primary) !important;
+  color: var(--app-on-primary) !important;
 }
 
 html[data-theme='dark'] .avatar-preview,
 html[data-theme='dark'] .user-name span {
-  background: #23483c !important;
-  color: #a1e5c6 !important;
+  background: #34475a !important;
+  color: var(--app-accent) !important;
 }
 
 html[data-theme='dark'] .status-draft,
@@ -372,33 +644,33 @@ html[data-theme='dark'] .widget-reference .ref-title,
 html[data-theme='dark'] .card-detail-grid h4,
 html[data-theme='dark'] .review-title h2,
 html[data-theme='dark'] .score {
-  color: #dbe3ec !important;
+  color: var(--app-text) !important;
 }
 
 html[data-theme='dark'] .board-column {
-  background: #1c2632 !important;
+  background: var(--app-surface-raised) !important;
   border-color: var(--app-border) !important;
 }
 
 html[data-theme='dark'] .column-count {
-  background: #263241 !important;
-  color: #c1cbd7 !important;
+  background: var(--app-surface-raised) !important;
+  color: var(--app-text-secondary) !important;
 }
 
 html[data-theme='dark'] .conflict-row {
   background: var(--app-surface) !important;
   border-color: var(--app-border) !important;
-  color: #c5ced9 !important;
+  color: var(--app-text-secondary) !important;
 }
 
 html[data-theme='dark'] .conflict-row.selected,
 html[data-theme='dark'] .history.active {
-  background: #1b4438 !important;
-  color: #8be0bd !important;
+  background: #34475a !important;
+  color: var(--app-accent) !important;
 }
 
 html[data-theme='dark'] .history {
-  color: #b9c4d1 !important;
+  color: var(--app-text-secondary) !important;
 }
 
 html[data-theme='dark'] .history:hover,
@@ -410,7 +682,7 @@ html[data-theme='dark'] .column-add-trigger:hover {
 html[data-theme='dark'] .column-add-trigger,
 html[data-theme='dark'] .history small,
 html[data-theme='dark'] .message-text strong {
-  color: #b9c4d1 !important;
+  color: var(--app-text-secondary) !important;
 }
 
 html[data-theme='dark'] .appearance-controls {
@@ -419,7 +691,7 @@ html[data-theme='dark'] .appearance-controls {
 }
 
 html[data-theme='dark'] .appearance-choice {
-  color: #c5ced9 !important;
+  color: var(--app-text-secondary) !important;
 }
 
 html[data-theme='dark'] .comment-item,
@@ -427,15 +699,15 @@ html[data-theme='dark'] .attachment-item,
 html[data-theme='dark'] .el-upload-dragger,
 html[data-theme='dark'] .selected-file,
 html[data-theme='dark'] .composer-input {
-  background: #111923 !important;
+  background: #21252b !important;
   border-color: var(--app-border) !important;
   color: var(--app-text) !important;
 }
 
 html[data-theme='dark'] .el-checkbox__inner,
 html[data-theme='dark'] .el-radio__inner {
-  background: #111923;
-  border-color: #566477;
+  background: #21252b;
+  border-color: var(--app-field-border);
 }
 
 html[data-theme='dark'] .el-menu,
@@ -453,7 +725,7 @@ html[data-theme='dark'] .el-picker-panel,
 html[data-theme='dark'] .el-date-table th,
 html[data-theme='dark'] .el-date-table td,
 html[data-theme='dark'] .el-time-spinner__item {
-  color: #c5ced9 !important;
+  color: var(--app-text-secondary) !important;
 }
 
 html[data-theme='dark'] .el-select-dropdown__item.hover,
@@ -471,32 +743,42 @@ html[data-theme='dark'] .el-table__border-right-patch {
 }
 
 html[data-theme='dark'] .el-skeleton__item {
-  background: #273342 !important;
+  background: var(--app-border) !important;
 }
 
 html[data-theme='dark'] .el-pagination,
 html[data-theme='dark'] .el-pagination button,
 html[data-theme='dark'] .el-pager li {
   background: var(--app-surface) !important;
-  color: #c5ced9 !important;
+  color: var(--app-text-secondary) !important;
 }
 
 html[data-theme='dark'] .el-pager li.is-active {
-  color: #7ce0b7 !important;
+  color: var(--app-accent) !important;
 }
 
 html[data-theme='dark'] .login-brand span,
 html[data-theme='dark'] .eyebrow,
-html[data-theme='dark'] .section-heading > .el-icon {
-  color: #67d2a8 !important;
+html[data-theme='dark'] .section-heading > .el-icon,
+html[data-theme='dark'] .preference-section-heading > .el-icon {
+  color: var(--app-accent) !important;
 }
 
 html[data-theme='dark'] .primary-button {
-  --el-button-bg-color: #168463;
-  --el-button-border-color: #168463;
-  --el-button-hover-bg-color: #0f7253;
-  --el-button-hover-border-color: #0f7253;
-  color: #fff !important;
+  --el-button-bg-color: var(--app-primary);
+  --el-button-border-color: var(--app-primary);
+  --el-button-hover-bg-color: var(--app-primary-hover);
+  --el-button-hover-border-color: var(--app-primary-hover);
+  color: var(--app-on-primary) !important;
+}
+
+html[data-theme='dark'] .primary-button span,
+html[data-theme='dark'] .primary-button .el-icon {
+  color: var(--app-on-primary) !important;
+}
+
+html[data-theme='dark'] .live-dot {
+  background: var(--app-success);
 }
 
 html[data-theme='dark'] .chat-welcome p:last-child,
@@ -505,5 +787,49 @@ html[data-theme='dark'] .input-area p {
 }
 
 html[data-theme='dark'] .table-action-neutral {
-  color: rgb(160, 166, 174) !important;
+  color: var(--app-muted) !important;
+}
+
+html[data-theme='dark'] #app .sidebar {
+  --sidebar-bg: var(--app-surface);
+  --sidebar-text: var(--app-text);
+  --sidebar-brand-accent: var(--app-primary);
+  --sidebar-muted: var(--app-muted);
+  --sidebar-item: var(--app-text-secondary);
+  --sidebar-hover: var(--app-hover);
+  --sidebar-hover-text: var(--app-text);
+  --sidebar-active: #34475a;
+  --sidebar-active-text: var(--app-accent);
+  --sidebar-scroll: var(--app-border);
+  border-right: 1px solid var(--app-border);
+}
+
+html[data-theme='dark'] #app .sidebar .nav-menu .el-menu-item:hover,
+html[data-theme='dark'] #app .sidebar .nav-menu .el-menu-item.is-active {
+  background: var(--app-hover);
+}
+
+html[data-theme='dark'] #app .sidebar .nav-menu .el-menu-item.is-active {
+  color: var(--app-accent);
+}
+
+html[data-theme='dark'] #app .sidebar .nav-menu .el-menu-item.is-active::before {
+  background: var(--app-accent);
+}
+
+html[data-theme='dark'] #app .chat-layout {
+  --chat-history-border: var(--app-border);
+  --chat-history-heading: var(--app-muted);
+  --chat-history-new-border: var(--app-accent);
+  --chat-history-new-bg: var(--app-surface-raised);
+  --chat-history-new-text: var(--app-accent);
+  --chat-history-new-hover: var(--app-hover);
+  --chat-history-text: var(--app-text-secondary);
+  --chat-history-date: var(--app-muted);
+  --chat-history-delete: var(--app-muted);
+  --chat-history-active-bg: #34475a;
+  --chat-history-active-text: var(--app-accent);
+  --chat-history-empty: var(--app-muted);
+  --chat-history-note: var(--app-muted);
+  --chat-history-open: var(--app-accent);
 }
