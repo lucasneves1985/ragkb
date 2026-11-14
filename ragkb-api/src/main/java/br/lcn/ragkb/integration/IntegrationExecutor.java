@@ -21,8 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import br.lcn.ragkb.integration.http.IntegrationHttpClient;
 import br.lcn.ragkb.shared.metrics.RoutingMetrics;
-import br.lcn.ragkb.whatsapp.WhatsAppSendException;
-import br.lcn.ragkb.whatsapp.WhatsAppService;
+import br.lcn.ragkb.whatsapp.api.WhatsAppMessagingApi;
+import br.lcn.ragkb.whatsapp.api.WhatsAppSendException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +62,7 @@ public class IntegrationExecutor {
 
     private final IntegrationExecutionRepository executionRepository;
     private final IntegrationHttpClient httpClient;
-    private final WhatsAppService whatsAppService;
+    private final WhatsAppMessagingApi whatsAppService;
     private final JavaMailSender mailSender;
     private final ObjectMapper objectMapper;
     private final RoutingMetrics metrics;

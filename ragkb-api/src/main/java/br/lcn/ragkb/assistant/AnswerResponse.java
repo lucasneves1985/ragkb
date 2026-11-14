@@ -8,8 +8,7 @@ package br.lcn.ragkb.assistant;
 
 import java.util.List;
 
-import br.lcn.ragkb.ticket.TicketSuggestion;
-import br.lcn.ragkb.ticket.TicketSuggestionDto;
+import br.lcn.ragkb.ticket.api.TicketSuggestionDto;
 
 public record AnswerResponse(
         String status,
@@ -25,9 +24,10 @@ public record AnswerResponse(
         return new AnswerResponse("KNOWLEDGE", answer, sourceIds, sources, null, conversationId);
     }
 
-    public static AnswerResponse withTicketSuggestion(String message, TicketSuggestion suggestion, String conversationId) {
+    public static AnswerResponse withTicketSuggestion(
+            String message, TicketSuggestionDto suggestion, String conversationId) {
         return new AnswerResponse("TICKET_SUGGESTED", message, List.of(), List.of(),
-                TicketSuggestionDto.fromDomain(suggestion), conversationId);
+                suggestion, conversationId);
     }
 
     /**

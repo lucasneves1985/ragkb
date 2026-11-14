@@ -12,7 +12,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import br.lcn.ragkb.identity.AppRole;
+import br.lcn.ragkb.identity.api.AppRole;
 import br.lcn.ragkb.identity.AppUser;
 import br.lcn.ragkb.identity.AppUserRepository;
 

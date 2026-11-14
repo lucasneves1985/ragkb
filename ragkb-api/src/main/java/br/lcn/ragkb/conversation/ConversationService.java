@@ -10,13 +10,16 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import br.lcn.ragkb.conversation.api.ConversationApi;
+import br.lcn.ragkb.conversation.api.InteractionRecord;
+import br.lcn.ragkb.conversation.api.RedisChatMessageDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ConversationService {
+public class ConversationService implements ConversationApi {
 
     private final ConversationRepository conversationRepository;
     private final RedisChatHistoryService redisChatHistoryService;
@@ -55,6 +58,26 @@ public class ConversationService {
     public ConversationDetailDto getOrCreateConversation(String conversationId, String userId, String initialQuestion) {
         Conversation conversation = resolveConversation(conversationId, userId, initialQuestion);
         return ConversationDetailDto.fromEntity(conversation);
+    }
+
+    @Override
+    public String getOrCreateConversationId(String conversationId, String userId, String initialQuestion) {
+        return getOrCreateConversation(conversationId, userId, initialQuestion).id();
+    }
+
+    @Override
+    public void addHistoryMessage(String conversationId, String sender, String content) {
+        redisChatHistoryService.addMessage(conversationId, sender, content);
+    }
+
+    @Override
+    public List<RedisChatMessageDto> getHistory(String conversationId) {
+        return redisChatHistoryService.getHistory(conversationId);
+    }
+
+    @Override
+    public String getFormattedHistory(String conversationId) {
+        return redisChatHistoryService.getFormattedHistory(conversationId);
     }
 
     private Conversation resolveConversation(String conversationId, String userId, String initialQuestion) {

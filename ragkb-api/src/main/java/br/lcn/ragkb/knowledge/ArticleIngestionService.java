@@ -14,7 +14,7 @@ import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 
-import br.lcn.ragkb.identity.AppRole;
+import br.lcn.ragkb.identity.api.AppRole;
 
 import lombok.RequiredArgsConstructor;
 

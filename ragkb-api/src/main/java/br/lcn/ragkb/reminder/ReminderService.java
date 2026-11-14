@@ -13,20 +13,21 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import br.lcn.ragkb.identity.AppUser;
-import br.lcn.ragkb.identity.AppUserRepository;
+import br.lcn.ragkb.reminder.api.ReminderAssistantApi;
+import br.lcn.ragkb.reminder.api.ReminderDto;
+import br.lcn.ragkb.identity.api.UserLookupApi;
 import br.lcn.ragkb.shared.exception.ReminderNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class ReminderService {
+public class ReminderService implements ReminderAssistantApi {
 
     private static final ZoneId ZONE = ZoneId.of("America/Sao_Paulo");
 
     private final ReminderRepository repository;
-    private final AppUserRepository userRepository;
+    private final UserLookupApi userLookupApi;
     private final ReminderExtractionService extractionService;
 
     /**
@@ -34,11 +35,12 @@ public class ReminderService {
      * envio usa o telefone do cadastro do usuário.
      */
     @Transactional
+    @Override
     public ReminderDto create(String userText, String username, String conversationId) {
-        AppUser user = userRepository.findByUsername(username)
+        var user = userLookupApi.findContactByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + username));
 
-        if (user.getPhone() == null || user.getPhone().isBlank()) {
+        if (user.phone() == null || user.phone().isBlank()) {
             throw new IllegalArgumentException(
                     "Seu cadastro não tem telefone. Atualize o perfil para receber lembretes via WhatsApp.");
         }
@@ -54,26 +56,32 @@ public class ReminderService {
                     "A data/hora do lembrete (" + extraction.localDateTime() + ") está no passado.");
         }
 
-        var reminder = new Reminder(user.getId(), conversationId, userText,
+        var reminder = new Reminder(user.id(), conversationId, userText,
                 extraction.summary(), remindAt);
-        return ReminderDto.from(repository.save(reminder));
+        return toDto(repository.save(reminder));
     }
 
     @Transactional(readOnly = true)
     public List<ReminderDto> listActive(String username) {
-        AppUser user = userRepository.findByUsername(username)
+        var user = userLookupApi.findContactByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + username));
-        return repository.findByUserIdAndStatusOrderByRemindAtDesc(user.getId(), ReminderStatus.PENDING)
-                .stream().map(ReminderDto::from).toList();
+        return repository.findByUserIdAndStatusOrderByRemindAtDesc(user.id(), ReminderStatus.PENDING)
+                .stream().map(this::toDto).toList();
     }
 
     @Transactional
     public void cancel(String id, String username) {
-        AppUser user = userRepository.findByUsername(username)
+        var user = userLookupApi.findContactByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + username));
-        Reminder reminder = repository.findByIdAndUserId(id, user.getId())
+        Reminder reminder = repository.findByIdAndUserId(id, user.id())
                 .orElseThrow(() -> new ReminderNotFoundException(id));
         reminder.cancel();
         repository.save(reminder);
+    }
+
+    private ReminderDto toDto(Reminder reminder) {
+        return new ReminderDto(reminder.getId(), reminder.getConversationId(), reminder.getOriginalRequest(),
+                reminder.getSummary(), reminder.getRemindAt(), reminder.getSentAt(), reminder.getStatus().name(),
+                reminder.getRetryCount(), reminder.getLastError(), reminder.getCreatedAt());
     }
 }

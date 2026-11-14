@@ -17,10 +17,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class QueryController {
 
-    private final QueryService queryService;
+    private final AssistantOrchestrator assistantOrchestrator;
 
     @PostMapping
     public AnswerResponse ask(@Valid @RequestBody AskRequest request, Authentication auth) {
-        return queryService.ask(request.question(), request.conversationId(), auth);
+        return assistantOrchestrator.ask(request.question(), request.conversationId(), auth);
     }
 }

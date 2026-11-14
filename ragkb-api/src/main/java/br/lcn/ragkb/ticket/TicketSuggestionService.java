@@ -13,18 +13,20 @@ import java.util.UUID;
 import org.springframework.ai.document.Document;
 import org.springframework.stereotype.Service;
 
-import br.lcn.ragkb.identity.SectorClassifier;
+import br.lcn.ragkb.identity.api.SectorClassificationApi;
+import br.lcn.ragkb.ticket.api.TicketSuggestionApi;
+import br.lcn.ragkb.ticket.api.TicketSuggestionDto;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class TicketSuggestionService {
+public class TicketSuggestionService implements TicketSuggestionApi {
 
     public record SuggestionResult(String message, TicketSuggestion suggestion) {
     }
 
-    private final SectorClassifier sectorClassifier;
+    private final SectorClassificationApi sectorClassifier;
     private final TicketGateway ticketGateway;
 
     public SuggestionResult suggestTicket(String question, String userId, List<Document> nearMisses) {
@@ -64,6 +66,18 @@ public class TicketSuggestionService {
 
         return new SuggestionResult(
                 reason + " Sugiro abrir um chamado com o setor: " + sector + ".", suggestion);
+    }
+
+    @Override
+    public TicketSuggestionApi.SuggestionResult suggestTicket(
+            String question, String userId, String conversationId, String reasonMessage) {
+        SuggestionResult result = suggestTicket(question, userId, List.of(), conversationId, reasonMessage);
+        return new TicketSuggestionApi.SuggestionResult(
+                result.message(), toDto(result.suggestion()));
+    }
+
+    private TicketSuggestionDto toDto(TicketSuggestion suggestion) {
+        return new TicketSuggestionDto(suggestion.question(), suggestion.description(), suggestion.userId());
     }
 
     public String confirmAndOpen(TicketSuggestion suggestion) {

@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import br.lcn.ragkb.whatsapp.WhatsAppService;
+import br.lcn.ragkb.whatsapp.api.WhatsAppMessagingApi;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ public class CertificateMonitorService {
     private static final DateTimeFormatter EXPIRY_DATE_FORMAT=DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZONE);
     private final CertificateMonitorRepository monitors;
     private final CertificateCheckRepository history;
-    private final WhatsAppService whatsApp;
+    private final WhatsAppMessagingApi whatsApp;
     private final JavaMailSender mailSender;
     @Value("${app.ticket.from-email:}") private String fromEmail;
 

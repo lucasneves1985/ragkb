@@ -18,7 +18,7 @@ public interface ProjectLookupApi {
 
     boolean isParticipant(String projectId, Long userId);
 
-    record ProjectAccess(String id, Long ownerId) {
+    record ProjectAccess(String id, Long ownerId, String name) {
         public boolean isLegacy() {
             return ownerId == null;
         }

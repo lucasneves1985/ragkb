@@ -1,11 +1,8 @@
-package br.lcn.ragkb.whatsapp;
-
-
+package br.lcn.ragkb.whatsapp.api;
 
 public class WhatsAppNotConnectedException extends RuntimeException {
-
     public WhatsAppNotConnectedException(String session) {
         super("Sessão WhatsApp '%s' não está conectada/emparelhada. "
-                + "Realize o emparelhamento com o QR Code.".formatted(session));
+                .formatted(session) + "Realize o emparelhamento com o QR Code.");
     }
 }

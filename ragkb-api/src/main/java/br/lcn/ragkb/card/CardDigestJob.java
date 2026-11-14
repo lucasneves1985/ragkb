@@ -16,11 +16,11 @@ import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
-import br.lcn.ragkb.identity.AppUser;
-import br.lcn.ragkb.identity.AppUserRepository;
-import br.lcn.ragkb.whatsapp.WhatsAppNotConnectedException;
-import br.lcn.ragkb.whatsapp.WhatsAppSendException;
-import br.lcn.ragkb.whatsapp.WhatsAppService;
+import br.lcn.ragkb.identity.api.UserLookupApi;
+import br.lcn.ragkb.identity.api.UserLookupApi.UserContact;
+import br.lcn.ragkb.whatsapp.api.WhatsAppMessagingApi;
+import br.lcn.ragkb.whatsapp.api.WhatsAppNotConnectedException;
+import br.lcn.ragkb.whatsapp.api.WhatsAppSendException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -66,8 +66,8 @@ public class CardDigestJob {
     private static final int MAX_TITLE_LENGTH = 60;
 
     private final CardRepository cardRepository;
-    private final AppUserRepository userRepository;
-    private final WhatsAppService whatsAppService;
+    private final UserLookupApi userLookupApi;
+    private final WhatsAppMessagingApi whatsAppService;
 
     /**
      * Resultado do teste "Checar Agora": sent indica se a mensagem saiu,
@@ -119,22 +119,22 @@ public class CardDigestJob {
         if (overdue.isEmpty() && dueToday.isEmpty() && upcoming.isEmpty()) {
             return false; // nada relevante — silêncio por design
         }
-        AppUser user = userRepository.findById(userId).orElse(null);
+        UserContact user = userLookupApi.findContactById(userId).orElse(null);
         if (user == null) {
             log.warn("Digest: destinatário {} não encontrado — resumo ignorado.", userId);
             return false;
         }
-        if (user.getPhone() == null || user.getPhone().isBlank()) {
-            log.warn("Digest: destinatário {} sem telefone no cadastro — resumo ignorado.", user.getUsername());
+        if (user.phone() == null || user.phone().isBlank()) {
+            log.warn("Digest: destinatário {} sem telefone no cadastro — resumo ignorado.", user.username());
             return false;
         }
-        String chatId = toChatId(user.getPhone());
+        String chatId = toChatId(user.phone());
         try {
             whatsAppService.sendText(chatId, buildMessage(today, overdue, dueToday, upcoming));
-            log.info("Digest de tarefas enviado para {} ({})", user.getUsername(), chatId);
+            log.info("Digest de tarefas enviado para {} ({})", user.username(), chatId);
             return true;
         } catch (WhatsAppSendException | WhatsAppNotConnectedException e) {
-            log.warn("Envio do digest para {} falhou: {}", user.getUsername(), e.getMessage());
+            log.warn("Envio do digest para {} falhou: {}", user.username(), e.getMessage());
             return false;
         }
     }
@@ -148,16 +148,16 @@ public class CardDigestJob {
     public DigestTestResult testDigestFor(String username) {
         LocalDate today = LocalDate.now(ZONE);
         LocalDate horizon = today.plusDays(HORIZON_DAYS);
-        AppUser admin = userRepository.findByUsername(username).orElse(null);
+        UserContact admin = userLookupApi.findContactByUsername(username).orElse(null);
         if (admin == null) {
             return new DigestTestResult(false, "Usuário autenticado não encontrado no cadastro.", null, 0);
         }
-        if (admin.getPhone() == null || admin.getPhone().isBlank()) {
+        if (admin.phone() == null || admin.phone().isBlank()) {
             return new DigestTestResult(false,
                     "Seu cadastro não tem telefone — o teste não pode ser entregue. Preencha o telefone no seu perfil.",
                     null, 0);
         }
-        List<Card> due = cardRepository.findDueCardsAccessibleTo(admin.getId(), CardStatus.CLOSED_STATUSES, horizon);
+        List<Card> due = cardRepository.findDueCardsAccessibleTo(admin.id(), CardStatus.CLOSED_STATUSES, horizon);
         List<Card> overdue = new ArrayList<>();
         List<Card> dueToday = new ArrayList<>();
         List<Card> upcoming = new ArrayList<>();
@@ -176,13 +176,13 @@ public class CardDigestJob {
                         + "Esta é uma mensagem de teste do canal."
                 : buildMessage(today, overdue, dueToday, upcoming);
         try {
-            whatsAppService.sendText(toChatId(admin.getPhone()), preview);
+            whatsAppService.sendText(toChatId(admin.phone()), preview);
             String detail = "Resumo de teste enviado para o seu WhatsApp. " + total
                     + " card(s) nos buckets (atrasadas / vencem hoje / próximos 7 dias).";
-            log.info("Teste de digest enviado para {} ({})", admin.getUsername(), admin.getPhone());
+            log.info("Teste de digest enviado para {} ({})", admin.username(), admin.phone());
             return new DigestTestResult(true, detail, preview, total);
         } catch (WhatsAppSendException | WhatsAppNotConnectedException e) {
-            log.warn("Teste de digest para {} falhou: {}", admin.getUsername(), e.getMessage());
+            log.warn("Teste de digest para {} falhou: {}", admin.username(), e.getMessage());
             return new DigestTestResult(false, "Falha no envio pelo WhatsApp: " + e.getMessage(), preview, total);
         }
     }

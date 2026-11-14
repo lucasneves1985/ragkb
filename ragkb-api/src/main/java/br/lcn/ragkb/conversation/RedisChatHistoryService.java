@@ -1,5 +1,7 @@
 package br.lcn.ragkb.conversation;
 
+import br.lcn.ragkb.conversation.api.RedisChatMessageDto;
+
 
 
 import java.util.ArrayList;

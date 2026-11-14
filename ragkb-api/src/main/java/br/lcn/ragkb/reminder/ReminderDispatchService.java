@@ -17,10 +17,10 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import br.lcn.ragkb.identity.AppUser;
-import br.lcn.ragkb.identity.AppUserRepository;
-import br.lcn.ragkb.whatsapp.WhatsAppSendException;
-import br.lcn.ragkb.whatsapp.WhatsAppService;
+import br.lcn.ragkb.identity.api.UserLookupApi;
+import br.lcn.ragkb.identity.api.UserLookupApi.UserContact;
+import br.lcn.ragkb.whatsapp.api.WhatsAppMessagingApi;
+import br.lcn.ragkb.whatsapp.api.WhatsAppSendException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,8 +45,8 @@ public class ReminderDispatchService {
             = DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm").withZone(ZONE);
 
     private final ReminderRepository reminderRepository;
-    private final AppUserRepository userRepository;
-    private final WhatsAppService whatsAppService;
+    private final UserLookupApi userLookupApi;
+    private final WhatsAppMessagingApi whatsAppService;
     private final ChatClient chatClient;
 
     @Scheduled(fixedDelay = 30_000, initialDelay = 15_000)
@@ -64,13 +64,13 @@ public class ReminderDispatchService {
     }
 
     private void dispatch(Reminder reminder) {
-        AppUser user = userRepository.findById(reminder.getUserId()).orElse(null);
-        if (user == null || user.getPhone() == null || user.getPhone().isBlank()) {
+        UserContact user = userLookupApi.findContactById(reminder.getUserId()).orElse(null);
+        if (user == null || user.phone() == null || user.phone().isBlank()) {
             reminder.registerRetryFailure("Usuário não encontrado ou sem telefone no cadastro.");
             reminderRepository.save(reminder);
             return;
         }
-        String chatId = toChatId(user.getPhone());
+        String chatId = toChatId(user.phone());
         String message = generateMessage(reminder, user);
         try {
             whatsAppService.sendText(chatId, message);
@@ -88,7 +88,7 @@ public class ReminderDispatchService {
     /**
      * Segunda chamada LLM: texto redigido no momento do disparo.
      */
-    private String generateMessage(Reminder reminder, AppUser user) {
+    private String generateMessage(Reminder reminder, UserContact user) {
         String prompt = """
                 Escreva a mensagem de um lembrete enviado por WhatsApp.
                 Conteúdo do lembrete: %s
@@ -100,7 +100,7 @@ public class ReminderDispatchService {
                 """.formatted(
                 reminder.getOriginalRequest() == null ? "" : reminder.getOriginalRequest(),
                 reminder.getRemindAt() == null ? "" : BRAZIL_FORMAT.format(reminder.getRemindAt()),
-                user.getFullName());
+                user.fullName());
         try {
             String content = chatClient.prompt().user(prompt).call().content();
             return content == null || content.isBlank() ? defaultText(reminder) : content.trim();

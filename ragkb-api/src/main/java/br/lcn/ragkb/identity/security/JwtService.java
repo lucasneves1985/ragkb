@@ -20,7 +20,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 
-import br.lcn.ragkb.identity.AppRole;
+import br.lcn.ragkb.identity.api.AppRole;
 
 import lombok.RequiredArgsConstructor;
 

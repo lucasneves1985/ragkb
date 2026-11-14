@@ -18,12 +18,12 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
-import br.lcn.ragkb.identity.AppUser;
-import br.lcn.ragkb.identity.AppUserRepository;
+import br.lcn.ragkb.identity.api.UserLookupApi;
+import br.lcn.ragkb.identity.api.UserLookupApi.UserContact;
 import br.lcn.ragkb.shared.AppConfigurationService;
-import br.lcn.ragkb.whatsapp.WhatsAppNotConnectedException;
-import br.lcn.ragkb.whatsapp.WhatsAppSendException;
-import br.lcn.ragkb.whatsapp.WhatsAppService;
+import br.lcn.ragkb.whatsapp.api.WhatsAppMessagingApi;
+import br.lcn.ragkb.whatsapp.api.WhatsAppNotConnectedException;
+import br.lcn.ragkb.whatsapp.api.WhatsAppSendException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -88,9 +88,9 @@ public class CardDueReminderJob {
     private static final int MAX_TITLE_LENGTH = 60;
 
     private final CardRepository cardRepository;
-    private final AppUserRepository userRepository;
+    private final UserLookupApi userLookupApi;
     private final AppConfigurationService configurationService;
-    private final WhatsAppService whatsAppService;
+    private final WhatsAppMessagingApi whatsAppService;
 
     /**
      * Resultado do teste "Checar Agora": sent indica se a mensagem saiu,
@@ -160,18 +160,18 @@ public class CardDueReminderJob {
     }
 
     private void dispatchToCreator(Long creatorId, List<Card> cards, LocalDate today, int windowDays) {
-        AppUser creator = userRepository.findById(creatorId).orElse(null);
+        UserContact creator = userLookupApi.findContactById(creatorId).orElse(null);
         if (creator == null) {
             log.warn("Criador {} não encontrado — lembrete de {} card(s) ignorado.", creatorId, cards.size());
             return;
         }
-        if (creator.getPhone() == null || creator.getPhone().isBlank()) {
+        if (creator.phone() == null || creator.phone().isBlank()) {
             log.warn("Criador {} sem telefone no cadastro — lembrete de {} card(s) ignorado.",
-                    creator.getUsername(), cards.size());
+                    creator.username(), cards.size());
             return;
         }
 
-        String chatId = toChatId(creator.getPhone());
+        String chatId = toChatId(creator.phone());
         try {
             whatsAppService.sendText(chatId, buildMessage(cards, today, windowDays));
             // Marcação em lote: só executa se o envio teve sucesso — falha
@@ -181,11 +181,11 @@ public class CardDueReminderJob {
                 cardRepository.save(card);
             }
             log.info("Lembrete de prazo agregado enviado para {} ({}): {} card(s)",
-                    creator.getUsername(), chatId, cards.size());
+                    creator.username(), chatId, cards.size());
         } catch (WhatsAppSendException | WhatsAppNotConnectedException e) {
             // Nenhum card marcado — tentará novamente na próxima execução.
             log.warn("Envio do lembrete para {} ({} card(s)) falhou: {}",
-                    creator.getUsername(), cards.size(), e.getMessage());
+                    creator.username(), cards.size(), e.getMessage());
         }
     }
 
@@ -237,19 +237,19 @@ public class CardDueReminderJob {
                 .findByDueDateNotNullAndDueDateLessThanEqualAndStatusNotInOrderByDueDateAsc(
                         cutoff, CardStatus.CLOSED_STATUSES);
 
-        AppUser admin = userRepository.findByUsername(username).orElse(null);
+        UserContact admin = userLookupApi.findContactByUsername(username).orElse(null);
         if (admin == null) {
             return new ReminderTestResult(false,
                     "Usuário autenticado não encontrado no cadastro.", null, inWindow.size());
         }
-        if (admin.getPhone() == null || admin.getPhone().isBlank()) {
+        if (admin.phone() == null || admin.phone().isBlank()) {
             return new ReminderTestResult(false,
                     "Seu cadastro não tem telefone — o teste não pode ser entregue. Preencha o telefone no seu perfil.",
                     null, inWindow.size());
         }
 
         List<Card> own = inWindow.stream()
-                .filter(c -> admin.getId().equals(c.getCreatedBy()))
+                .filter(c -> admin.id().equals(c.getCreatedBy()))
                 .toList();
 
         String preview = own.isEmpty()
@@ -258,14 +258,14 @@ public class CardDueReminderJob {
                 : buildMessage(own, today, windowDays);
 
         try {
-            whatsAppService.sendText(toChatId(admin.getPhone()), preview);
+            whatsAppService.sendText(toChatId(admin.phone()), preview);
             String detail = "Mensagem enviada para o seu WhatsApp. " + inWindow.size()
                     + " card(s) no total na janela de " + windowDays + " dia(s); o preview abaixo lista TODOS os "
                     + "SEUS cards na janela, do mais urgente ao menos urgente. O teste não marca nada como enviado.";
-            log.info("Teste de lembrete de prazo enviado para {} ({})", admin.getUsername(), admin.getPhone());
+            log.info("Teste de lembrete de prazo enviado para {} ({})", admin.username(), admin.phone());
             return new ReminderTestResult(true, detail, preview, inWindow.size());
         } catch (WhatsAppSendException | WhatsAppNotConnectedException e) {
-            log.warn("Teste de lembrete para {} falhou: {}", admin.getUsername(), e.getMessage());
+            log.warn("Teste de lembrete para {} falhou: {}", admin.username(), e.getMessage());
             return new ReminderTestResult(false, "Falha no envio pelo WhatsApp: " + e.getMessage(), preview,
                     inWindow.size());
         }

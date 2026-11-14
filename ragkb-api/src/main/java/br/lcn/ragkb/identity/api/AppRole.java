@@ -1,4 +1,4 @@
-package br.lcn.ragkb.identity;
+package br.lcn.ragkb.identity.api;
 
 
 

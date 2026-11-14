@@ -13,4 +13,11 @@ public interface UserLookupApi extends SectorLookupApi {
     Optional<String> findUsernameById(Long userId);
 
     Map<Long, String> findUsernamesByIds(Collection<Long> userIds);
+
+    Optional<UserContact> findContactById(Long userId);
+
+    Optional<UserContact> findContactByUsername(String username);
+
+    record UserContact(Long id, String username, String phone, String fullName) {
+    }
 }

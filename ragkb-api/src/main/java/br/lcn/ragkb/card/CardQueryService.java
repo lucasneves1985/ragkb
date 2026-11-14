@@ -17,10 +17,8 @@ import java.util.Optional;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 
-import br.lcn.ragkb.identity.AppUser;
-import br.lcn.ragkb.identity.AppUserRepository;
-import br.lcn.ragkb.project.Project;
-import br.lcn.ragkb.project.ProjectRepository;
+import br.lcn.ragkb.identity.api.UserLookupApi;
+import br.lcn.ragkb.project.api.ProjectLookupApi;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -86,8 +84,8 @@ public class CardQueryService {
     private final CardRepository cardRepository;
     private final CardCommentRepository commentRepository;
     private final CardStatusEventRepository statusEventRepository;
-    private final ProjectRepository projectRepository;
-    private final AppUserRepository userRepository;
+    private final ProjectLookupApi projectLookupApi;
+    private final UserLookupApi userLookupApi;
 
     public CardAnswerResponse ask(CardAskRequest request, String username) {
         String question = request.question().trim();
@@ -152,8 +150,8 @@ public class CardQueryService {
         List<CardReferenceDto> references = new ArrayList<>();
         for (Card card : candidates) {
             appendCardState(context, card);
-            String projectName = projectRepository.findById(card.getProjectId())
-                    .map(Project::getName)
+            String projectName = projectLookupApi.findProject(card.getProjectId())
+                    .map(ProjectLookupApi.ProjectAccess::name)
                     .orElse("Projeto");
             references.add(new CardReferenceDto(card.getId(), card.getTitle(),
                     card.getProjectId(), projectName, card.getStatus().name()));
@@ -180,8 +178,7 @@ public class CardQueryService {
      * JWT). Padrão do projeto: username como parâmetro (UserService).
      */
     private Long currentUserId(String username) {
-        return userRepository.findByUsername(username)
-                .map(AppUser::getId)
+        return userLookupApi.findIdByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Usuário autenticado não encontrado: " + username));
     }
@@ -198,9 +195,9 @@ public class CardQueryService {
         if (card.getCreatedBy() == null) {
             return false;
         }
-        return projectRepository.findById(card.getProjectId())
-                .map(p -> p.getCreatedBy() != null
-                        && projectRepository.isParticipant(p.getId(), userId))
+        return projectLookupApi.findProject(card.getProjectId())
+                .map(p -> p.ownerId() != null
+                        && projectLookupApi.isParticipant(p.id(), userId))
                 .orElse(false);
     }
 

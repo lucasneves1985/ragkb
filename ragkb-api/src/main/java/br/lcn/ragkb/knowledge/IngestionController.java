@@ -18,8 +18,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import br.lcn.ragkb.identity.AppRole;
-import br.lcn.ragkb.identity.UserService;
+import br.lcn.ragkb.identity.api.AppRole;
+import br.lcn.ragkb.identity.api.SectorLookupApi;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 public class IngestionController {
 
     private final IngestionService ingestionService;
-    private final UserService userService;
+    private final SectorLookupApi sectorLookupApi;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
@@ -53,7 +53,7 @@ public class IngestionController {
 
         if (!isAdmin) {
             // Editor: forçado a ingerir do próprio setor
-            String editorSector = userService.findByUsername(auth.getName());
+            String editorSector = sectorLookupApi.findSectorByUsername(auth.getName());
             if (!sector.equals(editorSector)) {
                 throw new IllegalArgumentException("Editor só pode ingerir documentos do seu setor: " + editorSector);
             }

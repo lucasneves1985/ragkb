@@ -7,12 +7,12 @@ package br.lcn.ragkb.project;
 
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import br.lcn.ragkb.identity.AppUser;
-import br.lcn.ragkb.identity.AppUserRepository;
+import br.lcn.ragkb.identity.api.UserLookupApi;
 import br.lcn.ragkb.project.api.ProjectLookupApi.ProjectAccess;
 import br.lcn.ragkb.project.api.ProjectLookupApi;
 import br.lcn.ragkb.shared.exception.DuplicateProjectNameException;
@@ -38,18 +38,18 @@ public class ProjectService implements ProjectLookupApi {
 
     private final ProjectRepository projectRepository;
     private final ProjectShareRepository shareRepository;
-    private final AppUserRepository userRepository;
+    private final UserLookupApi userLookupApi;
 
     @Override
     public java.util.Optional<ProjectAccess> findVisibleProject(String projectId, Long userId) {
         return projectRepository.findVisibleById(projectId, userId)
-                .map(project -> new ProjectAccess(project.getId(), project.getCreatedBy()));
+                .map(project -> new ProjectAccess(project.getId(), project.getCreatedBy(), project.getName()));
     }
 
     @Override
     public java.util.Optional<ProjectAccess> findProject(String projectId) {
         return projectRepository.findById(projectId)
-                .map(project -> new ProjectAccess(project.getId(), project.getCreatedBy()));
+                .map(project -> new ProjectAccess(project.getId(), project.getCreatedBy(), project.getName()));
     }
 
     @Override
@@ -113,15 +113,15 @@ public class ProjectService implements ProjectLookupApi {
     @Transactional
     public ProjectDto share(String id, String username, String targetUsername) {
         Project project = ownedProject(id, currentUserId(username));
-        AppUser target = userRepository.findByUsername(targetUsername)
+        Long targetUserId = userLookupApi.findIdByUsername(targetUsername)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Usuário '" + targetUsername + "' não encontrado no cadastro."));
-        if (target.getId().equals(project.getCreatedBy())) {
+        if (targetUserId.equals(project.getCreatedBy())) {
             return toDto(project); // owner já participa por definição
         }
-        if (!shareRepository.existsByProjectIdAndUserId(id, target.getId())) {
+        if (!shareRepository.existsByProjectIdAndUserId(id, targetUserId)) {
             boolean firstShare = shareRepository.findByProjectIdOrderBySharedAtAsc(id).isEmpty();
-            shareRepository.save(new ProjectShare(id, target.getId()));
+            shareRepository.save(new ProjectShare(id, targetUserId));
             if (firstShare) {
                 projectRepository.reindexPositionsGlobally(id);
             }
@@ -144,10 +144,11 @@ public class ProjectService implements ProjectLookupApi {
     @Transactional(readOnly = true)
     public List<String> listShares(String id, String username) {
         ownedProject(id, currentUserId(username));
-        return shareRepository.findByProjectIdOrderBySharedAtAsc(id).stream()
+        List<Long> userIds = shareRepository.findByProjectIdOrderBySharedAtAsc(id).stream()
                 .map(ProjectShare::getUserId)
-                .map(uid -> userRepository.findById(uid).map(AppUser::getUsername).orElse("?"))
                 .toList();
+        Map<Long, String> usernames = userLookupApi.findUsernamesByIds(userIds);
+        return userIds.stream().map(uid -> usernames.getOrDefault(uid, "?")).toList();
     }
 
     // ── Resolução de acesso ───────────────────────────────────
@@ -185,21 +186,19 @@ public class ProjectService implements ProjectLookupApi {
      * JWT). Padrão do projeto: username como parâmetro (UserService).
      */
     private Long currentUserId(String username) {
-        return userRepository.findByUsername(username)
-                .map(AppUser::getId)
+        return userLookupApi.findIdByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Usuário autenticado não encontrado: " + username));
     }
 
     private ProjectDto toDto(Project project) {
         String ownerUsername = project.getCreatedBy() == null ? null
-                : userRepository.findById(project.getCreatedBy())
-                        .map(AppUser::getUsername).orElse(null);
-        List<String> participants = shareRepository
-                .findByProjectIdOrderBySharedAtAsc(project.getId()).stream()
-                .map(s -> userRepository.findById(s.getUserId())
-                        .map(AppUser::getUsername).orElse("?"))
+                : userLookupApi.findUsernameById(project.getCreatedBy()).orElse(null);
+        List<Long> userIds = shareRepository.findByProjectIdOrderBySharedAtAsc(project.getId()).stream()
+                .map(ProjectShare::getUserId)
                 .toList();
+        Map<Long, String> usernames = userLookupApi.findUsernamesByIds(userIds);
+        List<String> participants = userIds.stream().map(id -> usernames.getOrDefault(id, "?")).toList();
         return ProjectDto.from(project, ownerUsername, participants);
     }
 }

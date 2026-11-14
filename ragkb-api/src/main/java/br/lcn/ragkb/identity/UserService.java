@@ -1,5 +1,6 @@
 package br.lcn.ragkb.identity;
 
+import br.lcn.ragkb.identity.api.AppRole;
 
 
 
@@ -215,5 +216,17 @@ public class UserService implements UserLookupApi {
         }
         return userRepository.findAllById(userIds).stream()
                 .collect(java.util.stream.Collectors.toMap(AppUser::getId, AppUser::getUsername));
+    }
+
+    @Override
+    public java.util.Optional<UserContact> findContactById(Long userId) {
+        return userRepository.findById(userId)
+                .map(user -> new UserContact(user.getId(), user.getUsername(), user.getPhone(), user.getFullName()));
+    }
+
+    @Override
+    public java.util.Optional<UserContact> findContactByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .map(user -> new UserContact(user.getId(), user.getUsername(), user.getPhone(), user.getFullName()));
     }
 }

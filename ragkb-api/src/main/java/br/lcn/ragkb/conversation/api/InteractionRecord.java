@@ -1,6 +1,4 @@
-package br.lcn.ragkb.conversation;
-
-
+package br.lcn.ragkb.conversation.api;
 
 import java.util.List;
 

@@ -7,8 +7,10 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
+import br.lcn.ragkb.identity.api.SectorClassificationApi;
+
 @Component
-public class SectorClassifier {
+public class SectorClassifier implements SectorClassificationApi {
 
     private static final Map<String, List<String>> KEYWORDS = Map.of(
             "TI", List.of("sistema", "login", "senha", "erro", "bug", "acesso"),
@@ -17,6 +19,7 @@ public class SectorClassifier {
             "Juridico", List.of("contrato", "clausula", "processo", "acordo")
     );
 
+    @Override
     public String classify(String question) {
         String q = question.toLowerCase();
         return KEYWORDS.entrySet().stream()

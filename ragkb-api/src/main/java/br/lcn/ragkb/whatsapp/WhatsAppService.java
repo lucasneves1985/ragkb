@@ -14,6 +14,10 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+import br.lcn.ragkb.whatsapp.api.WhatsAppMessagingApi;
+import br.lcn.ragkb.whatsapp.api.WhatsAppNotConnectedException;
+import br.lcn.ragkb.whatsapp.api.WhatsAppSendException;
+
 /**
  * Camada de abstração sobre a API HTTP do WAHA (WhatsApp HTTP API).
  *
@@ -33,7 +37,7 @@ import org.springframework.web.client.RestClientException;
  * estado degradado, nunca como exceção fatal para o fluxo principal da API.
  */
 @Service
-public class WhatsAppService {
+public class WhatsAppService implements WhatsAppMessagingApi {
 
     private static final Logger log = LoggerFactory.getLogger(WhatsAppService.class);
 
@@ -148,6 +152,7 @@ public class WhatsAppService {
      * @throws WhatsAppNotConnectedException se a sessão não estiver WORKING
      * @throws WhatsAppSendException se a WAHA rejeitar o envio
      */
+    @Override
     public void sendText(String chatId, String message) {
         if (chatId == null || !chatId.endsWith(CHAT_ID_SUFFIX)) {
             throw new WhatsAppSendException(
