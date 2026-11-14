@@ -1,0 +1,77 @@
+package br.lcn.ragkb.businessrule;
+
+
+
+
+
+
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import br.lcn.ragkb.shared.EmbeddingStatus;
+
+public interface BusinessRuleRepository extends JpaRepository<BusinessRule, String> {
+
+    // ── Gestão (ADMIN/EDITOR) ─────────────────────────────────
+    List<BusinessRule> findByStatusNotOrAuthorUsername(BusinessRuleStatus status, String authorUsername);
+
+    boolean existsByTitleIgnoreCase(String title);
+    boolean existsByTitleIgnoreCaseAndIdNot(String title, String id);
+
+    // ── Portal: leitura por setor ─────────────────────────────
+    List<BusinessRule> findByStatusOrderByPublishedAtDesc(BusinessRuleStatus status);
+
+    List<BusinessRule> findByStatusAndSectorNamesContainingOrderByPublishedAtDesc(
+            BusinessRuleStatus status, String sectorName);
+
+    // ── Guarda de exclusão de setor ───────────────────────────
+    long countBySectorNamesContaining(String sectorName);
+
+    // ── Retry job ─────────────────────────────────────────────
+    List<BusinessRule> findByStatusAndEmbeddingStatusInOrderById(
+            BusinessRuleStatus status, List<EmbeddingStatus> statuses);
+
+    // ── Busca semântica — coluna embedding (vector) NÃO mapeada no
+    //    Hibernate (ddl-auto: validate), por isso native query. ──────
+    @Query(value = """
+            SELECT r.id FROM business_rules r
+            WHERE r.status = 'PUBLISHED'
+              AND (
+                    (r.embedding IS NOT NULL
+                     AND 1 - (r.embedding <=> CAST(:qv AS vector)) >= :similarityThreshold)
+                    OR r.title ILIKE '%' || CAST(:query AS text) || '%'
+                    OR r.description ILIKE '%' || CAST(:query AS text) || '%'
+              )
+              AND (CAST(:sector AS text) IS NULL OR EXISTS (
+                    SELECT 1 FROM business_rule_sectors s
+                    WHERE s.rule_id = r.id AND s.sector_name = CAST(:sector AS text)))
+            ORDER BY CASE
+                         WHEN r.title ILIKE '%' || CAST(:query AS text) || '%'
+                           OR r.description ILIKE '%' || CAST(:query AS text) || '%'
+                         THEN 0 ELSE 1
+                     END,
+                     r.embedding <=> CAST(:qv AS vector)
+            LIMIT 20
+            """, nativeQuery = true)
+    List<String> semanticSearchIds(@Param("sector") String sector,
+                                   @Param("qv") String queryVector,
+                                   @Param("query") String query,
+                                   @Param("similarityThreshold") double similarityThreshold);
+
+    @Modifying
+    @Query(value = """
+            UPDATE business_rules
+            SET embedding = CAST(:qv AS vector), embedding_status = 'DONE'
+            WHERE id = :id
+            """, nativeQuery = true)
+    void saveEmbedding(@Param("id") String id, @Param("qv") String vectorLiteral);
+
+    @Modifying
+    @Query("update BusinessRule r set r.embeddingStatus = :status where r.id = :id")
+    void updateEmbeddingStatus(@Param("id") String id, @Param("status") EmbeddingStatus status);
+}

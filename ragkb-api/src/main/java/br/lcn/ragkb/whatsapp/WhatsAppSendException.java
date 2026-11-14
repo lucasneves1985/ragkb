@@ -1,5 +1,7 @@
 package br.lcn.ragkb.whatsapp;
 
+
+
 public class WhatsAppSendException extends RuntimeException {
 
     public WhatsAppSendException(String message) {

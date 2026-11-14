@@ -1,5 +1,7 @@
 package br.lcn.ragkb.whatsapp;
 
+
+
 public class WhatsAppNotConnectedException extends RuntimeException {
 
     public WhatsAppNotConnectedException(String session) {
