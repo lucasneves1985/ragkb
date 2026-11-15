@@ -1,8 +1,9 @@
 ﻿<script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Menu } from '@element-plus/icons-vue'
+import { ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import type { NavItem } from '@/types'
+import { useThemeStore, type ThemeMode } from '@/stores/theme'
 
 const props = defineProps<{
   collapsed: boolean
@@ -16,6 +17,14 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
+const theme = useThemeStore()
+const themeLogos: Record<ThemeMode, string> = {
+  light: '/padrao.png',
+  dark: '/dark.png',
+  graphite: '/grafite.png',
+  indigo: '/indigo.png',
+}
+const logoSrc = computed(() => themeLogos[theme.mode])
 const visibleItems = computed(() => props.items.filter((entry) => entry.visible))
 const isCollapsed = computed(() => props.collapsed && !props.mobileOpen)
 </script>
@@ -24,9 +33,14 @@ const isCollapsed = computed(() => props.collapsed && !props.mobileOpen)
   <el-aside :width="isCollapsed ? '76px' : '250px'"
     :class="['sidebar', { 'is-collapsed': isCollapsed, 'mobile-open': mobileOpen }]">
     <div class="brand">
-      <div class="brand-mark">R</div>
+      <img class="brand-mark" :src="logoSrc" alt="" aria-hidden="true" />
       <span v-show="!collapsed">rag<span>kb</span></span>
     </div>
+
+    <el-button circle class="sidebar-toggle" :aria-label="isCollapsed ? 'Expandir menu' : 'Recolher menu'"
+      :aria-expanded="!isCollapsed" @click="emit('toggle')">
+      <el-icon><ArrowRight v-if="isCollapsed" /><ArrowLeft v-else /></el-icon>
+    </el-button>
 
     <div v-show="!isCollapsed" class="workspace-label">BASE DE CONHECIMENTO</div>
 
@@ -43,14 +57,6 @@ const isCollapsed = computed(() => props.collapsed && !props.mobileOpen)
       </el-menu>
     </div>
 
-    <div class="sidebar-footer">
-      <el-button text class="collapse-button" @click="emit('toggle')">
-        <el-icon>
-          <Menu />
-        </el-icon>
-        <span v-show="!isCollapsed">Recolher menu</span>
-      </el-button>
-    </div>
   </el-aside>
 </template>
 
@@ -72,11 +78,16 @@ const isCollapsed = computed(() => props.collapsed && !props.mobileOpen)
   padding: 24px 12px;
   background: var(--sidebar-bg);
   transition: width 0.2s;
-  overflow: hidden;
+  overflow: visible;
   height: 100vh;
 }
 
 .sidebar.is-collapsed {
+  padding-inline: 0;
+}
+
+.sidebar.is-collapsed .brand {
+  justify-content: center;
   padding-inline: 0;
 }
 
@@ -98,14 +109,11 @@ const isCollapsed = computed(() => props.collapsed && !props.mobileOpen)
 }
 
 .brand-mark {
-  display: grid;
-  place-items: center;
   width: 30px;
   height: 30px;
-  border-radius: 9px;
-  color: var(--app-on-primary, #102219);
-  background: var(--sidebar-brand-accent);
-  font: 700 17px 'DM Mono';
+  flex: 0 0 30px;
+  border-radius: 8px;
+  object-fit: contain;
 }
 
 .workspace-label {
@@ -172,16 +180,29 @@ const isCollapsed = computed(() => props.collapsed && !props.mobileOpen)
   background: var(--sidebar-brand-accent);
 }
 
-.sidebar-footer {
-  margin-top: auto;
+.sidebar-toggle {
+  position: absolute;
+  top: 35px;
+  right: -12px;
+  z-index: 2201;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text-secondary);
+  box-shadow: 0 2px 8px rgb(15 23 42 / 28%);
 }
 
-.collapse-button {
-  width: 100%;
-  justify-content: flex-start;
-  gap: 11px;
-  color: var(--sidebar-item);
-  font-weight: 600;
+.sidebar-toggle:hover {
+  border-color: var(--app-focus);
+  background: var(--app-hover);
+  color: var(--app-accent);
+}
+
+.sidebar-toggle:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
 }
 
 @media (max-width: 760px) {

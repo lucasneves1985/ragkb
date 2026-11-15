@@ -1,6 +1,6 @@
 <template>
   <section class="login-intro">
-    <div class="login-brand"><i>R</i> rag<span>kb</span></div>
+    <div class="login-brand"><img src="/padrao.png" alt="" aria-hidden="true" /> rag<span>kb</span></div>
 
     <div>
       <p class="intro-kicker">CONHECIMENTO, COM CONTEXTO</p>
@@ -31,22 +31,18 @@
 }
 
 .login-brand {
-  font-size: 28px;
+  font-size: 49px;
   font-weight: 800;
   letter-spacing: -1px;
 }
 
-.login-brand i {
-  display: inline-grid;
-  place-items: center;
-  width: 31px;
-  height: 31px;
-  margin-right: 9px;
-  border-radius: 9px;
-  background: #72e2bf;
-  color: #102219;
-  font: 700 17px 'DM Mono';
-  font-style: normal;
+.login-brand img {
+  display: inline-block;
+  width: 56px;
+  height: 56px;
+  margin-right: 14px;
+  object-fit: contain;
+  vertical-align: middle;
 }
 
 .login-brand span {
